@@ -6,7 +6,9 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 
 ## Code snippet for adding an arm
 You might need to assign different address IDs.
+
 YOU DEFINITELY NEED TO CHECK THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD.
+
 YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for your own robot geometry mass and gear ratio.
 
 this code snippet can go to `subsystems/arm.py`
