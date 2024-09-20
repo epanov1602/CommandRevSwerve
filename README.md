@@ -214,6 +214,11 @@ class Arm(Subsystem):
         # ... then the rest of the function
 ```
 
+***this code goes to the top of `robotcontainer.py`, so robotcontainer knows what Arm is***
+```python
+from subsystems.arm import Arm, ArmConstants
+```
+
 # Code snippet for adding a camera
 
 ***this goes to `subsystems/limelight_camera.py`***
@@ -272,10 +277,5 @@ def _fix_name(name: str):
     if not name:
       name = "limelight"
     return name
-```
-
-***this code goes to the top of `robotcontainer.py`, so robotcontainer knows what Arm is***
-```python
-from subsystems.arm import Arm, ArmConstants
 ```
 
