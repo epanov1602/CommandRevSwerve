@@ -186,7 +186,31 @@ class Arm(Subsystem):
         self.followMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
 ```
 
-and this code snippet can go to the `robotcontainer.py`, so you can drive the arm with the joystick:
+*** this code snippet can go inside of the function `configureButtonBindings` in your `robotcontainer.py`, so you can drive the arm with the joystick:***
 ```{python}
+    def configureButtonBindings(self) -> None:
+        """
+        Use this method to define your button->command mappings. Buttons can be created by
+        instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
+        and then passing it to a JoystickButton.
+        """
 
+        ## start of arm joystick control code
+        from commands2.button import JoystickButton
+        from commands2 import RunCommand
+
+        aButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kY)
+        aButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(ArmConstants.kArmMinAngle)))
+
+        yButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kA)
+        yButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(70)))
+        ## end of arm joystick control code
 ```
+
+*** this code adds one arm to __init__() function in `robotcontainer.py` ***
+```
+    def __init__(self) -> None:
+        self.arm = Arm(CANIds.kArmMotorRight, CANIds.kArmMotorLeft, True)
+        # ... then the rest of the function
+```
+
