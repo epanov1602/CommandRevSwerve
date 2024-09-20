@@ -66,6 +66,11 @@ class DriveConstants:
     kGyroReversed = False
 
 
+class CANIds:
+    kArmMotorLeft = 12
+    kArmMotorRight = 13
+
+
 class ModuleConstants:
     # The MAXSwerve module can be configured with one of three pinion gears: 12T, 13T, or 14T.
     # This changes the drive speed of the module (a pinion gear with more teeth will result in a

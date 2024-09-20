@@ -1,6 +1,7 @@
 import math
 
 import commands2
+
 import wpimath
 import wpilib
 
@@ -9,8 +10,9 @@ from wpimath.controller import PIDController, ProfiledPIDControllerRadians, Holo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
-from constants import AutoConstants, DriveConstants, OIConstants
+from constants import AutoConstants, DriveConstants, OIConstants, CANIds
 from subsystems.drivesubsystem import DriveSubsystem
+from subsystems.arm import Arm, ArmConstants
 
 
 class RobotContainer:
@@ -23,6 +25,7 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The robot's subsystems
+        self.arm = Arm(CANIds.kArmMotorRight, CANIds.kArmMotorLeft, True)
         self.robotDrive = DriveSubsystem()
 
         # The driver's controller
@@ -53,6 +56,7 @@ class RobotContainer:
             )
         )
 
+
     def configureButtonBindings(self) -> None:
         """
         Use this method to define your button->command mappings. Buttons can be created by
@@ -60,9 +64,22 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
+        ## start of arm joystick control code
+        from commands2.button import JoystickButton
+        from commands2 import RunCommand
+
+        aButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kY)
+        aButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(ArmConstants.kArmMinAngle)))
+
+        yButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kA)
+        yButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(70)))
+        ## end of arm joystick control code
+
+
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
         This should be called on robot disable to prevent integral windup."""
+
 
     def getAutonomousCommand(self) -> commands2.Command:
         """Use this to pass the autonomous command to the main {@link Robot} class.
