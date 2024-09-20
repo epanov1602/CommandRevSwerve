@@ -11,7 +11,7 @@ YOU DEFINITELY NEED TO CHECK THE SENSOR/MOTOR DIRECTIONS at low values of initia
 
 YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for your own robot geometry mass and gear ratio.
 
-* this code snippet can go to `subsystems/arm.py`
+* **this code snippet can go to `subsystems/arm.py`**
 ```python
 from rev import CANSparkMax, CANSparkBase, SparkLimitSwitch, SparkAbsoluteEncoder
 from wpimath.geometry import Rotation2d
