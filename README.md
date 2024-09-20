@@ -5,9 +5,13 @@ https://www.youtube.com/watch?v=K2Aj0S4-aKI
 https://github.com/robotpy/robotpy-rev/tree/main/examples
 
 ## Code snippet for adding an arm
-(you might need to assign different address IDs and definitely tune the constants)
+You might need to assign different address IDs.
+YOU DEFINITELY NEED TO CHECK THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD.
+YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for your own robot geometry mass and gear ratio.
 
-```(python)
+this code snippet can go to `subsystems/arm.py`
+
+```{python}
 from rev import CANSparkMax, CANSparkBase, SparkLimitSwitch, SparkAbsoluteEncoder
 from wpimath.geometry import Rotation2d
 from commands2 import Subsystem
@@ -179,4 +183,9 @@ class Arm(Subsystem):
         self.leadMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
         self.followMotor.follow(self.leadMotor, True)
         self.followMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
+```
+
+and this code snippet can go to the `robotcontainer.py`, so you can drive the arm with the joystick:
+```{python}
+
 ```
