@@ -11,7 +11,7 @@ YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for yo
 
 this code snippet can go to `subsystems/arm.py`
 
-```{python}
+```python
 from rev import CANSparkMax, CANSparkBase, SparkLimitSwitch, SparkAbsoluteEncoder
 from wpimath.geometry import Rotation2d
 from commands2 import Subsystem
