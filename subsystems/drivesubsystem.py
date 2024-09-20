@@ -113,6 +113,12 @@ class DriveSubsystem(Subsystem):
             pose,
         )
 
+    def rotate(
+        self,
+        speed: float,
+    ) -> None:
+        self.drive(0, 0, speed, False, False)
+
     def drive(
         self,
         xSpeed: float,
