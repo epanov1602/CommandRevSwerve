@@ -26,7 +26,7 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The robot's subsystems
-        self.camera = LimelightCamera("limelight-pickup", 8630)
+        self.camera = LimelightCamera("limelight-pickup")
         self.arm = Arm(CANIds.kArmMotorRight, CANIds.kArmMotorLeft, True)
         self.robotDrive = DriveSubsystem()
 
