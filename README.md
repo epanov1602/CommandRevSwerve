@@ -186,8 +186,8 @@ class Arm(Subsystem):
         self.followMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
 ```
 
-*** this code snippet can go inside of the function `configureButtonBindings` in your `robotcontainer.py`, so you can drive the arm with the joystick:***
-```{python}
+***this code snippet can go inside of the function `configureButtonBindings` in your `robotcontainer.py`, so you can drive the arm with the joystick:***
+```python
     def configureButtonBindings(self) -> None:
         """
         Use this method to define your button->command mappings. Buttons can be created by
@@ -207,10 +207,15 @@ class Arm(Subsystem):
         ## end of arm joystick control code
 ```
 
-*** this code adds one arm to __init__() function in `robotcontainer.py` ***
-```
+***this code adds one arm to __init__() function in `robotcontainer.py`***
+```python
     def __init__(self) -> None:
         self.arm = Arm(CANIds.kArmMotorRight, CANIds.kArmMotorLeft, True)
         # ... then the rest of the function
+```
+
+***this code goes to the top of `robotcontainer.py`, so robotcontainer knows what Arm is***
+```python
+from subsystems.arm import Arm, ArmConstants
 ```
 
