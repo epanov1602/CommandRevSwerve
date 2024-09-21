@@ -79,3 +79,16 @@ requires = [
 from subsystems.limelight_camera import LimelightCamera
 ```
 
+**finally, let's add an example of how to use camera in `robotcontainer.py`**
+At the end of `configureButtonBindings()` function, add code for joystick button "B" to make robot slowly turn to the object:
+```
+        def turn_to_object():
+            x = self.camera.getX()
+            print(f"x={x}")
+            turn_speed = -0.005 * x
+            self.robotDrive.rotate(turn_speed)
+
+        bButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kB)
+        bButton.whileTrue(commands2.RunCommand(turn_to_object, self.robotDrive))
+        bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
+```
