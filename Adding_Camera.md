@@ -67,3 +67,15 @@ requires = [
 ]
 ```
 
+**in `robotcontainer.py`, in the __init__ method, we need to add one camera to the list of robot subsystems**
+```
+    def __init__(self) -> None:
+        # The robot's subsystems
+        self.camera = LimelightCamera("limelight-pickup")
+```
+
+, and for this to work don't forget to add this at the top of `robotcontainer.py`
+```
+from subsystems.limelight_camera import LimelightCamera
+```
+
