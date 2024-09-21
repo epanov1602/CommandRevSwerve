@@ -68,20 +68,21 @@ requires = [
 ```
 
 **in `robotcontainer.py`, in the __init__ method, we need to add one camera to the list of robot subsystems**
-```
+```python
     def __init__(self) -> None:
         # The robot's subsystems
         self.camera = LimelightCamera("limelight-pickup")
 ```
 
 , and for this to work don't forget to add this at the top of `robotcontainer.py`
-```
+```python
 from subsystems.limelight_camera import LimelightCamera
 ```
 
 **finally, let's add an example of how to use camera in `robotcontainer.py`**
+
 At the end of `configureButtonBindings()` function, add code for joystick button "B" to make robot slowly turn to the object:
-```
+```python
         def turn_to_object():
             x = self.camera.getX()
             print(f"x={x}")
@@ -91,4 +92,14 @@ At the end of `configureButtonBindings()` function, add code for joystick button
         bButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kB)
         bButton.whileTrue(commands2.RunCommand(turn_to_object, self.robotDrive))
         bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
+```
+
+**last move: drivetrain must have a `rotate()` function, so add this to `drivesubsystem.py`**
+```python
+    def rotate(self, speed) -> None:
+        """
+        Rotate the robot in place, without moving laterally (for example, for aiming)
+        :param speed: rotation speed 
+        """
+        self.drive(0, 0, speed)
 ```
