@@ -13,6 +13,7 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 from constants import AutoConstants, DriveConstants, OIConstants, CANIds
 from subsystems.drivesubsystem import DriveSubsystem
 from subsystems.arm import Arm, ArmConstants
+from subsystems.limelight_camera import LimelightCamera
 
 
 class RobotContainer:
@@ -25,6 +26,7 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The robot's subsystems
+        self.camera = LimelightCamera("limelight-pickup")
         self.arm = Arm(CANIds.kArmMotorRight, CANIds.kArmMotorLeft, True)
         self.robotDrive = DriveSubsystem()
 
@@ -75,6 +77,15 @@ class RobotContainer:
         yButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(70)))
         ## end of arm joystick control code
 
+        def turn_to_object():
+            x = self.camera.getX()
+            print(f"x={x}")
+            turn_speed = -0.005 * x
+            self.robotDrive.rotate(turn_speed)
+
+        bButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kB)
+        bButton.whileTrue(commands2.RunCommand(turn_to_object, self.robotDrive))
+        bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
