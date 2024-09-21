@@ -1,6 +1,6 @@
 ## Code snippet for adding an arm
 
-*WARNINGS*
+**WARNINGS**
 
 * YOU DEFINITELY NEED TO CHECK THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD, please watch the video
 
