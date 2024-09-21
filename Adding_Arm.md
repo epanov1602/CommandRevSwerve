@@ -197,10 +197,10 @@ class Arm(Subsystem):
         from commands2.button import JoystickButton
         from commands2 import RunCommand
 
-        aButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kY)
+        aButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kA)
         aButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(ArmConstants.kArmMinAngle)))
 
-        yButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kA)
+        yButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kY)
         yButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(70)))
         ## end of arm joystick control code
 ```
