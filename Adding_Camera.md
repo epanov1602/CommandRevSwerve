@@ -58,3 +58,12 @@ def _fix_name(name: str):
     return name
 ```
 
+**at the end of `pyproject.toml` you should have this (we need to add `pynetworkatables`, to talk with the camera)**
+
+```python
+# Other pip packages to install
+requires = [
+    "pynetworktables"
+]
+```
+
