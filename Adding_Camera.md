@@ -1,6 +1,6 @@
 # Code snippet for adding a camera
 
-***this goes to `subsystems/limelight_camera.py`***
+- **this goes to `subsystems/limelight_camera.py`**
 ```python
 from networktables import NetworkTables
 from wpilib import RobotController, Timer
@@ -58,7 +58,7 @@ def _fix_name(name: str):
     return name
 ```
 
-**at the end of `pyproject.toml` you should have this (we need to add `pynetworkatables`, to talk with the camera)**
+- **at the end of `pyproject.toml` you should have this (we need to add `pynetworkatables`, to talk with the camera)**
 
 ```python
 # Other pip packages to install
@@ -67,7 +67,7 @@ requires = [
 ]
 ```
 
-**in `robotcontainer.py`, in the __init__ method, we need to add one camera to the list of robot subsystems**
+- **in `robotcontainer.py`, in the __init__ method, we need to add one camera to the list of robot subsystems**
 ```python
     def __init__(self) -> None:
         # The robot's subsystems
@@ -79,7 +79,7 @@ requires = [
 from subsystems.limelight_camera import LimelightCamera
 ```
 
-**finally, let's add an example of how to use camera in `robotcontainer.py`**
+- **finally, let's add an example of how to use camera in `robotcontainer.py`**
 
 At the end of `configureButtonBindings()` function, add code for joystick button "B" to make robot slowly turn to the object:
 ```python
@@ -94,7 +94,7 @@ At the end of `configureButtonBindings()` function, add code for joystick button
         bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
 ```
 
-**last move: drivetrain must have a `rotate()` function, so add this to `drivesubsystem.py`**
+- **last move: drivetrain must have a `rotate()` function, so add this to `drivesubsystem.py`**
 ```python
     def rotate(self, speed) -> None:
         """
