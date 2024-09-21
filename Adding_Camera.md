@@ -42,7 +42,7 @@ class LimelightCamera(Subsystem):
 
     def periodic(self) -> None:
         now = Timer.getFPGATimestamp()
-        heartbeat = self.hb.getInteger(0)
+        heartbeat = self.hb.getNumber(0)
         if heartbeat != self.lastHeartbeat:
             self.lastHeartbeat = heartbeat
             self.lastHeartbeatTime = now
