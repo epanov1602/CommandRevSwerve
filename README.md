@@ -5,6 +5,7 @@ https://www.youtube.com/watch?v=K2Aj0S4-aKI
 https://github.com/robotpy/robotpy-rev/tree/main/examples
 
 ## Adding other things to this (or similar) robot
+(all of these will also work fine on a tank/arcade/mecanum drive robot also)
 - [Adding an Arm](Adding_Arm.md)
 - [Adding a Camera](Adding_Camera.md)
 - [Adding an Intake](Adding_Intake.md)
