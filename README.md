@@ -9,4 +9,4 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding an Arm](Adding_Arm.md)
 - [Adding a Camera](Adding_Camera.md)
 - [Adding an Intake](Adding_Intake.md)
-- [Adding an Shooter](Adding_Shooter.md)
+- [Adding a Shooter](Adding_Shooter.md)
