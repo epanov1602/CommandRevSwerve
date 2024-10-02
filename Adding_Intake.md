@@ -116,7 +116,7 @@ class Intake(Subsystem):
 
 - **if some of the symbols are showing up as "unresolved" errors, these import lines need to be added in the beginning of `robotcontainer.py`**
 ```python
-from commands2 import cmd, InstantCommand
+from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
 from wpilib import XboxController
 ```
