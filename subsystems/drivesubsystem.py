@@ -207,7 +207,7 @@ class DriveSubsystem(Subsystem):
                 xSpeedDelivered,
                 ySpeedDelivered,
                 rotDelivered,
-                Rotation2d.fromDegrees(self.gyro.getAngle()),
+                Rotation2d.fromDegrees(DriveConstants.kGyroReversed * self.gyro.getAngle()),
             )
             if fieldRelative
             else ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered)
@@ -270,4 +270,4 @@ class DriveSubsystem(Subsystem):
 
         :returns: The turn rate of the robot, in degrees per second
         """
-        return self.gyro.getRate() * (-1.0 if DriveConstants.kGyroReversed else 1.0)
+        return self.gyro.getRate() * DriveConstants.kGyroReversed

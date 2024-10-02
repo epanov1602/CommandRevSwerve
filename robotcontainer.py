@@ -4,7 +4,9 @@ import commands2
 import wpimath
 import wpilib
 
-from commands2 import cmd
+from commands2 import cmd, InstantCommand
+from commands2.button import JoystickButton
+from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
@@ -59,6 +61,9 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
+        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumper.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))
+
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
