@@ -87,7 +87,7 @@ class Shooter(Subsystem):
 - **in `robotcontainer.py`, inside `__init__` function, we need to add one `Shooter` to the list of robot subsystems**
 ```python
         # these two lines go to __init__ function
-        from subsystems.intake import Shooter
+        from subsystems.shooter import Shooter
         self.shooter = Shooter()
 ```
 
@@ -109,7 +109,7 @@ class Shooter(Subsystem):
 
 - **if some of the symbols are showing up as "unresolved" errors, these import lines need to be added in the beginning of `robotcontainer.py`**
 ```python
-from commands2 import cmd, InstantCommand
+from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
 from wpilib import XboxController
 ```
