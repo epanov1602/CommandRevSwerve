@@ -4,7 +4,7 @@ import commands2
 import wpimath
 import wpilib
 
-from commands2 import cmd, InstantCommand
+from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
@@ -61,9 +61,10 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
-        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
-        leftBumper.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))
 
+        xButton = JoystickButton(self.driverController, XboxController.Button.kX)
+        xButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))
+        xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.

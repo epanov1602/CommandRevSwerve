@@ -11,6 +11,7 @@ class ShooterConstants:
     kShooterMotorA_CANID = 10
     kShooterMotorB_CANID = 11
 
+    initialMinRPM = 600  # minumum sensible nonzero RPM
     initialMaxRPM = 6000
     initialFF = 1.4 / 10000
     initialP = 5.0 / 10000
@@ -80,7 +81,6 @@ class Shooter(Subsystem):
         self.pidController.setI(0)
         self.pidController.setIZone(0)
         self.pidController.setOutputRange(-1, +1)
-
 ```
 
 
