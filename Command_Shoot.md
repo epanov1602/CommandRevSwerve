@@ -74,7 +74,7 @@ class ShootGamepiece(Command):
 ```
 
 
-- **to run this command on "right bumper" button, this needs to be added to `robotcontainer.py` inside `configureButtonBindings` function**
+- **to run this command on "left bumper" button, this needs to be added to `robotcontainer.py` inside `configureButtonBindings` function**
 ```python
     def configureButtonBindings(self) -> None:
         # ...
@@ -83,7 +83,7 @@ class ShootGamepiece(Command):
         
         # create a command to shoot a picked up gamepiece with shooter speed 1500 rpm
         from commands.shoot import ShootGamepiece
-        shootCommand = ShootGamepiece(self.intake, self.shooter, shooterRPM=1500)
+        shootCommand = ShootGamepiece(self.intake, self.shooter, shooterRPM=1500).withTimeout(5.0)
 
         # assign this command to run *while* joystick "left bumper" is pressed (if you release button, command aborts)
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
