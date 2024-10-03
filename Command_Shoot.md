@@ -1,4 +1,4 @@
-# Code snippet for pick-up-gamepiece command
+# Code snippet for feed-and-shoot command
 
 ## Pre-requisites
 
