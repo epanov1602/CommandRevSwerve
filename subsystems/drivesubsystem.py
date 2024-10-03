@@ -102,6 +102,7 @@ class DriveSubsystem(Subsystem):
         :param pose: The pose to which to set the odometry.
 
         """
+        self.gyro.reset()
         self.odometry.resetPosition(
             Rotation2d.fromDegrees(self.gyro.getAngle()),
             (
