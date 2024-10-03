@@ -113,6 +113,17 @@ class DriveSubsystem(Subsystem):
             pose,
         )
 
+    def arcadeDrive(
+        self,
+        xSpeed: float,
+        rot: float,
+        assumeManualInput: bool = False,
+    ) -> None:
+        if assumeManualInput:
+            xSpeed = xSpeed * abs(xSpeed)
+            rot = rot * abs(rot)
+        self.drive(xSpeed, 0, rot, False, False)
+
     def drive(
         self,
         xSpeed: float,
