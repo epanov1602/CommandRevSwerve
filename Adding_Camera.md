@@ -40,6 +40,9 @@ class LimelightCamera(Subsystem):
     def getY(self) -> float:
         return self.ty.getDouble(0.0)
 
+    def getHB(self) -> float:
+        return self.hb.getNumber(0.0)
+
     def periodic(self) -> None:
         now = Timer.getFPGATimestamp()
         heartbeat = self.hb.getNumber(0)
