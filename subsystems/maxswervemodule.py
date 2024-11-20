@@ -1,4 +1,4 @@
-from rev import CANSparkMax, SparkMaxAbsoluteEncoder
+from rev import CANSparkMax, CANSparkFlex, CANSparkLowLevel, SparkMaxAbsoluteEncoder
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
 
@@ -7,34 +7,41 @@ from constants import ModuleConstants
 
 class MAXSwerveModule:
     def __init__(
-        self, drivingCANId: int, turningCANId: int, chassisAngularOffset: float
+        self,
+        drivingCANId: int,
+        turningCANId: int,
+        chassisAngularOffset: float,
+        turnMotorInverted = True,
+        motorControllerType = CANSparkFlex,
     ) -> None:
         """Constructs a MAXSwerveModule and configures the driving and turning motor,
         encoder, and PID controller. This configuration is specific to the REV
         MAXSwerve Module built with NEOs, SPARKS MAX, and a Through Bore
         Encoder.
         """
-
         self.chassisAngularOffset = 0
         self.desiredState = SwerveModuleState(0.0, Rotation2d())
 
-        self.drivingSparkMax = CANSparkMax(
-            drivingCANId, CANSparkMax.MotorType.kBrushless
+        self.drivingSparkMax = motorControllerType(
+            drivingCANId, CANSparkLowLevel.MotorType.kBrushless
         )
-        self.turningSparkMax = CANSparkMax(
-            turningCANId, CANSparkMax.MotorType.kBrushless
+        self.turningSparkMax = motorControllerType(
+            turningCANId, CANSparkLowLevel.MotorType.kBrushless
         )
 
         # Factory reset, so we get the SPARKS MAX to a known state before configuring
         # them. This is useful in case a SPARK MAX is swapped out.
         self.drivingSparkMax.restoreFactoryDefaults()
         self.turningSparkMax.restoreFactoryDefaults()
+        if turnMotorInverted:
+            self.turningSparkMax.setInverted(True)
 
         # Setup encoders and PID controllers for the driving and turning SPARKS MAX.
         self.drivingEncoder = self.drivingSparkMax.getEncoder()
         self.turningEncoder = self.turningSparkMax.getAbsoluteEncoder(
             SparkMaxAbsoluteEncoder.Type.kDutyCycle
         )
+
         self.drivingPIDController = self.drivingSparkMax.getPIDController()
         self.turningPIDController = self.turningSparkMax.getPIDController()
         self.drivingPIDController.setFeedbackDevice(self.drivingEncoder)

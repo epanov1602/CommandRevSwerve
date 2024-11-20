@@ -106,7 +106,7 @@ class ModuleConstants:
     kDrivingMinOutput = -1
     kDrivingMaxOutput = 1
 
-    kTurningP = 1
+    kTurningP = 1  # can be dialed down if you see oscillations in the turning motor
     kTurningI = 0
     kTurningD = 0
     kTurningFF = 0

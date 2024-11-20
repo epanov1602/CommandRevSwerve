@@ -18,6 +18,7 @@ from wpilib import SmartDashboard
 from constants import DriveConstants
 import swerveutils
 from .maxswervemodule import MAXSwerveModule
+from rev import CANSparkMax, CANSparkFlex
 import navx
 
 
@@ -30,24 +31,32 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset,
+            turnMotorInverted=True,
+            motorControllerType=CANSparkFlex,
         )
 
         self.frontRight = MAXSwerveModule(
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset,
+            turnMotorInverted=True,
+            motorControllerType=CANSparkFlex,
         )
 
         self.rearLeft = MAXSwerveModule(
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset,
+            turnMotorInverted=True,
+            motorControllerType=CANSparkFlex,
         )
 
         self.rearRight = MAXSwerveModule(
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset,
+            turnMotorInverted=True,
+            motorControllerType=CANSparkFlex,
         )
 
         # The gyro sensor
