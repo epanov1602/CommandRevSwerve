@@ -26,11 +26,13 @@ class DriveSubsystem(Subsystem):
     def __init__(self) -> None:
         super().__init__()
 
+        enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
+
         # Create MAXSwerveModules
         self.frontLeft = MAXSwerveModule(
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
-            DriveConstants.kFrontLeftChassisAngularOffset,
+            DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=True,
             motorControllerType=CANSparkFlex,
         )
@@ -38,7 +40,7 @@ class DriveSubsystem(Subsystem):
         self.frontRight = MAXSwerveModule(
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
-            DriveConstants.kFrontRightChassisAngularOffset,
+            DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=True,
             motorControllerType=CANSparkFlex,
         )
@@ -46,7 +48,7 @@ class DriveSubsystem(Subsystem):
         self.rearLeft = MAXSwerveModule(
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
-            DriveConstants.kBackLeftChassisAngularOffset,
+            DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=True,
             motorControllerType=CANSparkFlex,
         )
@@ -54,7 +56,7 @@ class DriveSubsystem(Subsystem):
         self.rearRight = MAXSwerveModule(
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
-            DriveConstants.kBackRightChassisAngularOffset,
+            DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=True,
             motorControllerType=CANSparkFlex,
         )

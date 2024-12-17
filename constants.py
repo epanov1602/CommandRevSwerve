@@ -46,7 +46,10 @@ class DriveConstants:
     ]
     kDriveKinematics = SwerveDrive4Kinematics(*kModulePositions)
 
-    # Angular offsets of the modules relative to the chassis in radians
+    # set it to True if you were using a ruler for zeroing and want to ignore the offsets below
+    kAssumeZeroOffsets = True
+
+    # set the above to == False, if you are using Rev zeroing tool (and you have to tinker with offsets below)
     kFrontLeftChassisAngularOffset = -math.pi / 2
     kFrontRightChassisAngularOffset = 0
     kBackLeftChassisAngularOffset = math.pi
