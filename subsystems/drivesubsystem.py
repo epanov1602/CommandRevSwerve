@@ -136,6 +136,13 @@ class DriveSubsystem(Subsystem):
             rot = rot * abs(rot)
         self.drive(xSpeed, 0, rot, False, False)
 
+    def rotate(self, rotSpeed) -> None:
+        """
+        Rotate the robot in place, without moving laterally (for example, for aiming)
+        :param rotSpeed: rotation speed
+        """
+        self.arcadeDrive(0, rotSpeed)
+
     def drive(
         self,
         xSpeed: float,

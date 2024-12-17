@@ -91,18 +91,19 @@ At the end of `configureButtonBindings()` function, add code for joystick button
             print(f"x={x}")
             turn_speed = -0.005 * x
             self.robotDrive.rotate(turn_speed)
+            # if you want your robot to slowly chase that object... replace this line above with: self.robotDrive.arcadeDrive(0.1, turn_speed)
 
         bButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kB)
         bButton.whileTrue(commands2.RunCommand(turn_to_object, self.robotDrive))
         bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
 ```
 
-- **last move: drivetrain must have a `rotate()` function, so add this to `drivesubsystem.py`**
+- **last move: if your drivetrain does not have a `rotate()` function, add this to `drivesubsystem.py`**
 ```python
-    def rotate(self, speed) -> None:
+    def rotate(self, rotSpeed) -> None:
         """
         Rotate the robot in place, without moving laterally (for example, for aiming)
         :param speed: rotation speed 
         """
-        self.drive(0, 0, speed)
+        self.arcadeDrive(0, rotSpeed)
 ```
