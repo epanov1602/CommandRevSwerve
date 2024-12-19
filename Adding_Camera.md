@@ -65,7 +65,7 @@ def _fix_name(name: str):
 - **at the end of `pyproject.toml` you should have this (we need to add `pyntcore`, to talk with the camera)**
 
 ```python
-# Other pip packages to install
+# Other pip packags to install
 requires = [
     "pyntcore"
 ]
