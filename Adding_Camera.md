@@ -2,9 +2,10 @@
 
 - **this goes to `subsystems/limelight_camera.py`**
 ```python
-from networktables import NetworkTables
 from wpilib import RobotController, Timer
 from commands2 import Subsystem
+from ntcore import NetworkTableInstance
+
 
 class LimelightCamera(Subsystem):
     def __init__(self, cameraName: str) -> None:
@@ -12,40 +13,40 @@ class LimelightCamera(Subsystem):
 
         self.cameraName = _fix_name(cameraName)
 
-        # networktables hostname?
-        hostname = f'roborio-{RobotController.getTeamNumber()}-frc.local'
-        print(f"Connecting to Networktables server on {hostname}")
-        NetworkTables.initialize(server=hostname)
+        instance = NetworkTableInstance.getDefault()
+        self.table = instance.getTable(self.cameraName)
+        self._path = self.table.getPath()
 
-        # connect to networktables server as a client
-        self.table = NetworkTables.getTable(self.cameraName)
-        self.pipeline = self.table.getEntry("pipeline")
-        self.ledMode = self.table.getEntry("ledMode")
-        self.camMode = self.table.getEntry("camMode")
-        self.percentTimeSeen = self.table.getEntry("percentSeen")
-        self.tx = self.table.getEntry("tx")
-        self.ty = self.table.getEntry("ty")
-        self.ta = self.table.getEntry("ta")
-        self.hb = self.table.getEntry("hb")
+        #self.pipelineIndexRequest = self.table.getIntegerTopic("pipeline").publish()
+
+        self.ledMode = self.table.getIntegerTopic("ledMode").getEntry(-1)
+        self.camMode = self.table.getIntegerTopic("camMode").getEntry(-1)
+        self.tx = self.table.getDoubleTopic("tx").getEntry(0.0)
+        self.ty = self.table.getDoubleTopic("ty").getEntry(0.0)
+        self.ta = self.table.getDoubleTopic("ta").getEntry(0.0)
+        self.hb = self.table.getIntegerTopic("hb").getEntry(0)
         self.lastHeartbeat = 0
         self.lastHeartbeatTime = 0
         self.heartbeating = False
 
     def getA(self) -> float:
-        return self.ta.getDouble(0.0)
+        return self.ta.get()
 
     def getX(self) -> float:
-        return self.tx.getDouble(0.0)
+        return self.tx.get()
 
     def getY(self) -> float:
-        return self.ty.getDouble(0.0)
+        return self.ty.get()
 
     def getHB(self) -> float:
-        return self.hb.getNumber(0.0)
+        return self.hb.get()
+
+    def getSecondsSinceLastHeartbeat(self) -> float:
+        return Timer.getFPGATimestamp() - self.lastHeartbeatTime
 
     def periodic(self) -> None:
         now = Timer.getFPGATimestamp()
-        heartbeat = self.hb.getNumber(0)
+        heartbeat = self.getHB()
         if heartbeat != self.lastHeartbeat:
             self.lastHeartbeat = heartbeat
             self.lastHeartbeatTime = now
@@ -57,16 +58,16 @@ class LimelightCamera(Subsystem):
 
 def _fix_name(name: str):
     if not name:
-      name = "limelight"
+        name = "limelight"
     return name
 ```
 
-- **at the end of `pyproject.toml` you should have this (we need to add `pynetworkatables`, to talk with the camera)**
+- **at the end of `pyproject.toml` you should have this (we need to add `pyntcore`, to talk with the camera)**
 
 ```python
 # Other pip packages to install
 requires = [
-    "pynetworktables"
+    "pyntcore"
 ]
 ```
 
