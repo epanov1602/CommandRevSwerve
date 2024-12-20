@@ -88,7 +88,7 @@ class DriveSubsystem(Subsystem):
     def periodic(self) -> None:
         # Update the odometry in the periodic block
         pose = self.odometry.update(
-            Rotation2d.fromDegrees(self.gyro.getAngle()),
+            self.getHeading(),
             (
                 self.frontLeft.getPosition(),
                 self.frontRight.getPosition(),
@@ -288,16 +288,32 @@ class DriveSubsystem(Subsystem):
         """Zeroes the heading of the robot."""
         self.gyro.reset()
 
-    def getHeading(self) -> float:
+    def getHeading(self) -> Rotation2d:
         """Returns the heading of the robot.
 
-        :returns: the robot's heading in degrees, from -180 to 180
+        :returns: the robot's heading as Rotation2d
         """
-        return Rotation2d.fromDegrees(self.gyro.getAngle()).degrees()
+        return Rotation2d.fromDegrees(self.gyro.getAngle() * DriveConstants.kGyroReversed)
+
+    def getHeadingDegrees(self) -> float:
+        """Returns the heading of the robot.
+
+        :returns: the robot's heading as degrees (between -180 and +180)
+        """
+        return self.gyro.getAngle() * DriveConstants.kGyroReversed
+
 
     def getTurnRate(self) -> float:
-        """Returns the turn rate of the robot.
+        """Returns the turn rate of the robot (in degrees per second)
 
         :returns: The turn rate of the robot, in degrees per second
         """
         return self.gyro.getRate() * DriveConstants.kGyroReversed
+
+
+    def getTurnRateDegreesPerSec(self) -> float:
+        """Returns the turn rate of the robot (in degrees per second)
+
+        :returns: The turn rate of the robot, in degrees per second
+        """
+        return self.getTurnRate() * 180 / math.pi
