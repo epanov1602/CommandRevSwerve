@@ -11,8 +11,8 @@ class MAXSwerveModule:
         drivingCANId: int,
         turningCANId: int,
         chassisAngularOffset: float,
-        turnMotorInverted = True,
-        motorControllerType = CANSparkFlex,
+        turnMotorInverted=True,
+        motorControllerType=CANSparkFlex,
     ) -> None:
         """Constructs a MAXSwerveModule and configures the driving and turning motor,
         encoder, and PID controller. This configuration is specific to the REV
