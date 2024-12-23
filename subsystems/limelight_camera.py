@@ -14,7 +14,7 @@ class LimelightCamera(Subsystem):
         self.table = instance.getTable(self.cameraName)
         self._path = self.table.getPath()
 
-        #self.pipelineIndexRequest = self.table.getIntegerTopic("pipeline").publish()
+        self.pipelineIndexRequest = self.table.getIntegerTopic("pipeline").publish()
 
         self.ledMode = self.table.getIntegerTopic("ledMode").getEntry(-1)
         self.camMode = self.table.getIntegerTopic("camMode").getEntry(-1)
@@ -25,6 +25,9 @@ class LimelightCamera(Subsystem):
         self.lastHeartbeat = 0
         self.lastHeartbeatTime = 0
         self.heartbeating = False
+
+    def setPipeline(self, index: int):
+        self.pipelineIndexRequest.set(index)
 
     def getA(self) -> float:
         return self.ta.get()

@@ -84,6 +84,7 @@ class DriveSubsystem(Subsystem):
                 self.rearRight.getPosition(),
             ),
         )
+        self.resetOdometry(Pose2d(0, 0, 0))
 
     def periodic(self) -> None:
         # Update the odometry in the periodic block

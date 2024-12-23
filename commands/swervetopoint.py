@@ -28,36 +28,32 @@ class SwerveToPoint(commands2.Command):
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
 
     def execute(self):
-        # 1. to which direction we should be pointing?
-        currentPose = self.drivetrain.getPose()
-        currentPoint = currentPose.translation()
-        targetDirection = (self.targetPose - currentPose).translation().angle()
-        degreesRemaining = (self.targetPose.rotation() - currentPose.rotation()).degrees()
+        currentXY = self.drivetrain.getPose()
+        xDistance, yDistance = self.targetPose.x - currentXY.x, self.targetPose.y - currentXY.y
+        totalDistance = self.targetPose.translation().distance(currentXY.translation())
 
-        # 2. proportional control for turning ("rotation"):
-        # if we are almost finished turning, use slower turn speed (to avoid overshooting)
-        turnSpeed = abs(self.speed)
-        proportionalSpeed = AimToDirectionConstants.kP * abs(degreesRemaining)
-        if turnSpeed > proportionalSpeed:
-            turnSpeed = proportionalSpeed
-        # if we need to be turning *right* while driving, use negative rotation speed
-        if degreesRemaining < 0:
-            turnSpeed = -turnSpeed
+        totalSpeed = GoToPointConstants.kPTranslate * totalDistance
+        if totalSpeed > abs(self.speed):
+            totalSpeed = abs(self.speed)
+        if totalSpeed < GoToPointConstants.kMinTranslateSpeed:
+            totalSpeed = GoToPointConstants.kMinTranslateSpeed
 
-        # 3. same for driving ("translation"): if almost finished driving, drive slower (avoid overshooting)
-        distanceRemaining = self.targetPose.translation().distance(currentPoint)
-        proportionalTransSpeed = GoToPointConstants.kPTranslate * distanceRemaining
-        translateSpeed = abs(self.speed)  # if we don't plan to stop at the end, go at max speed
-        if translateSpeed > proportionalTransSpeed and self.stop:
-            translateSpeed = proportionalTransSpeed
-        if translateSpeed < GoToPointConstants.kMinTranslateSpeed:
-            translateSpeed = GoToPointConstants.kMinTranslateSpeed
+        # distribute the total speed between x speed and y speed
+        xSpeed, ySpeed = 0, 0
+        if totalDistance > 0:
+            xSpeed = totalSpeed * xDistance / totalDistance
+            ySpeed = totalSpeed * yDistance / totalDistance
 
-        # 4. make a vector with this speed but pointing in target direction
-        translateSpeedXY = Translation2d(translateSpeed, 0).rotateBy(targetDirection)
+        degreesLeftToTurn = self.getDegreesLeftToTurn()
+        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        if turningSpeed > abs(self.speed):
+            turningSpeed = abs(self.speed)
+        if turningSpeed < AimToDirectionConstants.kMinTurnSpeed:
+            turningSpeed = AimToDirectionConstants.kMinTurnSpeed
+        if degreesLeftToTurn < 0:
+            turningSpeed = -turningSpeed
 
-        # 5. drive with the decided (X, Y, Rotation) speed
-        self.drivetrain.drive(translateSpeedXY.x, translateSpeedXY.y, turnSpeed, fieldRelative=True, rateLimit=False)
+        self.drivetrain.drive(xSpeed, ySpeed, turningSpeed, fieldRelative=True, rateLimit=False)
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
@@ -69,10 +65,26 @@ class SwerveToPoint(commands2.Command):
 
         # 2. did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
-        if distanceFromInitialPosition >= self.initialDistance:  # we overshot in distance
+        if distanceFromInitialPosition >= self.initialDistance:
             if not self.stop:
                 return True  # case 1: overshot in distance and did not mean to stop at this point
             distanceFromTargetDirectionDegrees = (self.targetPose.rotation() - currentDirection).degrees()
-            if abs(distanceFromTargetDirectionDegrees) < AimToDirectionConstants.kAngleToleranceDegrees:
+            if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
                 return True  # case 2: overshot in distance and target direction is correct
+
+    def getDegreesLeftToTurn(self):
+        # can we get rid of this function by using Rotation2d? probably we can
+
+        currentHeadingDegrees = self.drivetrain.getHeadingDegrees()
+        degreesLeftToTurn = self.targetPose.rotation().degrees() - currentHeadingDegrees
+
+        # if we have +350 degrees left to turn, this really means we have -10 degrees left to turn
+        while degreesLeftToTurn > 180:
+          degreesLeftToTurn -= 360
+
+        # if we have -350 degrees left to turn, this really means we have +10 degrees left to turn
+        while degreesLeftToTurn < -180:
+          degreesLeftToTurn += 360
+
+        return degreesLeftToTurn
 

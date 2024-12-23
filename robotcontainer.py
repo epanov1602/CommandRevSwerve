@@ -13,6 +13,7 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
+from subsystems.limelight_camera import LimelightCamera
 
 
 class RobotContainer:
@@ -27,6 +28,8 @@ class RobotContainer:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
 
+        # The robot's subsystems
+        self.camera = LimelightCamera("limelight-aiming")
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
@@ -61,10 +64,35 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
+        from commands.aimtodirection import AimToDirection
+        from commands.swervetopoint import SwerveToPoint
+        from commands.gotopoint import GoToPoint
+
+        leftButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftButton.whileTrue(SwerveToPoint(1, 1, headingDegrees=0, drivetrain=self.robotDrive))
+
+        rightButton = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightButton.whileTrue(SwerveToPoint(0, 0, headingDegrees=0, drivetrain=self.robotDrive))
 
         xButton = JoystickButton(self.driverController, XboxController.Button.kX)
         xButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))
         xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
+
+        def turn_to_object():
+            x = self.camera.getX()
+            print(f"x={x}")
+            turn_speed = -0.009 * x
+            if x == 0:
+                self.robotDrive.arcadeDrive(0, 0)
+            else:
+                self.robotDrive.arcadeDrive(0.2, turn_speed)
+            # if you want your robot to slowly chase that object... replace this line above with: self.robotDrive.arcadeDrive(0.1, turn_speed)
+
+        follow_cmd = commands2.RunCommand(turn_to_object, self.robotDrive)
+
+        bButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kB)
+        bButton.whileTrue(follow_cmd)
+        bButton.onFalse(commands2.InstantCommand(lambda: self.robotDrive.drive(0, 0, 0, False, False)))
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
@@ -75,6 +103,7 @@ class RobotContainer:
 
         :returns: the command to run in autonomous
         """
+
         # Create config for trajectory
         config = TrajectoryConfig(
             AutoConstants.kMaxSpeedMetersPerSecond,
@@ -90,7 +119,7 @@ class RobotContainer:
             # Pass through these two interior waypoints, making an 's' curve path
             [Translation2d(0.5, 0.5), Translation2d(1, -0.5)],
             # End 1.5 meters straight ahead of where we started, facing forward
-            Pose2d(1.5, 0, Rotation2d(0)),
+            Pose2d(1.5, 0, Rotation2d.fromDegrees(180)),
             config,
         )
 
