@@ -69,10 +69,12 @@ class RobotContainer:
         from commands.gotopoint import GoToPoint
 
         leftButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
-        leftButton.whileTrue(SwerveToPoint(1, 1, headingDegrees=0, drivetrain=self.robotDrive))
+        #leftButton.whileTrue(SwerveToPoint(1, 1, headingDegrees=0, drivetrain=self.robotDrive))
+        leftButton.whileTrue(GoToPoint(2, 2, speed=1, drivetrain=self.robotDrive))
 
         rightButton = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
-        rightButton.whileTrue(SwerveToPoint(0, 0, headingDegrees=0, drivetrain=self.robotDrive))
+        #rightButton.whileTrue(SwerveToPoint(0, 0, headingDegrees=0, drivetrain=self.robotDrive))
+        rightButton.whileTrue(GoToPoint(0, 0, speed=-1, drivetrain=self.robotDrive))
 
         xButton = JoystickButton(self.driverController, XboxController.Button.kX)
         xButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))

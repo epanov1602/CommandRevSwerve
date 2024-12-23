@@ -16,6 +16,7 @@ from wpimath.geometry import Rotation2d, Translation2d
 class GoToPointConstants:
     kPTranslate = 2.0
     kMinTranslateSpeed = 0.07  # moving forward slower than this is unproductive
+    kApproachRadius = 0.1  # within this radius from target location, try to point in initial direction
     kOversteerAdjustment = 0.5
 
 class GoToPoint(commands2.Command):
@@ -41,6 +42,8 @@ class GoToPoint(commands2.Command):
         self.initialPosition = self.drivetrain.getPose().translation()
         initialDirection = self.targetPosition - self.initialPosition
         self.initialDirection = Rotation2d(initialDirection.x, initialDirection.y)
+        if self.speed < 0:
+            self.initialDirection = self.initialDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
         self.initialDistance = self.initialPosition.distance(self.targetPosition)
         self.pointingInGoodDirection = False
 
@@ -51,27 +54,33 @@ class GoToPoint(commands2.Command):
         currentPoint = currentPose.translation()
         targetDirectionVector = self.targetPosition - currentPoint
         targetDirection = Rotation2d(targetDirectionVector.x, targetDirectionVector.y)
+        if self.speed < 0:
+            targetDirection = targetDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
         degreesRemaining = (targetDirection - currentDirection).degrees()
+        distanceRemaining = self.targetPosition.distance(currentPoint)
 
         # 2. if we are pointing in a very wrong direction (more than 45 degrees away), rotate away without moving
         if degreesRemaining > 45 and not self.pointingInGoodDirection:
-            self.drivetrain.arcadeDrive(0.0, self.speed)
+            self.drivetrain.arcadeDrive(0.0, abs(self.speed))
             return
         elif degreesRemaining < -45 and not self.pointingInGoodDirection:
-            self.drivetrain.arcadeDrive(0.0, self.speed)
+            self.drivetrain.arcadeDrive(0.0, -abs(self.speed))
             return
-        else:
-            self.pointingInGoodDirection = True
+
+        self.pointingInGoodDirection = True
 
         # 3. otherwise, drive forward but with an oversteer adjustment (better way is to use RAMSETE unicycle)
-        if GoToPointConstants.kOversteerAdjustment != 0:
+        if distanceRemaining < GoToPointConstants.kApproachRadius:
+            targetDirection = self.initialDirection  # avoid wiggling the direction when almost there
+            degreesRemaining = (targetDirection - currentDirection).degrees()
+        elif GoToPointConstants.kOversteerAdjustment != 0:
             deviationFromInitial = (targetDirection - self.initialDirection).degrees()
             adjustment = GoToPointConstants.kOversteerAdjustment * deviationFromInitial
             if adjustment > 20: adjustment = 20  # avoid oscillations by capping the adjustment at 20 degrees
             if adjustment < -20: adjustment = -20  # avoid oscillations by capping the adjustment at 20 degrees
             targetDirection = targetDirection.rotateBy(Rotation2d.fromDegrees(adjustment))
             degreesRemaining = (targetDirection - currentDirection).degrees()
-        #SmartDashboard.putNumber("z-heading-target", targetDirection.degrees())
+            #SmartDashboard.putNumber("z-heading-target", targetDirection.degrees())
 
         # 4. now when we know the desired direction, we can compute the turn speed
         rotateSpeed = abs(self.speed)
@@ -80,13 +89,14 @@ class GoToPoint(commands2.Command):
             rotateSpeed = proportionalRotateSpeed
 
         # 5. but if not too different, then we can drive while turning
-        distanceRemaining = self.targetPosition.distance(currentPoint)
         proportionalTransSpeed = GoToPointConstants.kPTranslate * distanceRemaining
-        translateSpeed = self.speed  # if we don't plan to stop at the end, go at max speed
+        translateSpeed = abs(self.speed)  # if we don't plan to stop at the end, go at max speed
         if translateSpeed > proportionalTransSpeed and self.stop:
             translateSpeed = proportionalTransSpeed
         if translateSpeed < GoToPointConstants.kMinTranslateSpeed:
             translateSpeed = GoToPointConstants.kMinTranslateSpeed
+        if self.speed < 0:
+            translateSpeed = -translateSpeed  # negative translation speed if supposed to go in reverse
 
         # 6. if we need to be turning *right* while driving, use negative rotation speed
         if degreesRemaining < 0:
@@ -111,3 +121,5 @@ class GoToPoint(commands2.Command):
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
         if distanceFromInitialPosition >= self.initialDistance or tooSlowNow:
             return True  # we overshot or driving too slow
+
+    REVERSE_DIRECTION = Rotation2d.fromDegrees(180)
