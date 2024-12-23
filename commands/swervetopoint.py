@@ -17,14 +17,27 @@ from wpimath.geometry import Rotation2d, Translation2d, Pose2d
 
 class SwerveToPoint(commands2.Command):
     def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True) -> None:
-        self.targetPose = Pose2d(x, y, Rotation2d.fromDegrees(headingDegrees))
+        self.targetPose = None
+        self.targetPoint = Translation2d(x, y)
+        if isinstance(headingDegrees, Rotation2d):
+            self.targetHeading = headingDegrees
+        elif headingDegrees is not None:
+            self.targetHeading = Rotation2d(headingDegrees)
+        else:
+            self.targetHeading = None
+
         self.speed = speed
         self.stop = slowDownAtFinish
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
 
     def initialize(self):
-        self.initialPosition = self.drivetrain.getPose().translation()
+        initialPose = self.drivetrain.getPose()
+        self.initialPosition = initialPose.translation()
+
+        targetHeading = initialPose.rotation() if self.targetHeading is None else self.targetHeading
+        self.targetPose = Pose2d(self.targetPoint, targetHeading)
+
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
 
     def execute(self):
