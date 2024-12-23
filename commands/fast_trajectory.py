@@ -98,16 +98,15 @@ class FastTrajectory(commands2.Command):
             waypoints = [self.waypoints[-1]]
         assert len(waypoints) > 0
 
-        # make the command connecting the waypoints which remain after skipping
+        # make the commands connecting the waypoints which remain after skipping
         commands = []
         last = len(waypoints) - 1
         for index, (point, heading) in enumerate(waypoints):
             command = self._makeWaypointCommand(point, heading, index == last)
             commands.append(command)
 
+        # connect them together and start
         self.command = commands2.SequentialCommandGroup(*commands)
-
-        # start it
         self.command.initialize()
 
     def execute(self):
