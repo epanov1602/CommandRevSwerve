@@ -100,6 +100,9 @@ class DriveSubsystem(Subsystem):
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
 
+    def getHeading(self) -> Rotation2d:
+        return self.getPose().rotation()
+
     def getPose(self) -> Pose2d:
         """Returns the currently-estimated pose of the robot.
 
