@@ -12,7 +12,7 @@ from wpimath.kinematics import (
     SwerveDrive4Kinematics,
     SwerveDrive4Odometry,
 )
-from wpilib import SmartDashboard
+from wpilib import SmartDashboard, Field2d
 
 
 from constants import DriveConstants
@@ -87,6 +87,10 @@ class DriveSubsystem(Subsystem):
         self.odometryHeadingOffset = Rotation2d(0)
         self.resetOdometry(Pose2d(0, 0, 0))
 
+        self.field = Field2d()
+        SmartDashboard.putData("Field", self.field)
+
+
     def periodic(self) -> None:
         # Update the odometry in the periodic block
         pose = self.odometry.update(
@@ -101,6 +105,7 @@ class DriveSubsystem(Subsystem):
         SmartDashboard.putNumber("x", pose.x)
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
+        self.field.setRobotPose(pose)
 
     def getHeading(self) -> Rotation2d:
         return self.getPose().rotation()
@@ -130,6 +135,10 @@ class DriveSubsystem(Subsystem):
             pose,
         )
         self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
+
+        self.field = Field2d()
+        SmartDashboard.putData("Field", self.field)
+
 
     def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
         pose = self.getPose()
