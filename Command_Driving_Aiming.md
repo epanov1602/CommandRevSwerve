@@ -12,7 +12,7 @@ Does your robot already have a drivetrain with odometry? (tank or swerve)
 Click on triangle signs below, in order to see the command code:
 
 <details>
-<summary>Setting the (X, Y) position of robot on the field (for example, autonomous starting position)</summary>
+<summary>A command to set the (X, Y) position of robot on the field at the start of the game</summary>
 Please try to put this code in file `commands/reset_xy.py`:
 
 ```python
@@ -21,8 +21,17 @@ import commands2
 
 from wpimath.geometry import Rotation2d, Pose2d, Translation2d
 
+
 class ResetXY(commands2.Command):
     def __init__(self, x, y, headingDegrees, drivetrain):
+        """
+        Reset the starting (X, Y) and heading (in degrees) of the robot to where they should be.
+        :param x: X
+        :param y: X
+        :param headingDegrees: heading (for example: 0 = "North" of the field, 180 = "South" of the field)
+        :param drivetrain: drivetrain on which the (X, Y, heading) should be set
+        """
+        super().__init__()
         self.drivetrain = drivetrain
         self.position = Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(headingDegrees))
         self.addRequirements(drivetrain)
@@ -30,15 +39,42 @@ class ResetXY(commands2.Command):
     def initialize(self):
         self.drivetrain.resetOdometry(self.position)
 
+    def isFinished(self) -> bool:
+        return True  # this is an instant command, it finishes right after it initialized
+
     def execute(self):
-        pass
+        """
+        nothing to do here, this is an instant command
+        """
 
     def end(self, interrupted: bool):
-        pass
+        """
+        nothing to do here, this is an instant command
+        """
+
+
+class ResetSwerveFront(commands2.Command):
+    def __init__(self, drivetrain):
+        super().__init__()
+        self.drivetrain = drivetrain
+        self.addRequirements(drivetrain)
+
+    def initialize(self):
+        pose = self.drivetrain.getPose()
+        self.drivetrain.resetOdometry(pose)
 
     def isFinished(self) -> bool:
-        return True
+        return True  # this is an instant command, it finishes right after it initialized
 
+    def execute(self):
+        """
+        nothing to do here, this is an instant command
+        """
+
+    def end(self, interrupted: bool):
+        """
+        nothing to do here, this is an instant command
+        """
 ```
 </details>
 
@@ -62,7 +98,7 @@ from wpimath.geometry import Rotation2d
 
 
 class AimToDirectionConstants:
-    kP = 0.0058  # 0.002 is the default, but 0.0058 makes our robot turn faster
+    kP = 0.0058  # 0.002 is the default
     kMinTurnSpeed = 0.05  # turning slower than this is unproductive for the motor (might not even spin)
     kAngleToleranceDegrees = 2.0  # plus minus 2 degrees is "close enough"
     kAngleVelocityToleranceDegreesPerSec = 50  # velocity under 100 degrees/second is considered "stopped"
@@ -70,12 +106,13 @@ class AimToDirectionConstants:
 
 class AimToDirection(commands2.Command):
     def __init__(self, degrees: float | typing.Callable[[], float], drivetrain: DriveSubsystem, speed=1.0, fwd_speed=0.0):
+        super().__init__()
         self.targetDegrees = degrees
         self.speed = min((1.0, abs(speed)))
-        self.fwdSpeed = min((1.0, abs(fwd_speed)))
         self.targetDirection = None
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
+        self.fwdSpeed = fwd_speed
 
     def initialize(self):
         if callable(self.targetDegrees):
@@ -118,6 +155,7 @@ class AimToDirection(commands2.Command):
             turnVelocity = self.drivetrain.getTurnRateDegreesPerSec()
             if abs(turnVelocity) < AimToDirectionConstants.kAngleVelocityToleranceDegreesPerSec:
                 return True
+
 ```
 </details>
 
@@ -135,21 +173,22 @@ Please try to put this code in file `commands/gotopoint.py`:
 
 from __future__ import annotations
 import commands2
-import typing
 
 from subsystems.drivesubsystem import DriveSubsystem
-from commands.aimtodirection import AimToDirectionConstants
 from wpimath.geometry import Rotation2d, Translation2d
+
+from commands.aimtodirection import AimToDirectionConstants
 
 
 class GoToPointConstants:
     kPTranslate = 2.0
     kMinTranslateSpeed = 0.07  # moving forward slower than this is unproductive
-    kApproachRadius = 0.1  # within this radius from target location, try to point in initial direction
+    kApproachRadius = 0.1  # within this radius from target location, try to point in desired direction
     kOversteerAdjustment = 0.5
 
+
 class GoToPoint(commands2.Command):
-    def __init__(self, x, y, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True) -> None:
+    def __init__(self, x, y, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True, finishDirection=None) -> None:
         """
         Go to a point with (X, Y) coordinates. Whether this is the end of your trajectory or not.
         :param x:
@@ -158,21 +197,30 @@ class GoToPoint(commands2.Command):
         :param speed: between -1.0 and +1.0 (you can use negative speed to drive backwards)
         :param slowDownAtFinish:
         """
+        super().__init__()
         self.targetPosition = Translation2d(x, y)
+        self.initialPosition = None
         self.speed = speed
         self.stop = slowDownAtFinish
-        self.initialDirection = None
+        self.desiredEndDirection = None
         self.initialDistance = None
         self.pointingInGoodDirection = False
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
 
+        self.finishDirection = finishDirection
+        if self.speed < 0 and self.finishDirection is not None:
+            self.finishDirection = self.finishDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
+
     def initialize(self):
         self.initialPosition = self.drivetrain.getPose().translation()
-        initialDirection = self.targetPosition - self.initialPosition
-        self.initialDirection = Rotation2d(initialDirection.x, initialDirection.y)
+        if self.finishDirection is not None:
+            self.desiredEndDirection = self.finishDirection
+        else:
+            initialDirection = self.targetPosition - self.initialPosition
+            self.desiredEndDirection = Rotation2d(initialDirection.x, initialDirection.y)
         if self.speed < 0:
-            self.initialDirection = self.initialDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
+            self.desiredEndDirection = self.desiredEndDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
         self.initialDistance = self.initialPosition.distance(self.targetPosition)
         self.pointingInGoodDirection = False
 
@@ -185,8 +233,7 @@ class GoToPoint(commands2.Command):
         targetDirection = Rotation2d(targetDirectionVector.x, targetDirectionVector.y)
         if self.speed < 0:
             targetDirection = targetDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
-        degreesRemaining = (targetDirection - currentDirection).degrees()
-        distanceRemaining = self.targetPosition.distance(currentPoint)
+        degreesRemaining = _optimize((targetDirection - currentDirection).degrees())
 
         # 2. if we are pointing in a very wrong direction (more than 45 degrees away), rotate away without moving
         if degreesRemaining > 45 and not self.pointingInGoodDirection:
@@ -199,17 +246,19 @@ class GoToPoint(commands2.Command):
         self.pointingInGoodDirection = True
 
         # 3. otherwise, drive forward but with an oversteer adjustment (better way is to use RAMSETE unicycle)
+        distanceRemaining = self.targetPosition.distance(currentPoint)
         if distanceRemaining < GoToPointConstants.kApproachRadius:
-            targetDirection = self.initialDirection  # avoid wiggling the direction when almost there
-            degreesRemaining = (targetDirection - currentDirection).degrees()
+            targetDirection = self.desiredEndDirection  # avoid wiggling the direction when almost there
+            degreesRemaining = _optimize((targetDirection - currentDirection).degrees())
+
         elif GoToPointConstants.kOversteerAdjustment != 0:
-            deviationFromInitial = (targetDirection - self.initialDirection).degrees()
+            deviationFromInitial = _optimize((targetDirection - self.desiredEndDirection).degrees())
             adjustment = GoToPointConstants.kOversteerAdjustment * deviationFromInitial
-            if adjustment > 20: adjustment = 20  # avoid oscillations by capping the adjustment at 20 degrees
-            if adjustment < -20: adjustment = -20  # avoid oscillations by capping the adjustment at 20 degrees
+            if adjustment > 30: adjustment = 30  # avoid oscillations by capping the adjustment at 30 degrees
+            if adjustment < -30: adjustment = -30  # avoid oscillations by capping the adjustment at 30 degrees
             targetDirection = targetDirection.rotateBy(Rotation2d.fromDegrees(adjustment))
-            degreesRemaining = (targetDirection - currentDirection).degrees()
-            #SmartDashboard.putNumber("z-heading-target", targetDirection.degrees())
+            degreesRemaining = _optimize((targetDirection - currentDirection).degrees())
+            # SmartDashboard.putNumber("z-heading-target", targetDirection.degrees())
 
         # 4. now when we know the desired direction, we can compute the turn speed
         rotateSpeed = abs(self.speed)
@@ -221,7 +270,7 @@ class GoToPoint(commands2.Command):
         proportionalTransSpeed = GoToPointConstants.kPTranslate * distanceRemaining
         translateSpeed = abs(self.speed)  # if we don't plan to stop at the end, go at max speed
         if translateSpeed > proportionalTransSpeed and self.stop:
-            translateSpeed = proportionalTransSpeed
+            translateSpeed = proportionalTransSpeed  # if we plan to stop at the end, slow down when close
         if translateSpeed < GoToPointConstants.kMinTranslateSpeed:
             translateSpeed = GoToPointConstants.kMinTranslateSpeed
         if self.speed < 0:
@@ -240,6 +289,11 @@ class GoToPoint(commands2.Command):
         # 1. did we reach the point where we must move very slow?
         currentPose = self.drivetrain.getPose()
         currentPosition = currentPose.translation()
+        distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
+
+        if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
+            return True  # close enough
+
         distanceRemaining = self.targetPosition.distance(currentPosition)
         translateSpeed = GoToPointConstants.kPTranslate * distanceRemaining
 
@@ -247,16 +301,25 @@ class GoToPoint(commands2.Command):
         tooSlowNow = translateSpeed < 0.125 * GoToPointConstants.kMinTranslateSpeed and self.stop
 
         # 2. did we overshoot?
-        distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
         if distanceFromInitialPosition >= self.initialDistance or tooSlowNow:
             return True  # we overshot or driving too slow
 
     REVERSE_DIRECTION = Rotation2d.fromDegrees(180)
 
+
+def _optimize(degrees):
+    while degrees > 180:  # for example, if we have 350 degrees to turn left, we probably want -10 degrees right
+        degrees -= 360
+
+    while degrees < -180:  # for example, if we have -350 degrees to turn right, we probably want +10 degrees left
+        degrees += 360
+
+    return degrees
+
 ```
 </details>
 
-## 3. A must-have swerve-only command
+## 3. Another must-have command, if you have swerve drive
 <details>
 <summary>"Swerving" to a point (X, Y), and you can optionally add the "heading" direction (0 degrees = North, etc.)</summary>
 Please try to put this code in file `commands/swervetopoint.py`:
@@ -270,7 +333,6 @@ Please try to put this code in file `commands/swervetopoint.py`:
 
 from __future__ import annotations
 import commands2
-import typing
 
 from subsystems.drivesubsystem import DriveSubsystem
 from commands.aimtodirection import AimToDirectionConstants
@@ -281,12 +343,13 @@ from wpimath.geometry import Rotation2d, Translation2d, Pose2d
 
 class SwerveToPoint(commands2.Command):
     def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True) -> None:
+        super().__init__()
         self.targetPose = None
         self.targetPoint = Translation2d(x, y)
         if isinstance(headingDegrees, Rotation2d):
             self.targetHeading = headingDegrees
         elif headingDegrees is not None:
-            self.targetHeading = Rotation2d(headingDegrees)
+            self.targetHeading = Rotation2d.fromDegrees(headingDegrees)
         else:
             self.targetHeading = None
 
@@ -294,6 +357,10 @@ class SwerveToPoint(commands2.Command):
         self.stop = slowDownAtFinish
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
+
+        self.initialPosition = None
+        self.initialDistance = None
+        self.overshot = False
 
     def initialize(self):
         initialPose = self.drivetrain.getPose()
@@ -303,6 +370,7 @@ class SwerveToPoint(commands2.Command):
         self.targetPose = Pose2d(self.targetPoint, targetHeading)
 
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
+        self.overshot = False
 
     def execute(self):
         currentXY = self.drivetrain.getPose()
@@ -338,22 +406,25 @@ class SwerveToPoint(commands2.Command):
     def isFinished(self) -> bool:
         currentPose = self.drivetrain.getPose()
         currentPosition = currentPose.translation()
-        currentDirection = currentPose.rotation()
 
-        # 2. did we overshoot?
+        # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
-        if distanceFromInitialPosition >= self.initialDistance:
-            if not self.stop:
-                return True  # case 1: overshot in distance and did not mean to stop at this point
-            distanceFromTargetDirectionDegrees = (self.targetPose.rotation() - currentDirection).degrees()
+        if not self.stop and distanceFromInitialPosition > self.initialDistance - 3 * GoToPointConstants.kApproachRadius:
+            return True  # close enough
+
+        if distanceFromInitialPosition > self.initialDistance:
+            self.overshot = True
+
+        if self.overshot:
+            distanceFromTargetDirectionDegrees = self.getDegreesLeftToTurn()
             if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
                 return True  # case 2: overshot in distance and target direction is correct
 
     def getDegreesLeftToTurn(self):
         # can we get rid of this function by using Rotation2d? probably we can
 
-        currentHeadingDegrees = self.drivetrain.getHeadingDegrees()
-        degreesLeftToTurn = self.targetPose.rotation().degrees() - currentHeadingDegrees
+        currentHeading = self.drivetrain.getPose().rotation()
+        degreesLeftToTurn = (self.targetPose.rotation() - currentHeading).degrees()
 
         # if we have +350 degrees left to turn, this really means we have -10 degrees left to turn
         while degreesLeftToTurn > 180:
@@ -368,11 +439,11 @@ class SwerveToPoint(commands2.Command):
 ```
 </details>
 
-## 4. Curved trajectory to some point (no extra calibration required)
+## 4. Curved trajectory to some point (simplistic)
 
 <details>
-<summary>Trajectory to some endpoint via "waypoints" (might overshoot turns!)</summary>
-Please try to put this code in file `commands/fast_trajectory.py`:
+<summary>Trajectory to some endpoint via "waypoints" (skips waypoints that are already behind)</summary>
+Please try to put this code in file `commands/jerky_trajectory.py`:
 
 ```python
 #
@@ -388,21 +459,20 @@ import typing
 import commands2
 
 from subsystems.drivesubsystem import DriveSubsystem
+from commands.aimtodirection import AimToDirection
 from commands.swervetopoint import SwerveToPoint
 from commands.gotopoint import GoToPoint
 
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
-from wpimath.trajectory import Trajectory, TrajectoryConfig, TrajectoryGenerator
-from wpimath.controller import RamseteController
-from wpilib import Timer
 
-class FastTrajectory(commands2.Command):
+
+class JerkyTrajectory(commands2.Command):
     def __init__(
         self,
         drivetrain: DriveSubsystem,
-        swerve: bool,
         endpoint: Pose2d | Translation2d | tuple | list,
         waypoints: typing.List[Pose2d | Translation2d | tuple | list] = (),
+        swerve: bool = False,
         speed=1.0,
     ):
         """
@@ -474,15 +544,20 @@ class FastTrajectory(commands2.Command):
         if len(waypoints) == 0:
             waypoints = [self.waypoints[-1]]
         assert len(waypoints) > 0
+        last = len(waypoints) - 1
+        last_direction = None
 
         # make the commands connecting the waypoints which remain after skipping
         commands = []
-        last = len(waypoints) - 1
         for index, (point, heading) in enumerate(waypoints):
             command = self._makeWaypointCommand(point, heading, index == last)
+            last_direction = heading
             commands.append(command)
 
-        # connect them together and start
+        # if the last waypoint (endpoint) has a specific direction, aim in that direction at the end
+        commands.append(AimToDirection(last_direction.degrees(), speed=self.speed, drivetrain=self.drivetrain))
+
+        # connect all these commands together and start
         self.command = commands2.SequentialCommandGroup(*commands)
         self.command.initialize()
 
