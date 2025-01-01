@@ -5,7 +5,7 @@ import wpilib
 
 from commands2 import Subsystem
 from wpimath.filter import SlewRateLimiter
-from wpimath.geometry import Pose2d, Rotation2d
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (
     ChassisSpeeds,
     SwerveModuleState,
@@ -84,11 +84,13 @@ class DriveSubsystem(Subsystem):
                 self.rearRight.getPosition(),
             ),
         )
+        self.odometryHeadingOffset = Rotation2d(0)
+        self.resetOdometry(Pose2d(0, 0, 0))
 
     def periodic(self) -> None:
         # Update the odometry in the periodic block
         pose = self.odometry.update(
-            self.getHeading(),
+            self.getGyroHeading(),
             (
                 self.frontLeft.getPosition(),
                 self.frontRight.getPosition(),
@@ -118,7 +120,7 @@ class DriveSubsystem(Subsystem):
         """
         self.gyro.reset()
         self.odometry.resetPosition(
-            Rotation2d.fromDegrees(self.gyro.getAngle()),
+            self.getGyroHeading(),
             (
                 self.frontLeft.getPosition(),
                 self.frontRight.getPosition(),
@@ -126,6 +128,21 @@ class DriveSubsystem(Subsystem):
                 self.rearRight.getPosition(),
             ),
             pose,
+        )
+        self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
+
+    def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
+        pose = self.getPose()
+        newPose = Pose2d(pose.translation() + dTrans, pose.rotation() + dRot)
+        self.odometry.resetPosition(
+            pose.rotation() - self.odometryHeadingOffset,
+            (
+                self.frontLeft.getPosition(),
+                self.frontRight.getPosition(),
+                self.rearLeft.getPosition(),
+                self.rearRight.getPosition(),
+            ),
+            newPose,
         )
 
     def arcadeDrive(
@@ -240,7 +257,7 @@ class DriveSubsystem(Subsystem):
                 xSpeedDelivered,
                 ySpeedDelivered,
                 rotDelivered,
-                Rotation2d.fromDegrees(DriveConstants.kGyroReversed * self.gyro.getAngle()),
+                self.getGyroHeading(),
             )
             if fieldRelative
             else ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered)
@@ -291,19 +308,12 @@ class DriveSubsystem(Subsystem):
         """Zeroes the heading of the robot."""
         self.gyro.reset()
 
-    def getHeading(self) -> Rotation2d:
+    def getGyroHeading(self) -> Rotation2d:
         """Returns the heading of the robot.
 
         :returns: the robot's heading as Rotation2d
         """
         return Rotation2d.fromDegrees(self.gyro.getAngle() * DriveConstants.kGyroReversed)
-
-    def getHeadingDegrees(self) -> float:
-        """Returns the heading of the robot.
-
-        :returns: the robot's heading as degrees (between -180 and +180)
-        """
-        return self.gyro.getAngle() * DriveConstants.kGyroReversed
 
 
     def getTurnRate(self) -> float:
