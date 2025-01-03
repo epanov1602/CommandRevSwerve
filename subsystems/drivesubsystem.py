@@ -153,6 +153,7 @@ class DriveSubsystem(Subsystem):
             ),
             newPose,
         )
+        self.odometryHeadingOffset += dRot
 
     def arcadeDrive(
         self,
