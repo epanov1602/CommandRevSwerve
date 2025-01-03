@@ -16,7 +16,7 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
 
-from commands.reset_xy import ResetXY
+from commands.reset_xy import ResetXY, ResetSwerveFront
 
 class RobotContainer:
     """
@@ -67,8 +67,11 @@ class RobotContainer:
         """
 
         xButton = JoystickButton(self.driverController, XboxController.Button.kX)
-        xButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(Pose2d(0.0, 0.0, 0.0))))
+        xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
         xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
+
+        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton.onTrue(ResetSwerveFront(self.robotDrive))
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
