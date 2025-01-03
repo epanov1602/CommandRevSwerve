@@ -13,22 +13,27 @@ class CameraState:
     name: str
     directionDegrees: float
     photonCamera: PhotonCamera
-    lastProcessedResult: float
-    lastVisibleTags: list
+    lastProcessedResultId: float
+    lastDrawnTags: list
+    lastRedrawTime: float
 
 class Localizer(commands2.Subsystem):
+    REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
 
-    def __init__(self, drivetrain, fieldLayoutFile: str):
+    def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=()):
         super().__init__()
 
         self.cameras = {}  # empty list of cameras, until cameras are added using addPhotonCamera
         self.drivetrain = drivetrain
-        self.field2d: Field2d = drivetrain.field
+        self.fieldDrawing: Field2d = drivetrain.field
 
         from os.path import isfile
         assert isfile(fieldLayoutFile), f"file with field layout {fieldLayoutFile} does not exist"
         self.fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
-        print(f"loaded field layout with {len(self.fieldLayout.getTags())} tags")
+        print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags")
+
+        self.ignoreTagIDs = set(ignoreTagIDs)
+        self.importantTagIDs = set(importantTagIDs)
 
     def addPhotonCamera(self, name, directionDegrees):
         """
@@ -38,7 +43,7 @@ class Localizer(commands2.Subsystem):
         """
         assert name not in self.cameras, f"camera '{name}' was already added"
         photonCamera = PhotonCamera(name)
-        self.cameras[name] = CameraState(name, directionDegrees, photonCamera, 0, [])
+        self.cameras[name] = CameraState(name, directionDegrees, photonCamera, 0, [], 0)
 
     def periodic(self):
         now = Timer.getFPGATimestamp()
@@ -47,14 +52,30 @@ class Localizer(commands2.Subsystem):
         robotDirection2d = drivetrainPose.rotation()
 
         for name, c in self.cameras.items():
-            photonCamera: PhotonCamera = c.photonCamera
-            if photonCamera.isConnected():
-                detections = photonCamera.getLatestResult()
-                detectionTime = detections.getTimestamp()
-                for tag in detections.getTargets():
-                    tagFieldPosition = self.fieldLayout.getTagPose(tag.getFiducialId())
+            # should we skip the results from this camera?
+            if not c.photonCamera.isConnected():
+                continue  # skip! this camera is not connected
+            detections = c.photonCamera.getLatestResult()
+            detectionTime = detections.getTimestamp()
+            if c.lastProcessedResultId == detectionTime:
+                continue  # skip! we already saw this camera frame result
+            c.lastProcessedResultId = detectionTime
+
+            # should we redraw the tags from this camera on Shuffleboard/Elastic?
+            redrawing = False
+            if (now - c.lastRedrawTime) * Localizer.REDRAW_DASHBOARD_FREQUENCY > 1:
+                c.lastRedrawTime = now
+                redrawing = True
+
+            # proceed!
+            tagsSeen = []
+            for tag in detections.getTargets():
+                    tagId = tag.getFiducialId()
+                    tagsSeen.append(tagId)
+
+                    tagFieldPosition = self.fieldLayout.getTagPose(tagId)
                     if tagFieldPosition is None:
-                        print(f"WARNING: tag {tag.getFiducialId()} is unknown on our field layout")
+                        print(f"WARNING: tag {tagId} is unknown on our field layout")
                         continue  # our field map does not know this tag
 
                     tagLocation2d = tagFieldPosition.toPose2d().translation()
@@ -77,17 +98,24 @@ class Localizer(commands2.Subsystem):
                     dRot = Rotation2d.fromDegrees((dRot + 180) % 360 - 180)  # avoid situation when dRot=+350 degrees when it really is -10
                     self.drivetrain.adjustOdometry(dPose * 0.1, dRot * 0.1)
 
-                    # let's draw it:
-                    #  - a line going from the tag, and following back along actual direction seen on camera
-                    observedLineFromTag = _make_line(40, tagLocation2d, tagLocation2d - observedVectorToTag)
-                    #  - and a line going from the tag, and following back along actual direction seen on camera
-                    odometryLineToTag = _make_line(10, robotLocation2d, tagLocation2d)
+                    if redrawing:
+                        #  - a line going from the tag, and following back along actual direction seen on camera
+                        observedLineFromTag = drawLine(40, tagLocation2d, tagLocation2d - observedVectorToTag)
+                        self.fieldDrawing.getObject(f"cam{c.name}-fromtag{tag.getFiducialId()}").setPoses(observedLineFromTag)
 
-                    self.field2d.getObject(f"to-tag{tag.getFiducialId()}").setPoses(odometryLineToTag)
-                    self.field2d.getObject(f"from-tag{tag.getFiducialId()}").setPoses(observedLineFromTag)
+                        #  - and a line going from the tag, and following back along actual direction seen on camera
+                        odometryLineToTag = drawLine(10, robotLocation2d, tagLocation2d)
+                        self.fieldDrawing.getObject(f"cam{c.name}-totag{tag.getFiducialId()}").setPoses(odometryLineToTag)
 
+            # - finally, remove the drawn lines for the tag we no longer see
+            if redrawing:
+                for tag in c.lastDrawnTags:
+                    if tag not in tagsSeen:
+                        self.fieldDrawing.getObject(f"cam{c.name}-fromtag{tag.getFiducialId()}").setPoses([])
+                        self.fieldDrawing.getObject(f"cam{c.name}-totag{tag.getFiducialId()}").setPoses([])
+                c.lastDrawnTags = tagsSeen
 
-def _make_line(nPoints: int, start: Translation2d, end: Translation2d):
+def drawLine(nPoints: int, start: Translation2d, end: Translation2d):
     result = []
     direction = end - start
     angle = direction.angle()
