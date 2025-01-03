@@ -19,6 +19,7 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
+    IMPORTANT_TAG_WEIGHT = 3.0
 
     def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=()):
         super().__init__()
@@ -71,6 +72,8 @@ class Localizer(commands2.Subsystem):
             tagsSeen = []
             for tag in detections.getTargets():
                     tagId = tag.getFiducialId()
+                    if tagId in self.ignoreTagIDs:
+                        continue
                     tagsSeen.append(tagId)
 
                     tagFieldPosition = self.fieldLayout.getTagPose(tagId)
@@ -78,42 +81,67 @@ class Localizer(commands2.Subsystem):
                         print(f"WARNING: tag {tagId} is unknown on our field layout")
                         continue  # our field map does not know this tag
 
-                    tagLocation2d = tagFieldPosition.toPose2d().translation()
-                    distanceToTag = tagLocation2d.distance(robotLocation2d)
-
-                    # now let's do math:
-                    # say robot is already facing 30 degrees left and left camera is pointing 90 degrees further left
-                    # , but tag X is actually seen 10 degrees to the right of that (on that camera frame)
-                    #
-                    # ...then, of course, the tag is really 90 + 30 - 10 = 110 degrees to the left, correct?
-                    observedTagDirectionDegrees = c.directionDegrees + robotDirection2d.degrees() - tag.getYaw()
-                    observedDirectionToTag = Rotation2d.fromDegrees(observedTagDirectionDegrees)
-                    observedVectorToTag = Translation2d(distanceToTag, 0).rotateBy(observedDirectionToTag)
-
-                    # but odometry says that this below is our vector to tag! (is odometry correct?)
-                    odometryVectorToTag = tagLocation2d - robotLocation2d
-
-                    dPose = odometryVectorToTag - observedVectorToTag
-                    dRot = odometryVectorToTag.angle().degrees() - observedVectorToTag.angle().degrees()
-                    dRot = Rotation2d.fromDegrees((dRot + 180) % 360 - 180)  # avoid situation when dRot=+350 degrees when it really is -10
-                    self.drivetrain.adjustOdometry(dPose * 0.1, dRot * 0.1)
-
-                    if redrawing:
-                        #  - a line going from the tag, and following back along actual direction seen on camera
-                        observedLineFromTag = drawLine(40, tagLocation2d, tagLocation2d - observedVectorToTag)
-                        self.fieldDrawing.getObject(f"cam{c.name}-fromtag{tag.getFiducialId()}").setPoses(observedLineFromTag)
-
-                        #  - and a line going from the tag, and following back along actual direction seen on camera
-                        odometryLineToTag = drawLine(10, robotLocation2d, tagLocation2d)
-                        self.fieldDrawing.getObject(f"cam{c.name}-totag{tag.getFiducialId()}").setPoses(odometryLineToTag)
+                    self.processDetectedTag(c, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition)
 
             # - finally, remove the drawn lines for the tag we no longer see
             if redrawing:
-                for tag in c.lastDrawnTags:
-                    if tag not in tagsSeen:
-                        self.fieldDrawing.getObject(f"cam{c.name}-fromtag{tag.getFiducialId()}").setPoses([])
-                        self.fieldDrawing.getObject(f"cam{c.name}-totag{tag.getFiducialId()}").setPoses([])
+                for tagId in c.lastDrawnTags:
+                    if tagId not in tagsSeen:
+                        lineToTag, lineFromTag = self.tagLineNames(c.name, tagId)
+                        self.fieldDrawing.getObject(lineToTag).setPoses([])
+                        self.fieldDrawing.getObject(lineFromTag).setPoses([])
                 c.lastDrawnTags = tagsSeen
+
+    def tagLineNames(self, cameraName, tagId):
+        toTag = f"cam{cameraName}-fromtag{tagId}"
+        fromTag = f"cam{cameraName}-totag{tagId}"
+        return toTag, fromTag
+
+    def processDetectedTag(self, c, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition):
+        tagId = tag.getFiducialId()
+        tagLocation2d = tagFieldPosition.toPose2d().translation()
+        distanceToTag = tagLocation2d.distance(robotLocation2d)
+
+        # now let's do math:
+        # say robot is already facing 30 degrees left and left camera is pointing 90 degrees further left
+        # , but tag X is actually seen 10 degrees to the right of that (on that camera frame)
+        #
+        # ...then, of course, the tag is really 90 + 30 - 10 = 110 degrees to the left, correct?
+        observedTagDirectionDegrees = c.directionDegrees + robotDirection2d.degrees() - tag.getYaw()
+        observedDirectionToTag = Rotation2d.fromDegrees(observedTagDirectionDegrees)
+        observedVectorToTag = Translation2d(distanceToTag, 0).rotateBy(observedDirectionToTag)
+
+        # but if odometry says that this vector below is our direction to tag
+        odometryVectorToTag = tagLocation2d - robotLocation2d
+
+        # how much do we need to adjust the odometry (X, Y) to match the direction that we see?
+        dPose = odometryVectorToTag - observedVectorToTag
+        if self.trustGyro:
+            dRot = Rotation2d()  # rotation does not need adjustment, we trust the gyro
+        else:
+            dRot = odometryVectorToTag.angle().degrees() - observedVectorToTag.angle().degrees()
+            dRot = Rotation2d.fromDegrees((dRot + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's really -10
+
+        # use "learning rate" (for example, 0.05) to apply this X, Y adjustment only partially (+do it again next time)
+        learningRate = self.learningRate
+        if tagId in self.importantTagIDs:
+            learningRate = self.learningRate * Localizer.IMPORTANT_TAG_WEIGHT
+
+        # adjust the (X, Y) that robot odometry has
+        self.drivetrain.adjustOdometry(dPose * learningRate, dRot * learningRate)
+
+        # do we need to redraw the lines on the screen?
+        if redrawing:
+            lineToTag, lineFromTag = self.tagLineNames(c.name, tag.getFiducialId())
+
+            #  - a line going from the tag, and following back along actual direction seen on camera
+            observedLineFromTag = drawLine(40, tagLocation2d, tagLocation2d - observedVectorToTag)
+            self.fieldDrawing.getObject(lineFromTag).setPoses(observedLineFromTag)
+
+            #  - and a line going from the tag, and following back along actual direction seen on camera
+            odometryLineToTag = drawLine(10, robotLocation2d, tagLocation2d)
+            self.fieldDrawing.getObject(lineToTag).setPoses(odometryLineToTag)
+
 
 def drawLine(nPoints: int, start: Translation2d, end: Translation2d):
     result = []
