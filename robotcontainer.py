@@ -30,6 +30,11 @@ class RobotContainer:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
 
+        from subsystems.localizer import Localizer
+        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
+        self.localizer.addPhotonCamera("front_camera", directionDegrees=0)
+        self.localizer.addPhotonCamera("right_camera", directionDegrees=-90)  # right = -90 degrees to the left
+
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 

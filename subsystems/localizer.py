@@ -17,6 +17,7 @@ class CameraState:
     lastDrawnTags: list
     lastRedrawTime: float
 
+
 class Localizer(commands2.Subsystem):
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     IMPORTANT_TAG_WEIGHT = 3.0
@@ -35,6 +36,9 @@ class Localizer(commands2.Subsystem):
 
         self.ignoreTagIDs = set(ignoreTagIDs)
         self.importantTagIDs = set(importantTagIDs)
+
+        self.trustGyro = False
+        self.learningRate = 0.05
 
     def addPhotonCamera(self, name, directionDegrees):
         """
@@ -115,9 +119,9 @@ class Localizer(commands2.Subsystem):
         odometryVectorToTag = tagLocation2d - robotLocation2d
 
         # how much do we need to adjust the odometry (X, Y) to match the direction that we see?
-        dPose = odometryVectorToTag - observedVectorToTag
+        dPosition = odometryVectorToTag - observedVectorToTag
         if self.trustGyro:
-            dRot = Rotation2d()  # rotation does not need adjustment, we trust the gyro
+            dRot = Rotation2d()  # rotation does not need any adjustment, if we trust the gyro
         else:
             dRot = odometryVectorToTag.angle().degrees() - observedVectorToTag.angle().degrees()
             dRot = Rotation2d.fromDegrees((dRot + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's really -10
@@ -128,19 +132,19 @@ class Localizer(commands2.Subsystem):
             learningRate = self.learningRate * Localizer.IMPORTANT_TAG_WEIGHT
 
         # adjust the (X, Y) that robot odometry has
-        self.drivetrain.adjustOdometry(dPose * learningRate, dRot * learningRate)
+        self.drivetrain.adjustOdometry(dPosition * learningRate, dRot * learningRate * 0.25)  # we still ~trust the gyro
 
         # do we need to redraw the lines on the screen?
         if redrawing:
             lineToTag, lineFromTag = self.tagLineNames(c.name, tag.getFiducialId())
 
-            #  - a line going from the tag, and following back along actual direction seen on camera
-            observedLineFromTag = drawLine(40, tagLocation2d, tagLocation2d - observedVectorToTag)
-            self.fieldDrawing.getObject(lineFromTag).setPoses(observedLineFromTag)
+            #  - a line going from odometry position to the tag
+            lineFromOdometryPositionToTag = drawLine(10, robotLocation2d, tagLocation2d)
+            self.fieldDrawing.getObject(lineToTag).setPoses(lineFromOdometryPositionToTag)
 
-            #  - and a line going from the tag, and following back along actual direction seen on camera
-            odometryLineToTag = drawLine(10, robotLocation2d, tagLocation2d)
-            self.fieldDrawing.getObject(lineToTag).setPoses(odometryLineToTag)
+            #  - and line going back from the tag to robot's real position, using real actual tag direction from camera
+            lineFromTagToRealPosition = drawLine(40, tagLocation2d, tagLocation2d - observedVectorToTag)
+            self.fieldDrawing.getObject(lineFromTag).setPoses(lineFromTagToRealPosition)
 
 
 def drawLine(nPoints: int, start: Translation2d, end: Translation2d):
