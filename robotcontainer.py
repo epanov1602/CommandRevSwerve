@@ -96,6 +96,7 @@ class RobotContainer:
         self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample())
         self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue())
         self.chosenAuto.addOption("left red", self.getAutonomousLeftRed())
+        self.chosenAuto.addOption("localizer", self.getAutonomousLocalizerTest())
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
 
     def getAutonomousLeftBlue(self):
@@ -113,6 +114,10 @@ class RobotContainer:
 
         command = setStartPose.andThen(driveForward.withTimeout(2.0)).andThen(stop)
         return command
+
+    def getAutonomousLocalizerTest(self):
+        setStartPose = ResetXY(x=9.58, y=2.05, headingDegrees=+49, drivetrain=self.robotDrive)
+        return setStartPose
 
     def getAutonomousTrajectoryExample(self) -> commands2.Command:
         # Create config for trajectory
