@@ -13,7 +13,7 @@ Click on triangle signs below, in order to see the command code:
 
 <details>
 <summary>A command to set the (X, Y) position of robot on the field at the start of the game</summary>
-Please try to put this code in file `commands/reset_xy.py`:
+Please try to put this code in file `commands/reset_xy.py` :
 
 ```python
 from __future__ import annotations
