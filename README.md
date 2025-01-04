@@ -6,11 +6,11 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 
 ## Adding other things to this (or similar) robot
 (all of these will also work fine on a tank/arcade/mecanum drive robot)
-- [Adding an Arm Subsystem](Adding_Arm.md)
-- [Adding a Camera Subsystem](Adding_Camera.md)
-- [Adding an Intake Subsystem](Adding_Intake.md)
-- [Adding a Shooter Subsystem](Adding_Shooter.md)
+- [Adding an Arm Subsystem](docs/Adding_Arm.md)
+- [Adding a Camera Subsystem](docs/Adding_Camera.md)
+- [Adding an Intake Subsystem](docs/Adding_Intake.md)
+- [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
 
 ## Adding complex behaviors: commands
-- [Add "Pick Up" Command](Command_PickUp.md)
-- [Add "Shoot" Command](Command_Shoot.md)
+- [Add "Pick Up" Command](docs/Command_PickUp.md)
+- [Add "Shoot" Command](docs/Command_Shoot.md)
