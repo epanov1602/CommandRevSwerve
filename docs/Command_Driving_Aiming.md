@@ -583,6 +583,7 @@ class JerkyTrajectory(commands2.Command):
     <summary>Setting the camera pipeline (picking which objects to detect on camera)</summary>
 
 This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+
 The code below should go to `commands/setcamerapipeline.py` .
 
 ```python
@@ -631,6 +632,7 @@ class SetCameraPipeline(commands2.Command):
     <summary>Approaching (or pointing to) a visible gamepiece/tag/etc using camera</summary>
 
 This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+
 The code below should go to `commands/followobject.py` .
 
 ```python
@@ -837,6 +839,10 @@ class StopWhen:
 
 <details>
     <summary>Turning until you find an object using camera</summary>
+
+This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+
+The code below should go to `commands/findobject.py` .
 
 ```python
 import commands2
