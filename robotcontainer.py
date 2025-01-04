@@ -87,7 +87,6 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        # self.chosenAuto.setDefaultOption("two trajectories", self.getAutonomousCommandTwoTrajectories())
         self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
         self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
         self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
