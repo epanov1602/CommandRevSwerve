@@ -12,5 +12,6 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
 
 ## Adding complex behaviors: commands
+- [Autonomous Driving and Aiming](docs/Command_Driving_Aiming.md)
 - [Add "Pick Up" Command](docs/Command_PickUp.md)
 - [Add "Shoot" Command](docs/Command_Shoot.md)
