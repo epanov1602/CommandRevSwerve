@@ -578,7 +578,7 @@ class JerkyTrajectory(commands2.Command):
 </details>
 
 
-## 5. Using vision (camera) to nagivate
+## 5. Using vision (cameras) to nagivate
 <details>
     <summary>Setting the camera pipeline (picking which objects to detect on camera)</summary>
 
