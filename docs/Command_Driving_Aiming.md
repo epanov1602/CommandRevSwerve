@@ -381,7 +381,7 @@ class SwerveToPoint(commands2.Command):
         xDistance, yDistance = self.targetPose.x - currentXY.x, self.targetPose.y - currentXY.y
         totalDistance = self.targetPose.translation().distance(currentXY.translation())
 
-        totalSpeed = GoToPointConstants.kPTranslate * totalDistance
+        totalSpeed = 0.75 * GoToPointConstants.kPTranslate * totalDistance
         if totalSpeed > abs(self.speed):
             totalSpeed = abs(self.speed)
         if totalSpeed < GoToPointConstants.kMinTranslateSpeed:
@@ -394,7 +394,7 @@ class SwerveToPoint(commands2.Command):
             ySpeed = totalSpeed * yDistance / totalDistance
 
         degreesLeftToTurn = self.getDegreesLeftToTurn()
-        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        turningSpeed = 0.75 * abs(degreesLeftToTurn) * AimToDirectionConstants.kP
         if turningSpeed > abs(self.speed):
             turningSpeed = abs(self.speed)
         if turningSpeed < AimToDirectionConstants.kMinTurnSpeed:
