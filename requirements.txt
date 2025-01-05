@@ -1,4 +1,5 @@
 robotpy==2024.3.2.2
 robotpy-commands-v2==2024.3.1
 robotpy-rev==2024.2.4
+robotpy-navx==2024.1.1
 wpilib==2024.3.2.1
