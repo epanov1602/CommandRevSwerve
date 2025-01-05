@@ -101,7 +101,7 @@ from wpimath.geometry import Rotation2d
 
 
 class AimToDirectionConstants:
-    kP = 0.0058  # 0.002 is the default
+    kP = 0.004  # 0.002 is the default, but you must calibrate this to your robot
     kMinTurnSpeed = 0.05  # turning slower than this is unproductive for the motor (might not even spin)
     kAngleToleranceDegrees = 2.0  # plus minus 2 degrees is "close enough"
     kAngleVelocityToleranceDegreesPerSec = 50  # velocity under 100 degrees/second is considered "stopped"
@@ -184,9 +184,10 @@ from commands.aimtodirection import AimToDirectionConstants
 
 
 class GoToPointConstants:
-    kPTranslate = 2.0
+    kPTranslate = 0.3  # make it 0.2 to be conservative?  # you will need to calibrate this one to your robot
+
     kMinTranslateSpeed = 0.07  # moving forward slower than this is unproductive
-    kApproachRadius = 0.1  # within this radius from target location, try to point in desired direction
+    kApproachRadius = 0.2  # within this radius from target location, try to point in desired direction
     kOversteerAdjustment = 0.5
 
 
@@ -237,13 +238,14 @@ class GoToPoint(commands2.Command):
         if self.speed < 0:
             targetDirection = targetDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
         degreesRemaining = _optimize((targetDirection - currentDirection).degrees())
+        rotateSpeed = min([abs(self.speed), AimToDirectionConstants.kP * abs(degreesRemaining)])
 
         # 2. if we are pointing in a very wrong direction (more than 45 degrees away), rotate away without moving
         if degreesRemaining > 45 and not self.pointingInGoodDirection:
-            self.drivetrain.arcadeDrive(0.0, abs(self.speed))
+            self.drivetrain.arcadeDrive(0.0, rotateSpeed)
             return
         elif degreesRemaining < -45 and not self.pointingInGoodDirection:
-            self.drivetrain.arcadeDrive(0.0, -abs(self.speed))
+            self.drivetrain.arcadeDrive(0.0, -rotateSpeed)
             return
 
         self.pointingInGoodDirection = True
@@ -318,7 +320,6 @@ def _optimize(degrees):
         degrees += 360
 
     return degrees
-
 ```
 </details>
 
