@@ -381,7 +381,7 @@ class SwerveToPoint(commands2.Command):
         xDistance, yDistance = self.targetPose.x - currentXY.x, self.targetPose.y - currentXY.y
         totalDistance = self.targetPose.translation().distance(currentXY.translation())
 
-        totalSpeed = GoToPointConstants.kPTranslate * totalDistance
+        totalSpeed = 0.75 * GoToPointConstants.kPTranslate * totalDistance
         if totalSpeed > abs(self.speed):
             totalSpeed = abs(self.speed)
         if totalSpeed < GoToPointConstants.kMinTranslateSpeed:
@@ -394,7 +394,7 @@ class SwerveToPoint(commands2.Command):
             ySpeed = totalSpeed * yDistance / totalDistance
 
         degreesLeftToTurn = self.getDegreesLeftToTurn()
-        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        turningSpeed = 0.75 * abs(degreesLeftToTurn) * AimToDirectionConstants.kP
         if turningSpeed > abs(self.speed):
             turningSpeed = abs(self.speed)
         if turningSpeed < AimToDirectionConstants.kMinTurnSpeed:
@@ -586,7 +586,7 @@ class JerkyTrajectory(commands2.Command):
 <details>
     <summary>Setting the camera pipeline (picking which objects to detect on camera)</summary>
 
-This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+This code works with Limelight or PhotonVision cameras from [here](Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
 
 The code below should go to `commands/setcamerapipeline.py` .
 
@@ -635,7 +635,8 @@ class SetCameraPipeline(commands2.Command):
 <details>
     <summary>Approaching (or pointing to) a visible gamepiece/tag/etc using camera</summary>
 
-This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+This code works with Limelight or PhotonVision cameras from [here](Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+
 
 The code below should go to `commands/followobject.py` .
 
@@ -844,7 +845,7 @@ class StopWhen:
 <details>
     <summary>Turning until you find an object using camera</summary>
 
-This code works with Limelight or PhotonVision cameras from [here](docs/Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
+This code works with Limelight or PhotonVision cameras from [here](Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
 
 The code below should go to `commands/findobject.py` .
 
