@@ -999,8 +999,15 @@ class FindObject(commands2.Command):
         approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.5)
         alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.0)
         # optional: you can also have your robot step 20 centimeters to the right at the end
-        stepToSide = SwerveToSide(drivetrain=self.robotDrive)
-     
+        dropCoralOnLevel2 = ... # your robot has a command for this, right?
+
+        # connect them together
+        scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(dropCoralOnLevel2)
+
+        # or you can do this, if you want to score the coral 15 centimeters to the right of above the AprilTag
+        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, speed=0.2)
+        # scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide).andThen(dropCoralOnLevel2)
+
 ```
 
 This code works with Limelight or PhotonVision cameras from [here](Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
