@@ -998,7 +998,6 @@ class FindObject(commands2.Command):
         lookForTheseTags = SetCameraPipeline(self.camera, 3)
         approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.5)
         alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.0)
-        # optional: you can also have your robot step 20 centimeters to the right at the end
         dropCoralOnLevel2 = ... # your robot has a command for this, right?
 
         # connect them together
