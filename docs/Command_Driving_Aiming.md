@@ -986,7 +986,7 @@ class FindObject(commands2.Command):
 
 ## 6. REEFSCAPE special command!
 <details>
-    <summary>Aligning a swerve robot to an AprilTag in front of it, and then firmly pushing against the tag</summary>
+    <summary>Aligning a swerve robot to an AprilTag in front of it, and then firmly pushing against the tag to score that coral onto reef</summary>
 
 ```python
         from commands.setcamerapipeline import SetCameraPipeline
