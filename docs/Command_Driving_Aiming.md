@@ -1023,7 +1023,7 @@ from __future__ import annotations
 import math
 import commands2
 
-from commands.aimtodirection import AimToDirectionConstants
+from commands.aimtodirection import AimToDirectionConstants, AimToDirection
 from commands.gotopoint import GoToPointConstants
 
 from wpimath.geometry import Rotation2d
@@ -1083,7 +1083,7 @@ class AlignWithTag(commands2.Command):
         # state
         self.targetDirection = None
         self.alignedToTag = False
-        self.pushForwardUntilTime = None
+        self.pushForwardCommand = None
         self.haveNotSeenObjectSinceTime = None
         self.everSawObject = False
 
@@ -1091,7 +1091,7 @@ class AlignWithTag(commands2.Command):
     def initialize(self):
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.alignedToTag = False
-        self.pushForwardUntilTime = None
+        self.pushForwardCommand = None
         self.haveNotSeenObjectSinceTime = Timer.getFPGATimestamp()
         self.everSawObject = False
 
@@ -1101,15 +1101,17 @@ class AlignWithTag(commands2.Command):
         if now > self.haveNotSeenObjectSinceTime + 3.0:
             print("AlignSwerveWithTag: finished because have not seen the object for >3 seconds")
             return True
-        if self.alignedToTag and self.pushForwardSeconds == 0:
+        if self.alignedToTag and self.pushForwardCommand is None:
             print("AlignSwerveWithTag: finished because aligned to the tag and don't need to push forward")
             return True
-        if self.alignedToTag and self.pushForwardUntilTime is not None and now > self.pushForwardUntilTime:
+        if self.alignedToTag and self.pushForwardCommand is not None and self.pushForwardCommand.isFinished():
             print("AlignSwerveWithTag: finished because aligned to the tag and the forward push is finished")
             return True
 
 
     def end(self, interrupted: bool):
+        if self.pushForwardCommand is not None:
+            self.pushForwardCommand.end(interrupted)
         self.drivetrain.arcadeDrive(0, 0)
 
 
@@ -1117,6 +1119,11 @@ class AlignWithTag(commands2.Command):
         if self.camera.hasDetection():
             self.haveNotSeenObjectSinceTime = Timer.getFPGATimestamp()
             self.everSawObject = True
+
+        # 0. are we pushing forward already?
+        if self.alignedToTag and self.pushForwardCommand is not None:
+            self.pushForwardCommand.execute()
+            return
 
         # 1. how many degrees are left to turn?
         currentDirection = self.drivetrain.getHeading()
@@ -1137,12 +1144,11 @@ class AlignWithTag(commands2.Command):
         swerveSpeed = self.getSwerveLeftSpeed(degreesRemaining)
 
         # 4. if we just aligned the heading and the swerve axis and should be pushing forward, make that push
-        pushForwardSpeed = 0.0
-        if self.alignedToTag and self.pushForwardSeconds > 0:
-            pushForwardSpeed = self.getPushForwardSpeed()
-
-        # 5. all the speeds are computed, drive with those speeds
-        self.drivetrain.drive(pushForwardSpeed, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
+        if not self.alignedToTag:
+            self.drivetrain.drive(0, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
+        elif self.pushForwardCommand is None and self.pushForwardSeconds > 0:
+            self.pushForwardCommand = self.getPushForwardCommand()
+            self.pushForwardCommand.initialize()
 
 
     def getTurnSpeed(self, degreesRemaining):
@@ -1159,15 +1165,10 @@ class AlignWithTag(commands2.Command):
         return turnSpeed
 
 
-    def getPushForwardSpeed(self):
-        pushForwardSpeed = self.pushForwardSpeed
-        if pushForwardSpeed < GoToPointConstants.kMinTranslateSpeed:
-            pushForwardSpeed = GoToPointConstants.kMinTranslateSpeed
-        if self.reverse:
-            pushForwardSpeed = -pushForwardSpeed
-        if self.pushForwardUntilTime is None:
-            self.pushForwardUntilTime = Timer.getFPGATimestamp() + self.pushForwardSeconds
-        return pushForwardSpeed
+    def getPushForwardCommand(self):
+        speed = self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed
+        command = AimToDirection(degrees=None, drivetrain=self.drivetrain, fwd_speed=speed)
+        return command.withTimeout(self.pushForwardSeconds)
 
 
     def getSwerveLeftSpeed(self, degreesRemaining):
@@ -1214,12 +1215,12 @@ class AlignWithTag(commands2.Command):
 
         # how fast should we swerve to the right or left? use proportional control!
         swerveSpeed = self.speed
-        proportionalSpeed = GoToPointConstants.kPTranslate * abs(objectXMeters)
+        proportionalSpeed = 0.33 * GoToPointConstants.kPTranslate * abs(objectXMeters)
         if GoToPointConstants.kUseSqrtControl:
             proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)
         if proportionalSpeed < swerveSpeed:
             swerveSpeed = proportionalSpeed
-        if swerveSpeed < GoToPointConstants.kMinTranslateSpeed and self.pushForwardSeconds == 0:
+        if swerveSpeed < GoToPointConstants.kMinTranslateSpeed:
             swerveSpeed = GoToPointConstants.kMinTranslateSpeed
 
         # if the object is on the right, swerve to the right (negative swerve speed)
