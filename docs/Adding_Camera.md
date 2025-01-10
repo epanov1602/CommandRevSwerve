@@ -182,7 +182,7 @@ class PhotonVisionCamera(Subsystem):
 Example code for PhotonVision camera that **will only give you tag IDs that you specified** (for example, "only detect tag 3 and 8")
 </summary>
 
-- **this goes to the end of your `pyproject.toml`** (to make sense of tags, you have to install official PhotonVision library compatible with camera)
+- **this goes to the end of your `pyproject.toml`** (to make sense of tags IDs, install official PhotonVision library compatible with camera)
 
 ```python
 # Other pip packages to install
