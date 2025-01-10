@@ -15,7 +15,7 @@ from wpimath.kinematics import (
 from wpilib import SmartDashboard, Field2d
 
 
-from constants import DriveConstants
+from constants import DriveConstants, ModuleConstants
 import swerveutils
 from .maxswervemodule import MAXSwerveModule
 from rev import CANSparkMax, CANSparkFlex
@@ -33,7 +33,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=True,
+            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             motorControllerType=CANSparkFlex,
         )
 
@@ -41,7 +41,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=True,
+            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             motorControllerType=CANSparkFlex,
         )
 
@@ -49,7 +49,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=True,
+            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             motorControllerType=CANSparkFlex,
         )
 
@@ -57,7 +57,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=True,
+            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             motorControllerType=CANSparkFlex,
         )
 
