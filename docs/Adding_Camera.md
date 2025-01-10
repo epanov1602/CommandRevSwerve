@@ -182,6 +182,25 @@ class PhotonVisionCamera(Subsystem):
 Example code for PhotonVision camera that **will only give you tag IDs that you specified** (for example, "only detect tag 3 and 8")
 </summary>
 
+- **this goes to the end of your `pyproject.toml`** (to make sense of tags, you have to install official PhotonVision library compatible with camera)
+
+```python
+# Other pip packages to install
+requires = [
+   "pyntcore",
+   "photonlibpy==2024.3.1",  # or you must use "photonlibpy==2025.0.0b" if you installed PhotonVision 2025.0.0b on your actual camera, instead of 2024.3.1
+]
+```
+
+- **this goes to the end of your `requirements.txt`** (to make sense of tags, you have to install official PhotonVision library compatible with camera)
+
+```bash
+# Other pip packages to install
+pyntcore
+photonlibpy==2024.3.1  # or you must use "photonlibpy==2025.0.0b" if you installed PhotonVision 2025.0.0b on your actual camera, instead of 2024.3.1
+```
+
+
 - **this goes to `subsystems/photon_tag_camera.py`**
 
 ```python
