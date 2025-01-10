@@ -179,7 +179,7 @@ class PhotonVisionCamera(Subsystem):
 
 <details>
 <summary>
-Example code for PhotonVision camera that will only detect the tag IDs that you specified.
+Example code for PhotonVision camera that **will only detect the tag IDs that you specified** (for example, "only detect tag 3 and 8")
 </summary>
 
 - **this goes to `subsystems/photon_tag_camera.py`**
