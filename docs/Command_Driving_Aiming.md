@@ -683,8 +683,6 @@ from wpilib import Timer
 
 
 class SetCameraPipeline(commands2.Command):
-    ANGLE_TOLERANCE = 50  # if pointing further away than this, do not move forward (rotate towards the object first)
-    MIN_SPEED = GoToPointConstants.kMinTranslateSpeed
 
     def __init__(self, camera, pipelineIndex: int):
         super().__init__()
