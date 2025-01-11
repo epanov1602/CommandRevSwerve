@@ -180,6 +180,7 @@ class DriveSubsystem(Subsystem):
         rot: float,
         fieldRelative: bool,
         rateLimit: bool,
+        square: bool = False
     ) -> None:
         """Method to drive the robot using joystick info.
 
@@ -189,7 +190,14 @@ class DriveSubsystem(Subsystem):
         :param fieldRelative: Whether the provided x and y speeds are relative to the
                               field.
         :param rateLimit:     Whether to enable rate limiting for smoother control.
+        :param square:        Whether to square the inputs (useful for manual control)
         """
+
+        if square:
+            rot = rot * abs(rot)
+            norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
+            xSpeed = xSpeed * norm
+            ySpeed = ySpeed * norm
 
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed

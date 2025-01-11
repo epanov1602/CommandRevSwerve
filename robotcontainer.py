@@ -54,6 +54,7 @@ class RobotContainer:
                     ),
                     True,
                     True,
+                    square=True,
                 ),
                 self.robotDrive,
             )

@@ -267,7 +267,7 @@ class PhotonTagCamera(Subsystem):
         return self.hb
 
     def hasDetection(self):
-        return self.heartbeating and self.camera.getLatestResult().hasTargets()
+        return self.heartbeating and (self.tx != 0 or self.ty != 0)
 
     def getSecondsSinceLastHeartbeat(self) -> float:
         return Timer.getFPGATimestamp() - self.lastHeartbeatTime
