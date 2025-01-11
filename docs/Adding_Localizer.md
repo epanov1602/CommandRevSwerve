@@ -766,9 +766,9 @@ class CameraState:
 
 
 class Localizer(commands2.Subsystem):
-    LEARNING_RATE = 0.4  # to converge faster you may want to increase this, but location can become more unstable
+    LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
 
-    TRUST_GYRO_COMPLETELY = False  # if you set it =True, odometry heading (North) will never be modified
+    TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
     IMPORTANT_TAG_WEIGHT_FACTOR = 2.0  # if a tag is important (for example, located on a shooting target)
 
@@ -789,9 +789,16 @@ class Localizer(commands2.Subsystem):
         self.enabled.addOption("on", True)
         SmartDashboard.putData("Localizer", self.enabled)
 
-        from os.path import isfile
-        assert isfile(fieldLayoutFile), f"file with field layout {fieldLayoutFile} does not exist"
-        self.fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
+        from os.path import isfile, join
+
+        self.fieldLayout = None
+        for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
+            candidate = join(prefix, fieldLayoutFile)
+            print(f"Localizer: trying field layout from {candidate}")
+            if isfile(candidate):
+                self.fieldLayout = AprilTagFieldLayout(candidate)
+                break
+        assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
         print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
 
         self.ignoreTagIDs = set(ignoreTagIDs)
@@ -811,6 +818,7 @@ class Localizer(commands2.Subsystem):
 
 
     def periodic(self):
+        self.skippedTags.clear()
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
         enabled = self.enabled.getSelected()
@@ -919,12 +927,12 @@ class Localizer(commands2.Subsystem):
         turnDegrees = Rotation2d.fromDegrees((turnDegrees + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's -10 deg
 
         # use "learning rate" (for example, 0.05) to partly apply this (X, Y) shift and partly the shift in heading
-        learningRate = self.learningRate
+        learningRate = Localizer.LEARNING_RATE
         if tagId in self.importantTagIDs:
-            learningRate = self.learningRate * Localizer.IMPORTANT_TAG_WEIGHT
+            learningRate = learningRate * Localizer.IMPORTANT_TAG_WEIGHT_FACTOR
 
         skip = False
-        if abs(turnDegrees.degrees()) > self.maxAngularDeviationDegrees:
+        if abs(turnDegrees.degrees()) > Localizer.MAX_ANGULAR_DEVIATION_DEGREES:
             skip = True
 
         # do we need to redraw the lines on the screen?
@@ -950,7 +958,7 @@ class Localizer(commands2.Subsystem):
 
         # adjust the (X, Y) in the drivetrain odometry
         shift = shiftMeters * learningRate
-        turn = turnDegrees * learningRate * 0.25  # 0.25 because we still kind of trust the gyro
+        turn = Rotation2d(0.0) if Localizer.TRUST_GYRO_COMPLETELY else turnDegrees * learningRate * 0.25  # 0.25 because we still kind of trust the gyro
         return shift, turn
 
     def tagLineNames(self, cameraName, tagId):
