@@ -569,6 +569,8 @@ Inside of `robotcontainer.py` **__init__** function we need to add something alo
 
         from subsystems.localizer import Localizer
         self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
+        # ^^field layouts like "2024-crescendo.json" and "2025-reefscape.json" can be downloaded from
+        #  https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
 
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0)
         self.localizer.addPhotonCamera("right_camera", directionDegrees=-90)  # right = -90 degrees to the left
