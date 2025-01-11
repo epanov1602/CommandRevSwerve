@@ -994,3 +994,12 @@ Inside of `robotcontainer.py` **__init__** function we need to add something alo
         # ^^^ here we must add the cameras exactly the way they are called in PhotonVision
 ...
 ```
+
+
+## 4. In Elastic/SmartDashboard
+
+Once added as above, you should be able to add Localizer widget in Elastic, near your field map:
+![image](https://github.com/user-attachments/assets/ffecdad0-dd1e-4b08-8d6e-b9442d322778)
+
+, resulting in something like this:
+![image](https://github.com/user-attachments/assets/3d6d31e6-ab2c-4b4e-af92-ce3522107204)
