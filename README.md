@@ -10,6 +10,7 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding a Camera Subsystem](docs/Adding_Camera.md)
 - [Adding an Intake Subsystem](docs/Adding_Intake.md)
 - [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
+- [Adding a Localizer by reusing PhotonVision cameras](docs/Adding_Localizer.md)
 
 ## Adding complex behaviors: commands
 - [Autonomous Driving and Aiming](docs/Command_Driving_Aiming.md)
