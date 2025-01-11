@@ -990,7 +990,7 @@ Inside of `robotcontainer.py` **__init__** function we need to add something alo
         #  https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
 
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0)
-        self.localizer.addPhotonCamera("right_camera", directionDegrees=-90)  # right = -90 degrees to the left
+        self.localizer.addPhotonCamera("left_camera", directionDegrees=+90)  # left = +90 degrees to the left (right would have been -90)
         # ^^^ here we must add the cameras exactly the way they are called in PhotonVision
 ...
 ```
