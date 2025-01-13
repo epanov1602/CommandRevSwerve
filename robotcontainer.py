@@ -28,6 +28,10 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The robot's subsystems
+        from subsystems.limelight_camera import LimelightCamera
+        self.camera = LimelightCamera("limelight-pickup")  # name of your camera goes in parentheses
+
+        # The robot's subsystems
         self.robotDrive = DriveSubsystem()
 
         # The driver's controller
@@ -88,10 +92,71 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
-        self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
-        self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
+        # self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
+        # self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
+        # self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
+        self.chosenAuto.setDefaultOption("straight blue right to finish", self.getStraightBlueRightCommand)
+        self.chosenAuto.addOption("curved blue right to finish", self.getCurvedBlueRightCommand)
+        self.chosenAuto.addOption("approach tag", self.getApproachTagCommand)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
+
+    def getApproachCommand(self):
+        setStartPose = ResetXY(x=8.775, y=7.262, headingDegrees=180, drivetrain=self.robotDrive)
+
+        from commands.jerky_trajectory import JerkyTrajectory
+        trajectory = JerkyTrajectory
+            drivetrain=self.robotDrive
+            endpoint=(2.594, 3.996, 0.0),
+            waypoint=[
+                (8.775, 7.262, 180.0),
+                (6.503, 7.262, -178.831),
+                (3.578, 7.104, -175.504),
+                (2.174, 5.497, -101.094)
+            ],
+            speed=0.2
+        )
+        from commands.followobject import FollowObject
+
+        followTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=8.0), speed=0.2)
+
+        from commands.arcadedrive import ArcadeDrive
+        driveForwardALittle = ArcadeDrive(driveSpeed=0.15, rotationSpeed=0.0, drivetrain=self.robotDrive).withTimeout(0.3)
+
+        dropCoral = None
+
+        command = setStartPose.andThen(trajectory).andThen(followTag).andThen(driveForwardALittle).andThen(dropCoral)
+        return command
+    def getStraightBlueRightCommand(self):
+            setStartPose = ResetXY(x=0.773, y=6.696, headingDegrees=+60.000, drivetrain=self.robotDrive)
+
+            from commands.gotopoint import  GoToPoint
+            goToFinish = GoToPoint(x=6.520,y=7.369,drivetrain=self.robotDrive)
+
+            from commands.aimtodirection import AimToDirection
+            aimdown = AimToDirection(degrees=90,drivetrain=self.robotDrive)
+
+            command = setStartPose.andThen(goToFinish).andThen(aimdown)
+            return command
+
+    def getCurvedBlueRightCommand(self):
+            setStartPose = ResetXY(x=0.773, y=6.696, headingDegrees=+60.000, drivetrain=self.robotDrive)
+
+            from commands.jerky_trajectory import  JerkyTrajectory
+            goToFinish = JerkyTrajectory(drivetrain=self.robotDrive,
+                                         endpoint=(6.520, 7.369,-0.748),
+                                         waypoints=[
+                                             (0.733, 6.696, 60.000),
+                                             (1.673, 7.191, -48.013),
+                                             (3.236, 6.508, 0.979),
+                                             (4.492, 7.062, 51.911),
+                                            # You don't need to add the end point, it's already added above
+                                         ],
+                                         swerve=True,
+                                         speed=0.2)
+
+
+
+
 
     def getAutonomousLeftBlue(self):
         setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)
