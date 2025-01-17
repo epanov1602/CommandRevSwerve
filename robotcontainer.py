@@ -29,9 +29,8 @@ class RobotContainer:
     def __init__(self) -> None:
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
-        self.camera = LimelightCamera("limelight-pickup")  # name of your camera goes in parentheses
+        self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
-        # The robot's subsystems
         self.robotDrive = DriveSubsystem()
 
         # The driver's controller
@@ -92,72 +91,72 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        # self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
-        # self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
-        # self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
-        self.chosenAuto.setDefaultOption("straight blue right to finish", self.getStraightBlueRightCommand)
-        self.chosenAuto.addOption("curved blue right to finish", self.getCurvedBlueRightCommand)
-        self.chosenAuto.addOption("approach tag", self.getApproachTagCommand)
+        self.chosenAuto.setDefaultOption("straight blue right", self.getstraightbluerightcommand)
+        self.chosenAuto.addOption("curved blue right", self.getcurvedbluerightcommand)
+        self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
 
-    def getApproachCommand(self):
-        setStartPose = ResetXY(x=8.775, y=7.262, headingDegrees=180, drivetrain=self.robotDrive)
+    def getAproachTagCommand(self):
+        setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
+
 
         from commands.jerky_trajectory import JerkyTrajectory
-        trajectory = JerkyTrajectory
-            drivetrain=self.robotDrive
-            endpoint=(2.594, 3.996, 0.0),
-            waypoint=[
-                (8.775, 7.262, 180.0),
-                (6.503, 7.262, -178.831),
-                (3.578, 7.104, -175.504),
-                (2.174, 5.497, -101.094)
+        trajectory = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(7.000,6.608,0.000),
+            waypoints= [
+                (0.779, 6.608, 7.496),
+                (2.469,5.805,14.470),
+                (4.627,7.124,-37.776)
             ],
             speed=0.2
         )
-        from commands.followobject import FollowObject
 
-        followTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=8.0), speed=0.2)
+        from commands.followobject import FollowObject, StopWhen
+        fallowtag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
 
-        from commands.arcadedrive import ArcadeDrive
-        driveForwardALittle = ArcadeDrive(driveSpeed=0.15, rotationSpeed=0.0, drivetrain=self.robotDrive).withTimeout(0.3)
+        from commands.alignwithtag import AlignWithTag
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
 
+        from commands.swervetopoint import SwerveToSide
+        swervleft = SwerveToSide(metersToTheLeft=0.2, speed=0.2, drivetrain=self.robotDrive)
+        from commands.aimtodirection import AimToDirection
+        aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
         dropCoral = None
 
-        command = setStartPose.andThen(trajectory).andThen(followTag).andThen(driveForwardALittle).andThen(dropCoral)
+        commands = setStartPose.andThen(fallowtag).andThen(alignAndPush).andThen(swervleft).andThen(aimnorth)
+        print("I created a command to approach tag")
+        return commands
+
+
+
+
+    def getstraightbluerightcommand(self):
+        setStartPose = ResetXY(x=2.000, y=7.000, headingDegrees=+0, drivetrain=self.robotDrive)
+
+        from commands.gotopoint import GoToPoint
+        gotoFinish = GoToPoint(x=4.000, y=6.000, drivetrain=self.robotDrive)
+        from commands.aimtodirection import  AimToDirection
+        aimDown = AimToDirection(degrees=-90.000, drivetrain=self.robotDrive)
+
+        command = setStartPose.andThen(gotoFinish).andThen(aimDown)
         return command
-    def getStraightBlueRightCommand(self):
-            setStartPose = ResetXY(x=0.773, y=6.696, headingDegrees=+60.000, drivetrain=self.robotDrive)
 
-            from commands.gotopoint import  GoToPoint
-            goToFinish = GoToPoint(x=6.520,y=7.369,drivetrain=self.robotDrive)
+    def getcurvedbluerightcommand(self):
+        setStartPose = ResetXY(x=0.911, y=6.632, headingDegrees=+60, drivetrain=self.robotDrive)
 
-            from commands.aimtodirection import AimToDirection
-            aimdown = AimToDirection(degrees=90,drivetrain=self.robotDrive)
+        from commands.jerky_trajectory import JerkyTrajectory
+        gotoFinish = JerkyTrajectory(drivetrain=self.robotDrive,
+                                     endpoint=(7.336,6.273,86.009),
+                                     waypoints=[
+                                         (3.860,7.100,-25.544), (6.066,5.865,-26.565)
+                                     ], swerve=False,
+                                     speed=0.8)
+        from commands.aimtodirection import  AimToDirection
+        aimDown = AimToDirection(degrees=-90.000, drivetrain=self.robotDrive)
 
-            command = setStartPose.andThen(goToFinish).andThen(aimdown)
-            return command
-
-    def getCurvedBlueRightCommand(self):
-            setStartPose = ResetXY(x=0.773, y=6.696, headingDegrees=+60.000, drivetrain=self.robotDrive)
-
-            from commands.jerky_trajectory import  JerkyTrajectory
-            goToFinish = JerkyTrajectory(drivetrain=self.robotDrive,
-                                         endpoint=(6.520, 7.369,-0.748),
-                                         waypoints=[
-                                             (0.733, 6.696, 60.000),
-                                             (1.673, 7.191, -48.013),
-                                             (3.236, 6.508, 0.979),
-                                             (4.492, 7.062, 51.911),
-                                            # You don't need to add the end point, it's already added above
-                                         ],
-                                         swerve=True,
-                                         speed=0.2)
-
-
-
-
-
+        command = setStartPose.andThen(gotoFinish).andThen(aimDown)
+        return command
     def getAutonomousLeftBlue(self):
         setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)
         driveForward = commands2.RunCommand(lambda: self.robotDrive.arcadeDrive(xSpeed=1.0, rot=0.0), self.robotDrive)
