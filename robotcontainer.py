@@ -130,7 +130,6 @@ class RobotContainer:
 
 
 
-
     def getstraightbluerightcommand(self):
         setStartPose = ResetXY(x=2.000, y=7.000, headingDegrees=+0, drivetrain=self.robotDrive)
 
@@ -152,7 +151,7 @@ class RobotContainer:
                                          (3.860,7.100,-25.544), (6.066,5.865,-26.565)
                                      ], swerve=False,
                                      speed=0.8)
-        from commands.aimtodirection import  AimToDirection
+        from commands.aimtodirection import AimToDirection
         aimDown = AimToDirection(degrees=-90.000, drivetrain=self.robotDrive)
 
         command = setStartPose.andThen(gotoFinish).andThen(aimDown)
