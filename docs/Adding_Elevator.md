@@ -14,6 +14,7 @@
 <summary>This code snippet can go to `subsystems/elevator.py` </summary>
 
 ```python
+
 from __future__ import annotations
 
 from rev import CANSparkMax, CANSparkBase, SparkLimitSwitch, SparkAbsoluteEncoder
@@ -39,10 +40,10 @@ class ElevatorConstants:
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
     calibrating = False
-    
-    # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function 
+
+    # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
     # self.elevator.setDefaultCommand(
-    #    commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+    #    commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()))
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
@@ -158,6 +159,7 @@ class Elevator(Subsystem):
         self.leadMotor.setInverted(ElevatorConstants.leadMotorInverted)
         self.leadMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
         if self.followMotor is not None:
+            self.followMotor.setInverted(ElevatorConstants.leadMotorInverted)  # yes, setting it = "lead motor inverted"
             invert = ElevatorConstants.leadMotorInverted != ElevatorConstants.followMotorInverted
             self.followMotor.follow(self.leadMotor, invert)
             self.followMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
