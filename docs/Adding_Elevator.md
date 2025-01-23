@@ -20,6 +20,7 @@ from rev import CANSparkMax, CANSparkBase, SparkLimitSwitch, SparkAbsoluteEncode
 from wpilib import SmartDashboard
 from commands2 import Subsystem
 
+
 # constants right here, to simplify
 class ElevatorConstants:
     # very scary setting! (if set wrong, the arm will escape equilibrium and break something)
@@ -35,6 +36,14 @@ class ElevatorConstants:
     leadMotorInverted = True
     followMotorInverted = False
     findingZeroSpeed = 0.1
+
+    # calibrating? (at first, set it =True and calibrate all the constants above)
+    calibrating = False
+    
+    # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function 
+    # self.elevator.setDefaultCommand(
+    #    commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()))
+    # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 15  # inches
@@ -57,15 +66,15 @@ class ElevatorConstants:
 
 class Elevator(Subsystem):
     def __init__(
-        self,
-        leadMotorCANId: int,
-        followMotorCANId: int | None = None,
-        presetSwitchPositions: tuple = (),
-        useAbsoluteEncoder: bool = False,
-        motorClass=CANSparkMax,
-        limitSwitchType=SparkLimitSwitch.Type.kNormallyClosed,
+            self,
+            leadMotorCANId: int,
+            followMotorCANId: int | None = None,
+            presetSwitchPositions: tuple = (),
+            useAbsoluteEncoder: bool = False,
+            motorClass=CANSparkMax,
+            limitSwitchType=SparkLimitSwitch.Type.kNormallyClosed,
     ) -> None:
-        """Constructs an elevator. Be very very careful with setting PIDs -- elevators are dangerous"""
+        """Constructs an elevator. Be very, very careful with setting PIDs -- elevators are dangerous"""
         super().__init__()
 
         self.zeroFound = False
@@ -98,20 +107,17 @@ class Elevator(Subsystem):
             goal = self.absoluteEncoder.getPosition()
         self.setPositionGoal(goal)
 
-        
     def switchDown(self):
         if self.presetSwitchPositions:
             self.positionGoalSwitchIndex = self.positionGoalSwitchIndex - 1
             self.positionGoalSwitchIndex = max([self.positionGoalSwitchIndex, 0])
             self.setPositionGoal(self.presetSwitchPositions[self.positionGoalSwitchIndex])
 
-
     def switchUp(self):
         if self.presetSwitchPositions:
             self.positionGoalSwitchIndex = self.positionGoalSwitchIndex + 1
             self.positionGoalSwitchIndex = min([self.positionGoalSwitchIndex, len(self.presetSwitchPositions) - 1])
             self.setPositionGoal(self.presetSwitchPositions[self.positionGoalSwitchIndex])
-
 
     def setPositionGoal(self, goalInches: float) -> None:
         if goalInches < ElevatorConstants.minPositionGoal:
@@ -121,12 +127,11 @@ class Elevator(Subsystem):
         self.positionGoal = goalInches
 
         if self.pidController is not None:
-            self.pidController.setReference(goalInches + ElevatorConstants.kStaticGain, CANSparkBase.ControlType.kPosition)
-
+            self.pidController.setReference(goalInches + ElevatorConstants.kStaticGain,
+                                            CANSparkBase.ControlType.kPosition)
 
     def getPositionGoal(self) -> float:
         return self.positionGoal
-
 
     def getPosition(self) -> float:
         if self.absoluteEncoder is not None:
@@ -134,13 +139,11 @@ class Elevator(Subsystem):
         else:
             return self.relativeEncoder.getPosition()
 
-
     def getAngleVelocity(self) -> float:
         if self.absoluteEncoder is not None:
             return self.absoluteEncoder.getVelocity()
         else:
             return self.relativeEncoder.getVelocity()
-
 
     def stopAndReset(self) -> None:
         self.leadMotor.stopMotor()
@@ -151,7 +154,6 @@ class Elevator(Subsystem):
         if self.followMotor is not None:
             self.followMotor.clearFaults()
 
-
     def setMotorDirections(self) -> None:
         self.leadMotor.setInverted(ElevatorConstants.leadMotorInverted)
         self.leadMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
@@ -159,8 +161,6 @@ class Elevator(Subsystem):
             invert = ElevatorConstants.leadMotorInverted != ElevatorConstants.followMotorInverted
             self.followMotor.follow(self.leadMotor, invert)
             self.followMotor.setIdleMode(CANSparkBase.IdleMode.kBrake)
-
-
 
     def initEncoders(self, useAbsoluteEncoder):
         if useAbsoluteEncoder:
@@ -174,7 +174,6 @@ class Elevator(Subsystem):
         self.relativeEncoder.setPositionConversionFactor(1.0 / ElevatorConstants.motorRevolutionsPerInch)
         self.relativeEncoder.setVelocityConversionFactor(
             ElevatorConstants.positionToVelocityFactor / ElevatorConstants.motorRevolutionsPerInch)
-
 
     def initPidController(self):
         self.pidController = self.leadMotor.getPIDController()
@@ -200,6 +199,8 @@ class Elevator(Subsystem):
         if self.followMotor is not None:
             self.followMotor.burnFlash()  # otherwise the "inverted" setting will not survive the brownout
 
+    def drive(self, speed):
+        self.leadMotor.set(speed)
 
     def findZero(self):
         # did we find the zero previously?
@@ -216,20 +217,18 @@ class Elevator(Subsystem):
         # otherwise, continue finding it
         self.leadMotor.set(-ElevatorConstants.findingZeroSpeed)
 
-
     def getState(self) -> str:
-        if not self.zeroFound:
-            return "finding zero"
-        elif self.forwardLimit.get():
+        if self.forwardLimit.get():
             return "forward limit"
         elif self.reverseLimit.get():
             return "reverse limit"
+        elif not self.zeroFound:
+            return "finding zero"
         else:
             return "ok"
 
-
     def periodic(self):
-        if not self.zeroFound:
+        if not self.zeroFound and not ElevatorConstants.calibrating:
             self.findZero()
         SmartDashboard.putString("elevState", self.getState())
         SmartDashboard.putNumber("elevGoal", self.getPositionGoal())
