@@ -28,18 +28,18 @@ class ElevatorConstants:
     absoluteEncoderInverted = False
 
     # if using relative encoder, how many motor revolutions are needed to move the elevator by one inch?
-    motorRevolutionsPerInch = 2.0
+    motorRevolutionsPerInch = 3.92
 
     # if using absolute encoder on output shaft, how many output shaft revolutions are needed to move elevtr by an inch?
     absEncoderRevolutionsPerInch = 0.1
 
     # other settings
-    leadMotorInverted = True
-    followMotorInverted = False
+    leadMotorInverted = False
+    followMotorInverted = True
     findingZeroSpeed = 0.1
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
-    calibrating = False
+    calibrating = True
 
     # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
     # self.elevator.setDefaultCommand(
@@ -221,7 +221,7 @@ class Elevator(Subsystem):
 
     def getState(self) -> str:
         if self.forwardLimit.get():
-            return "forward limit"
+            return "forward limit" if not self.reverseLimit.get() else "both limits"
         elif self.reverseLimit.get():
             return "reverse limit"
         elif not self.zeroFound:
