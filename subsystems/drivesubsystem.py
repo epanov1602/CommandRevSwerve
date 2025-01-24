@@ -18,7 +18,7 @@ from wpilib import SmartDashboard, Field2d
 from constants import DriveConstants, ModuleConstants
 import swerveutils
 from .maxswervemodule import MAXSwerveModule
-from rev import CANSparkMax, CANSparkFlex
+from rev import SparkMax, SparkFlex
 import navx
 
 
@@ -34,7 +34,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=CANSparkFlex,
+            motorControllerType=SparkFlex,
         )
 
         self.frontRight = MAXSwerveModule(
@@ -42,7 +42,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=CANSparkFlex,
+            motorControllerType=SparkFlex,
         )
 
         self.rearLeft = MAXSwerveModule(
@@ -50,7 +50,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=CANSparkFlex,
+            motorControllerType=SparkFlex,
         )
 
         self.rearRight = MAXSwerveModule(
@@ -58,7 +58,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=CANSparkFlex,
+            motorControllerType=SparkFlex,
         )
 
         # The gyro sensor
