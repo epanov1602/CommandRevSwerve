@@ -10,12 +10,13 @@ numerical or boolean constants. Don't use this for any other purpose!
 
 import math
 
+import rev
 from wpimath import units
 from wpimath.geometry import Translation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.trajectory import TrapezoidProfileRadians
 
-from rev import CANSparkMax
+from rev import SparkBase, SparkBaseConfig, ClosedLoopConfig
 
 
 class NeoMotorConstants:
@@ -69,6 +70,36 @@ class DriveConstants:
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
 
 
+def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
+    drivingConfig = SparkBaseConfig()
+    drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+    drivingConfig.smartCurrentLimit(ModuleConstants.kDrivingMotorCurrentLimit)
+    drivingConfig.encoder.positionConversionFactor(ModuleConstants.kDrivingEncoderPositionFactor)
+    drivingConfig.encoder.velocityConversionFactor(ModuleConstants.kDrivingEncoderVelocityFactor)
+    drivingConfig.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kPrimaryEncoder)
+    drivingConfig.closedLoop.pid(ModuleConstants.kDrivingP, ModuleConstants.kDrivingI, ModuleConstants.kDrivingD)
+    drivingConfig.closedLoop.velocityFF(ModuleConstants.kDrivingFF)
+    drivingConfig.closedLoop.outputRange(ModuleConstants.kDrivingMinOutput, ModuleConstants.kDrivingMaxOutput)
+    return drivingConfig
+
+
+def getSwerveTurningMotorConfig() -> SparkBaseConfig:
+    turningConfig = SparkBaseConfig()
+    turningConfig.inverted(ModuleConstants.kTurningMotorInverted)
+    turningConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+    turningConfig.smartCurrentLimit(ModuleConstants.kTurningMotorCurrentLimit)
+    turningConfig.absoluteEncoder.positionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor)
+    turningConfig.absoluteEncoder.velocityConversionFactor(ModuleConstants.kTurningEncoderVelocityFactor)
+    turningConfig.absoluteEncoder.inverted(ModuleConstants.kTurningEncoderInverted)
+    turningConfig.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kAbsoluteEncoder)
+    turningConfig.closedLoop.pid(ModuleConstants.kTurningP, ModuleConstants.kTurningI, ModuleConstants.kTurningD)
+    turningConfig.closedLoop.velocityFF(ModuleConstants.kTurningFF)
+    turningConfig.closedLoop.outputRange(ModuleConstants.kTurningMinOutput, ModuleConstants.kTurningMaxOutput)
+    turningConfig.closedLoop.positionWrappingEnabled(True)
+    turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    return turningConfig
+
+
 class ModuleConstants:
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
@@ -118,13 +149,14 @@ class ModuleConstants:
     kTurningMinOutput = -1
     kTurningMaxOutput = 1
 
-    kDrivingMotorIdleMode = CANSparkMax.IdleMode.kBrake
-    kTurningMotorIdleMode = CANSparkMax.IdleMode.kBrake
+    kDrivingMotorIdleMode = SparkBase.IdleMode.kBrake
+    kTurningMotorIdleMode = SparkBase.IdleMode.kBrake
 
     kDrivingMotorCurrentLimit = 50  # amp
     kTurningMotorCurrentLimit = 20  # amp
 
     kDrivingMinSpeedMetersPerSecond = 0.01
+
 
 class OIConstants:
     kDriverControllerPort = 0
