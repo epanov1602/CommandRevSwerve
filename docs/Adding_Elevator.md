@@ -31,7 +31,7 @@ class ElevatorConstants:
     motorRevolutionsPerInch = 3.92
 
     # if using absolute encoder on output shaft, how many output shaft revolutions are needed to move elevtr by an inch?
-    absEncoderRevolutionsPerInch = 0.1
+    absEncoderRevolutionsPerInch = motorRevolutionsPerInch / 20  # is gear ratio == 20?
 
     # other settings
     leadMotorInverted = False
@@ -39,7 +39,7 @@ class ElevatorConstants:
     findingZeroSpeed = 0.1
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
-    calibrating = True
+    calibrating = False
 
     # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
     # self.elevator.setDefaultCommand(
