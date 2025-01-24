@@ -37,7 +37,7 @@ class MAXSwerveModule:
             SparkBase.PersistMode.kPersistParameters)
 
         self.turningSparkMax.configure(
-            getSwerveTurningMotorConfig(),
+            getSwerveTurningMotorConfig(turnMotorInverted),
             SparkBase.ResetMode.kResetSafeParameters,
             SparkBase.PersistMode.kPersistParameters)
 

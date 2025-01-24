@@ -83,9 +83,9 @@ def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     return drivingConfig
 
 
-def getSwerveTurningMotorConfig() -> SparkBaseConfig:
+def getSwerveTurningMotorConfig(turnMotorInverted: bool) -> SparkBaseConfig:
     turningConfig = SparkBaseConfig()
-    turningConfig.inverted(ModuleConstants.kTurningMotorInverted)
+    turningConfig.inverted(turnMotorInverted)
     turningConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
     turningConfig.smartCurrentLimit(ModuleConstants.kTurningMotorCurrentLimit)
     turningConfig.absoluteEncoder.positionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor)
