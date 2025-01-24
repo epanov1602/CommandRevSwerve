@@ -13,6 +13,7 @@ from wpimath.controller import PIDController, ProfiledPIDControllerRadians, Holo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
+from commands.followobject import StopWhen
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
 
@@ -32,6 +33,10 @@ class RobotContainer:
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
         self.robotDrive = DriveSubsystem()
+
+        from subsystems.intake import Intake
+        self.intake = Intake()
+
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
@@ -69,6 +74,24 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
+        from commands.pickup import PickupGamepiece
+        pickupCommand = PickupGamepiece(self.intake, self.robotDrive, drivingSpeed=0.3)
+
+        # assign this command to run while joystick "right bumper" button is pressed
+        rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumper.whileTrue(pickupCommand)
+
+        aButton = JoystickButton(self.driverController, XboxController.Button.kA)
+        # when "A" button is pressed, start intaking the gamepiece
+        aButton.onTrue(InstantCommand(self.intake.intakeGamepiece, self.intake))
+        # when "A" button is no longer pressed, stop the intake even if it is not done
+        aButton.onFalse(InstantCommand(self.intake.stop, self.intake))
+
+        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+        # when "B" button is pressed, start ejecting the gamepiece
+        bButton.onTrue(InstantCommand(self.intake.ejectGamepiece, self.intake))
+        # when "B" button is no longer pressed, stop ejecting the gamepiece even if it is still in
+        bButton.onFalse(InstantCommand(self.intake.stop, self.intake))
 
         xButton = JoystickButton(self.driverController, XboxController.Button.kX)
         xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
@@ -91,10 +114,12 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        self.chosenAuto.setDefaultOption("straight blue right", self.getstraightbluerightcommand)
+        self.chosenAuto.setDefaultOption("Fallow coral", self.fallowcoralcommand)
         self.chosenAuto.addOption("curved blue right", self.getcurvedbluerightcommand)
         self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
+        self.chosenAuto.addOption("left Blue Tag approach", self.leftBlueAprileTag)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
+
 
     def getAproachTagCommand(self):
         setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
@@ -128,18 +153,62 @@ class RobotContainer:
         print("I created a command to approach tag")
         return commands
 
+    def fallowcoralcommand(self):
+        setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
+
+        from commands.followobject import FollowObject, StopWhen
+        FollowCoral = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
+
+        from commands.alignwithtag import AlignWithTag
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
+        from commands.aimtodirection import AimToDirection
+
+        aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
+        dropCoral = None
+
+        # these two lines go to __init__ function
+        from commands.pickup import PickupGamepiece
+        pickupCommand = PickupGamepiece(self.intake, self.robotDrive, drivingSpeed=0.3)
+
+        commands = setStartPose.andThen(FollowCoral).andThen(alignAndPush).andThen(aimnorth).andThen(pickupCommand)
+        print("I created a command to approach coral")
+        return commands
 
 
-    def getstraightbluerightcommand(self):
-        setStartPose = ResetXY(x=2.000, y=7.000, headingDegrees=+0, drivetrain=self.robotDrive)
+    def leftBlueAprileTag(self):
 
-        from commands.gotopoint import GoToPoint
-        gotoFinish = GoToPoint(x=4.000, y=6.000, drivetrain=self.robotDrive)
-        from commands.aimtodirection import  AimToDirection
-        aimDown = AimToDirection(degrees=-90.000, drivetrain=self.robotDrive)
+        setStartPose = ResetXY(x=0.000, y=0.000, headingDegrees=+0, drivetrain=self.robotDrive)
 
-        command = setStartPose.andThen(gotoFinish).andThen(aimDown)
-        return command
+        from commands.jerky_trajectory import JerkyTrajectory
+        trajectory = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(3.752,5.422,-72.300),
+            waypoints=[
+                (0.000, 0.000,0.000),
+                (3.600, 5,222, -72.300)
+
+            ],
+            speed=0.2
+        )
+
+        from commands.followobject import FollowObject, StopWhen
+        fallowtag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
+
+        from commands.alignwithtag import AlignWithTag
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
+
+        from commands.swervetopoint import SwerveToSide
+        swervleft = SwerveToSide(metersToTheLeft=0.2, speed=0.2, drivetrain=self.robotDrive)
+        from commands.aimtodirection import AimToDirection
+        aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
+        dropCoral = None
+
+
+        commands = setStartPose.andthen(trajectory).andThen(fallowtag).andThen(alignAndPush).andThen(swervleft).andThen(aimnorth)
+
+
+
+
 
     def getcurvedbluerightcommand(self):
         setStartPose = ResetXY(x=0.911, y=6.632, headingDegrees=+60, drivetrain=self.robotDrive)

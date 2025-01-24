@@ -15,7 +15,20 @@
       "/SmartDashboard/Field": "Field2d"
     }
   },
+  "NetworkTables": {
+    "Transitory Values": {
+      "open": false
+    },
+    "transitory": {
+      "PathPlanner": {
+        "open": true
+      }
+    }
+  },
   "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
     "visible": true
   }
 }
