@@ -98,8 +98,9 @@ class MAXSwerveModule:
         )
 
         # Optimize the reference state to avoid spinning further than 90 degrees.
-        optimizedDesiredState = SwerveModuleState.optimize(
-            correctedDesiredState, Rotation2d(self.turningEncoder.getPosition())
+        optimizedDesiredState = correctedDesiredState
+        SwerveModuleState.optimize(
+            optimizedDesiredState, Rotation2d(self.turningEncoder.getPosition())
         )
 
         # Command driving and turning SPARKS MAX towards their respective setpoints.
