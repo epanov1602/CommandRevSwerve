@@ -28,8 +28,6 @@ class Intake(Subsystem):
             SparkBase.ResetMode.kResetSafeParameters,
             SparkBase.PersistMode.kPersistParameters)
 
-        self.motor.setInverted(True)
-
         # when the gamepiece is fully in, it will touch the limit switch -- physical or optical
         self.limitSwitch = self.motor.getForwardLimitSwitch()
 
