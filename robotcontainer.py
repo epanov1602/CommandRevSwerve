@@ -16,8 +16,10 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 from commands.followobject import StopWhen
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
+from commands.gotopoint import GoToPoint
 
 from commands.reset_xy import ResetXY, ResetSwerveFront
+
 
 class RobotContainer:
     """
@@ -33,6 +35,11 @@ class RobotContainer:
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
         self.robotDrive = DriveSubsystem()
+
+        from subsystems.localizer import Localizer
+        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
+        self.localizer.addPhotonCamera("front_camera", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
+        self.localizer.addPhotonCamera("left_camera", directionDegrees=+90, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
 
         from subsystems.intake import Intake
         self.intake = Intake()
@@ -118,8 +125,13 @@ class RobotContainer:
         self.chosenAuto.addOption("curved blue right", self.getcurvedbluerightcommand)
         self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
         self.chosenAuto.addOption("left Blue Tag approach", self.leftBlueAprileTag)
+        self.chosenAuto.addOption("go to midepoint", self.getToStage)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
 
+    def getToStage(self):
+        x = 15
+        y = 2.75
+        return GoToPoint(x,y, self.robotDrive, speed=0.2)
 
     def getAproachTagCommand(self):
         setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
