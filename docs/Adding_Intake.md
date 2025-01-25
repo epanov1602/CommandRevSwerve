@@ -3,7 +3,7 @@
 - **this goes to a new file `subsystems/intake.py`**
 ```python
 from commands2 import Subsystem
-from rev import CANSparkMax, CANSparkBase, CANSparkLowLevel, SparkLimitSwitch
+from rev import SparkMax, SparkBase, SparkLowLevel, SparkLimitSwitch, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard
 
 
@@ -16,22 +16,41 @@ class Intake(Subsystem):
     def __init__(self) -> None:
         super().__init__()
 
-        self.motor = CANSparkMax(IntakeConstants.kIntakeMotor_CANID, CANSparkLowLevel.MotorType.kBrushless)
-        self.motor.restoreFactoryDefaults()
+        self.motor = SparkMax(IntakeConstants.kIntakeMotor_CANID, SparkLowLevel.MotorType.kBrushless)
+
+        self.motorConfig = SparkBaseConfig()
+        self.motorConfig.inverted(True)
+        self.motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+        self.motorConfig.limitSwitch.forwardLimitSwitchType(LimitSwitchConfig.Type.kNormallyOpen)
+        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(True)  # by default, enabled
+
+        self.motor.configure(self.motorConfig,
+            SparkBase.ResetMode.kResetSafeParameters,
+            SparkBase.PersistMode.kPersistParameters)
+
         self.motor.setInverted(True)
-        self.motor.setIdleMode(CANSparkBase.IdleMode.kBrake)
 
         # when the gamepiece is fully in, it will touch the limit switch -- physical or optical
-        self.limitSwitch = self.motor.getForwardLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen)
-        self.limitSwitch.enableLimitSwitch(True)
-
-        # we want most of these settings to survive after a "brownout" event, so calling motor.burnFlash()
-        self.motor.burnFlash()
+        self.limitSwitch = self.motor.getForwardLimitSwitch()
 
         # (we want the intake to keep ~working if switch is broken during the game, so using "normally open")
 
     def periodic(self):
         pass  # nothing to do
+
+    def enableLimitSwitch(self):
+        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(True)
+        self.motor.configure(self.motorConfig,
+            SparkBase.ResetMode.kNoResetSafeParameters,
+            SparkBase.PersistMode.kNoPersistParameters)
+        # ^^ do not reset and do not persist, just enable the switch
+
+    def disableLimitSwitch(self):
+        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(False)
+        self.motor.configure(self.motorConfig,
+            SparkBase.ResetMode.kNoResetSafeParameters,
+            SparkBase.PersistMode.kNoPersistParameters)
+        # ^^ do not reset and do not persist, just disable the switch
 
     def isGamepieceInside(self) -> bool:
         return self.limitSwitch.get()
@@ -43,7 +62,7 @@ class Intake(Subsystem):
         """
         If the gamepiece is not inside, try to intake it
         """
-        self.limitSwitch.enableLimitSwitch(True)
+        self.enableLimitSwitch()
         self._setSpeed(IntakeConstants.kIntakeSpeedSetpoint)
         print("Intake::intakeGamepiece")
 
@@ -51,7 +70,7 @@ class Intake(Subsystem):
         """
         Rush the gamepiece forward into the shooter, at full speed (100%)
         """
-        self.limitSwitch.enableLimitSwitch(False)
+        self.disableLimitSwitch()
         self._setSpeed(1.0)
         print("Intake::feedGamepieceForward")
 
@@ -59,7 +78,7 @@ class Intake(Subsystem):
         """
         Eject the gamepiece back out of the intake
         """
-        self.limitSwitch.enableLimitSwitch(False)
+        self.disableLimitSwitch()
         self._setSpeed(-IntakeConstants.kIntakeSpeedSetpoint)
         print("Intake::ejectGamepiece")
 
@@ -67,7 +86,7 @@ class Intake(Subsystem):
         """
         Even if (possibly broken) limit switch thinks that the gamepiece is already inside, try to intake it
         """
-        self.limitSwitch.enableLimitSwitch(False)
+        self.disableLimitSwitch()
         self._setSpeed(IntakeConstants.kIntakeSpeedSetpoint)
 
     def stop(self):
