@@ -22,7 +22,7 @@ class Intake(Subsystem):
         self.motorConfig.inverted(True)
         self.motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
         self.motorConfig.limitSwitch.forwardLimitSwitchType(LimitSwitchConfig.Type.kNormallyOpen)
-        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(True)  # by default, enabled
+        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(True)  # by default disabled (until `intakeGamepiece()`)
 
         self.motor.configure(self.motorConfig,
             SparkBase.ResetMode.kResetSafeParameters,
