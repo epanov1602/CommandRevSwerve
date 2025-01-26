@@ -11,7 +11,7 @@
 **Adding elevator subsystem**
 
 <details>
-<summary>This code snippet can go to `subsystems/elevator.py` </summary>
+<summary>(click to expand!) This code snippet can go to `subsystems/elevator.py` </summary>
 
 ```python
 
