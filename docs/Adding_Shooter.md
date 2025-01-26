@@ -3,7 +3,7 @@
 - **this goes to a new file `subsystems/shooter.py`**
 ```python
 from commands2 import Subsystem
-from rev import CANSparkFlex, CANSparkBase, CANSparkLowLevel
+from rev import SparkFlex, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard
 
 
@@ -11,7 +11,7 @@ class ShooterConstants:
     kShooterMotorA_CANID = 10
     kShooterMotorB_CANID = 11
 
-    initialMinRPM = 600  # minumum sensible nonzero RPM
+    initialMinRPM = 600  # minimum sensible nonzero RPM
     initialMaxRPM = 6000
     initialFF = 1.4 / 10000
     initialP = 5.0 / 10000
@@ -21,18 +21,24 @@ class ShooterConstants:
 class Shooter(Subsystem):
     def __init__(self) -> None:
         super().__init__()
-        self.velocityGoal = 0
-        self.leadMotor = CANSparkFlex(ShooterConstants.kShooterMotorA_CANID, CANSparkLowLevel.MotorType.kBrushless)
-        self.leadMotor.restoreFactoryDefaults()
-        self.followMotor = CANSparkFlex(ShooterConstants.kShooterMotorB_CANID, CANSparkLowLevel.MotorType.kBrushless)
-        self.followMotor.restoreFactoryDefaults()
 
-        self.pidController = self.leadMotor.getPIDController()
+        self.leadMotor = SparkFlex(ShooterConstants.kShooterMotorA_CANID, SparkLowLevel.MotorType.kBrushless)
+        self.leadMotor.configure(
+            _getLeadMotorConfig(),
+            SparkBase.ResetMode.kResetSafeParameters,
+            SparkBase.PersistMode.kPersistParameters,
+        )
+
+        self.followMotor = SparkFlex(ShooterConstants.kShooterMotorB_CANID, SparkLowLevel.MotorType.kBrushless)
+        self.followMotor.configure(
+            _getFollowMotorConfig(),
+            SparkBase.ResetMode.kResetSafeParameters,
+            SparkBase.PersistMode.kPersistParameters,
+        )
+
+        self.pidController = self.leadMotor.getClosedLoopController()
         self.encoder = self.leadMotor.getEncoder()
-
-        self._setupMotorConfig()
-        self.leadMotor.burnFlash()
-        self.followMotor.burnFlash()
+        self.velocityGoal = 0
 
         self.reportedVelocityGoal = 0
         self.reportedVelocitySeen = 0
@@ -44,7 +50,6 @@ class Shooter(Subsystem):
         return -self.velocityGoal
 
     def setVelocityGoal(self, rpm):
-        self._setupMotorConfig()
         rpm = -rpm  # hack to avoid inverting the motor direction (inversion setting gets lost during brownouts in Rev)
         if rpm < -ShooterConstants.initialMaxRPM or rpm > ShooterConstants.initialMaxRPM:
             print(f"Shooter Illegal Velocity Goal: {-rpm}")
@@ -52,7 +57,7 @@ class Shooter(Subsystem):
         if rpm != self.velocityGoal:
             print(f"Shooter::setVelocityGoal({-rpm})")
         self.velocityGoal = rpm
-        self.pidController.setReference(self.velocityGoal, CANSparkFlex.ControlType.kVelocity)
+        self.pidController.setReference(self.velocityGoal, SparkBase.ControlType.kVelocity)
 
     def periodic(self):
         seen = self.getVelocity()
@@ -68,19 +73,24 @@ class Shooter(Subsystem):
         self.leadMotor.stopMotor()
         self.velocityGoal = 0
 
-    def _setupMotorConfig(self):
-        self.leadMotor.setInverted(False)
-        self.leadMotor.setIdleMode(CANSparkBase.IdleMode.kCoast)
-        self.followMotor.follow(self.leadMotor, False)
-        self.followMotor.setIdleMode(CANSparkBase.IdleMode.kCoast)
 
-        # set proportional control coefficients
-        self.pidController.setFF(ShooterConstants.initialFF)
-        self.pidController.setP(ShooterConstants.initialP)
-        self.pidController.setD(ShooterConstants.initialD)
-        self.pidController.setI(0)
-        self.pidController.setIZone(0)
-        self.pidController.setOutputRange(-1, +1)
+def _getLeadMotorConfig() -> SparkBaseConfig:
+    config = SparkBaseConfig()
+    config.inverted(True)
+    config.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
+    config.limitSwitch.forwardLimitSwitchEnabled(False)
+    config.limitSwitch.reverseLimitSwitchEnabled(False)
+    config.closedLoop.pid(ShooterConstants.initialP, 0.0, ShooterConstants.initialD)
+    config.closedLoop.velocityFF(ShooterConstants.initialFF)
+    config.closedLoop.outputRange(-1, +1)
+    return config
+
+def _getFollowMotorConfig():
+    followConfig = SparkBaseConfig()
+    followConfig.follow(ShooterConstants.kShooterMotorA_CANID, False)
+    followConfig.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
+    return followConfig
+
 ```
 
 
