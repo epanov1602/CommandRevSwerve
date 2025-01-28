@@ -174,6 +174,7 @@ class Elevator(Subsystem):
         # speed is assumed to be between -1.0 and +1.0
         if abs(speed) < deadband:
             speed = 0
+        speed = speed * abs(speed)  # quadratic scaling, easier for humans
         if self.pidController is None:
             self.leadMotor.set(speed)
             return
