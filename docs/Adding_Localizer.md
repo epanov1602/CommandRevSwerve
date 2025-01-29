@@ -329,7 +329,9 @@ For example, for 2024 it will be `2024-crescendo.json` as pasted below:
 And for 2025 it will be this `2025-reefscape.json`:
 <details>
     <summary>(click to expand)</summary>
+
 ```json
+    
 {
   "tags": [
     {
@@ -734,7 +736,9 @@ And for 2025 it will be this `2025-reefscape.json`:
     "width": 8.052
   }
 }
+
 ```
+
 </details>
 
 ## 2. Adding Localizer subsystem
