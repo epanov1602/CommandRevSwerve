@@ -1,17 +1,28 @@
-## Code examples for adding an elevator (completely untested for now)
+## Code examples for adding an elevator
 
-**WARNINGS**
+**READ FIRST**
+
+* Your elevator must have limit switches, ideally normally-closed which is safest (if you don't have them or they are normally-open, you need to change `limitSwitchType=` to normally-open in the `__init__` function in `subsystems/elevator.py` below, but it is not safe to have normally-open or missing limit switches)
 
 * Before you run this first time, check the values of every constant in `ElevatorConstants`
 
-* Before you run this first time, in `ElevatorConstants` set `kP = 0.0001` (you can later increase it by doubling)
+* Before you run this first time, in `ElevatorConstants` set `kP = 0.0001` (you can later increase it by doubling and doubling and doubling again)
 
 * You might need to assign different addresses (CAN IDs), inside the snippet below
 
-**Adding elevator subsystem**
+* All that said, set `calibrating=True` in `ElevatorConstants` and follow the comments around `calibrating=True` in that code to calibrate all directions
+
+* When `calibrating=True`, open SmartDashboard or Elastic and watch three variables:
+  * `elevState` (push limit switches with hand, ensure it's doing what you want)
+  * `elevGoal`
+  * `elevPosn`
+ 
+* After all above looks good in testing, you can set `calibrating=False`
+
+**Adding elevator subsystem to `subsystems/elevator.py`**
 
 <details>
-<summary>(click to expand!) This code snippet can go to `subsystems/elevator.py` </summary>
+<summary>(click to expand the subsystem code) </summary>
 
 ```python
 
@@ -248,7 +259,7 @@ def _getLeadMotorConfig(
 </details>
 
 
-**Adding a command to use the elevator (especially in autonomous) to `commands/setelevatorposition.py` **
+**Adding a command to use the elevator (especially in autonomous) to `commands/setelevatorposition.py`**
 <details>
 <summary>(click to expand the command code)</summary>
 

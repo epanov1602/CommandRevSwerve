@@ -1,12 +1,13 @@
 # Adding a Localizer (automatic odometry X,Y adjustments from cameras looking at tags)
 
 ## 0. Installing dependencies
-In `requirements.txt` we need to add two more lines (dependencies):
+In `requirements.txt` we need to add three more lines (dependencies):
 ```python
-photonlibpy==2024.3.1
-robotpy-apriltag==2024.3.2.1
+pyntcore
+photonlibpy
+robotpy-apriltag
 ```
-, and these will need to be installed.
+, so these two libraries will need to be installed.
 
 In `pyproject.toml` we need to change `requires` line to:
 ```python
