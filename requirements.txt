@@ -3,3 +3,6 @@ robotpy-commands-v2
 robotpy-rev
 robotpy-navx
 wpilib==2025.2.1
+pyntcore
+photonlibpy
+robotpy-apriltag

@@ -30,6 +30,13 @@ class RobotContainer:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
 
+        from subsystems.localizer import Localizer
+        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2025-reefscape.json")
+        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0)
+        self.localizer.addPhotonCamera("ELP_Right", directionDegrees=-90)
+        # ^^^ here we must add the cameras exactly the way they are called in PhotonVision
+
+
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
