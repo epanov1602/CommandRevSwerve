@@ -95,10 +95,15 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
+        self.chosenAuto.setDefaultOption("example localizer", self.getSetExampleLocalizerStart)
+        self.chosenAuto.addOption("trajectory example", self.getAutonomousTrajectoryExample)
         self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
         self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
+
+    def getSetExampleLocalizerStart(self):
+        setStartPose = ResetXY(x=12.0, y=6.0, headingDegrees=+135, drivetrain=self.robotDrive)
+        return setStartPose
 
     def getAutonomousLeftBlue(self):
         setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)
