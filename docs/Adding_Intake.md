@@ -2,7 +2,7 @@
 
 - **this goes to a new file `subsystems/intake.py`**
 <details>
-    <summary>(click to expand)</summary>
+    <summary>(click to expand code for intake without rangefinder)</summary>
 
 ```python
 from commands2 import Subsystem
@@ -110,7 +110,7 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(click to expand code for intake with a rangefinder!)</summary>
+    <summary>(click to expand code for intake with an optional rangefinder!)</summary>
 
 ```python
 
