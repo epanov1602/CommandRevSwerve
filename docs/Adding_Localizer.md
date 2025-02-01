@@ -1025,13 +1025,15 @@ Inside of `robotcontainer.py` **__init__** function we need to add something alo
         self.robotDrive = DriveSubsystem()
 
         from subsystems.localizer import Localizer
-        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
-        # ^^field layouts like "2024-crescendo.json" and "2025-reefscape.json" can be downloaded from
+        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2025-reefscape.json")
+
+        # ^^field layouts like "2024-crescendo.json" and "2025-reefscape.json" can be downloaded from:
         #  https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
 
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0)
         self.localizer.addPhotonCamera("left_camera", directionDegrees=+90)  # left = +90 degrees to the left (right would have been -90)
         # ^^^ here we must add the cameras exactly the way they are called in PhotonVision
+
 ...
 ```
 
