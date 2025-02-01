@@ -10,7 +10,6 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding a Camera Subsystem](docs/Adding_Camera.md)
 - [Adding an Elevator Subsystem](docs/Adding_Elevator.md)
 - [Adding an Intake Subsystem](docs/Adding_Intake.md)
-- [Adding a Localizer Subsystem](docs/Adding_Localizer.md)
 - [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
 - [Adding a Localizer by reusing PhotonVision cameras](docs/Adding_Localizer.md)
 
