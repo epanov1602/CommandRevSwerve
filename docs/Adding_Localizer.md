@@ -748,6 +748,7 @@ We need to add the code for the new subsystem (Localizer) into `subsystem/locali
 <summary>(click to expand)</summary>
 
 ```python
+
 import commands2
 from wpilib import Timer, Field2d, SmartDashboard, SendableChooser
 
@@ -772,6 +773,7 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
+    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = False  # avoid making adjustments to odometry if only one tag is seen
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
@@ -808,6 +810,7 @@ class Localizer(commands2.Subsystem):
 
         self.ignoreTagIDs = set(ignoreTagIDs)
         self.importantTagIDs = set(importantTagIDs)
+        self.recentlySeenTags = deque()
         self.skippedTags = set()
 
     def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0)):
@@ -822,11 +825,30 @@ class Localizer(commands2.Subsystem):
         self.cameras[name] = CameraState(name, cameraPose, photonCamera, 0, [], 0, deque())
 
 
+    def recentlySawMoreThanOneTag(self, horizonTime):
+        lastTagSeen = None
+        for t, tagId in reversed(self.recentlySeenTags):
+            if t < horizonTime:
+                break
+            if lastTagSeen is None:
+                lastTagSeen = tagId
+            elif tagId != lastTagSeen:
+                return True  # saw lastTagSeen and this other tagId => more than one seen recently
+
+
     def periodic(self):
         self.skippedTags.clear()
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
         enabled = self.enabled.getSelected()
+
+        while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
+            self.recentlySeenTags.popleft()
+
+        # if saw more multiple tags in the last 0.25s, then apply adjustments (if enabled)
+        ready = True
+        if Localizer.ONLY_WORK_IF_SEEING_MULTIPLE_TAGS:
+            ready = self.recentlySawMoreThanOneTag(now - 0.25)
 
         for name, camera in self.cameras.items():
             if enabled is None:
@@ -840,7 +862,7 @@ class Localizer(commands2.Subsystem):
             if not camera.photonCamera.isConnected():
                 continue  # skip! this camera is not connected
             detections = camera.photonCamera.getLatestResult()
-            cameraFrameTime = detections.getTimestamp()
+            cameraFrameTime = detections.getTimestampSeconds()
             if camera.lastProcessedCameraTime == cameraFrameTime:
                 continue  # skip! we already saw this camera frame result
             camera.lastProcessedCameraTime = cameraFrameTime
@@ -876,10 +898,12 @@ class Localizer(commands2.Subsystem):
                     self.skippedTags.add(tagId)
                     continue  # our field map does not know this tag
 
+                self.recentlySeenTags.append((now, tagId))
+
                 odometryAdjustment = self.calculateOdometryAdjustment(
                     camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition)
 
-                if enabled and (odometryAdjustment is not None):
+                if enabled and ready and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
                     self.drivetrain.adjustOdometry(shift, turn)
 
