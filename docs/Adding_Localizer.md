@@ -779,7 +779,7 @@ class Localizer(commands2.Subsystem):
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
     IMPORTANT_TAG_WEIGHT_FACTOR = 2.0  # if a tag is important (for example, located on a shooting target)
 
-    REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
+    REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in Elastic/Shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
 
     def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=()):
