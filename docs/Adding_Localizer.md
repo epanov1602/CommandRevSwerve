@@ -742,7 +742,7 @@ And for 2025 it will be this `2025-reefscape.json`:
 
 </details>
 
-* For other years, go to: https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
+(for other years, go to: https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/ )
 
 
 ## 2. Adding Localizer subsystem
