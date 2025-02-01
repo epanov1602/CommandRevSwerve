@@ -746,7 +746,7 @@ And for 2025 it will be this `2025-reefscape.json`:
 
 
 ## 2. Adding Localizer subsystem
-We need to add the code for the new subsystem (Localizer) into `subsystem/localizer.py`
+We need to add the code for the new subsystem (Localizer) into `subsystems/localizer.py`
 <details>
 <summary>(click to expand)</summary>
 
