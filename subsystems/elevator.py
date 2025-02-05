@@ -161,6 +161,14 @@ class Elevator(Subsystem):
         if abs(speed) < deadband:
             speed = 0
         speed = speed * abs(speed)  # quadratic scaling, easier for humans
+
+        # Rev controllers in follower mode are not great at respecting limits
+        # (but we can respect such limits here)
+        if speed > 0 and self.forwardLimit.get():
+            speed = 0
+        if speed < 0 and self.reverseLimit.get():
+            speed = 0
+
         if self.pidController is None:
             self.leadMotor.set(speed)
             return
@@ -194,6 +202,7 @@ class Elevator(Subsystem):
             return "ok"
 
     def periodic(self):
+        self.manageFollowMotor()
         if not self.zeroFound and not ElevatorConstants.calibrating:
             self.findZero()
         SmartDashboard.putString("elevState", self.getState())
