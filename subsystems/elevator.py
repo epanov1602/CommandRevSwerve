@@ -27,7 +27,7 @@ class ElevatorConstants:
     findingZeroSpeed = 0.1
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
-    calibrating = True
+    calibrating = False
 
     # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
     # self.elevator.setDefaultCommand(
@@ -38,8 +38,8 @@ class ElevatorConstants:
     minPositionGoal = 15  # inches
     maxPositionGoal = 70  # inches
 
-    # PID configuration
-    kP = 0.0001  # at first make it very small, then start tuning by increasing from there
+    # PID configuration (after you are done with calibrating=True)
+    kP = 0.02  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0  # make it 3.5?
     kMaxOutput = 1.0
@@ -157,18 +157,13 @@ class Elevator(Subsystem):
             self.followMotor.clearFaults()
 
     def drive(self, speed, deadband=0.1, maxSpeedInchesPerSecond=5):
+        # if we aren't calibrating, zero must be found first (before we can drive)
+        if not self.zeroFound and not ElevatorConstants.calibrating:
+            return
         # speed is assumed to be between -1.0 and +1.0
         if abs(speed) < deadband:
             speed = 0
         speed = speed * abs(speed)  # quadratic scaling, easier for humans
-
-        # Rev controllers in follower mode are not great at respecting limits
-        # (but we can respect such limits here)
-        if speed > 0 and self.forwardLimit.get():
-            speed = 0
-        if speed < 0 and self.reverseLimit.get():
-            speed = 0
-
         if self.pidController is None:
             self.leadMotor.set(speed)
             return
@@ -181,7 +176,7 @@ class Elevator(Subsystem):
         if self.zeroFound:
             return
         # did we find the zero just now?
-        if self.reverseLimit.get():
+        if self.reverseLimit.get() and not self.forwardLimit.get():
             self.zeroFound = True
             self.leadMotor.set(0)  # zero setpoint now
             self.relativeEncoder.setPosition(0.0)  # reset the relative encoder
@@ -193,7 +188,7 @@ class Elevator(Subsystem):
 
     def getState(self) -> str:
         if self.forwardLimit.get():
-            return "forward limit" if not self.reverseLimit.get() else "both limits"
+            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
         elif self.reverseLimit.get():
             return "reverse limit"
         elif not self.zeroFound:
@@ -202,7 +197,6 @@ class Elevator(Subsystem):
             return "ok"
 
     def periodic(self):
-        self.manageFollowMotor()
         if not self.zeroFound and not ElevatorConstants.calibrating:
             self.findZero()
         SmartDashboard.putString("elevState", self.getState())

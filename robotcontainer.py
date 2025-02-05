@@ -32,6 +32,9 @@ class RobotContainer:
     """
 
     def __init__(self) -> None:
+        # The driver's controller
+        self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
+
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
@@ -43,26 +46,23 @@ class RobotContainer:
         # The robots Elevator
         from subsystems.elevator import Elevator
         from rev import LimitSwitchConfig
-        self.elevator = Elevator(leadMotorCANId=DriveConstants.kFollowElevationCanId,
-                                 followMotorCANId=DriveConstants.kLeadElevationCanId,
+        self.elevator = Elevator(leadMotorCANId=DriveConstants.kLeadElevationCanId,
+                                 followMotorCANId=DriveConstants.kFollowElevationCanId,
                                  presetSwitchPositions=(10, 20, 70), motorClass=rev.SparkMax,
-                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyOpen)
+                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed)
+
+        self.elevator.setDefaultCommand(
+           commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+        )
+
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
         leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
 
-        LeftTrigger = JoystickButton(self.driverController, XboxController.Button.kLeftTrigger)
-        LeftTrigger.onTrue(InstantCommand(self.elevator.switchDown, self.elevator ))
-
         from subsystems.localizer import Localizer
-
         self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
         self.localizer.addPhotonCamera("left_camera", directionDegrees=+90, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
 
-
-
-        # The driver's controller
-        self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
         # Configure the button bindings and autos
         self.configureButtonBindings()

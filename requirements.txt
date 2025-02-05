@@ -6,3 +6,4 @@ wpilib
 pyntcore
 photonlibpy
 robotpy-apriltag
+robotpy-playingwithfusion

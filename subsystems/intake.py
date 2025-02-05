@@ -12,6 +12,9 @@ class Intake(Subsystem):
     def __init__(self) -> None:
         super().__init__()
 
+        from playingwithfusion import TimeOfFlight
+        self.rangefinder = TimeOfFlight(sensorID=33)
+
         self.motor = SparkMax(IntakeConstants.kIntakeMotor_CANID, SparkLowLevel.MotorType.kBrushless)
 
         self.motorConfig = SparkBaseConfig()
@@ -30,7 +33,8 @@ class Intake(Subsystem):
         # (we want the intake to keep ~working if switch is broken during the game, so using "normally open")
 
     def periodic(self):
-        pass  # nothing to do
+        SmartDashboard.putNumber("intakeRange", self.rangefinder.getRange())
+        SmartDashboard.putBoolean("intakeRangeValid", self.rangefinder.isRangeValid())
 
     def enableLimitSwitch(self):
         self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(True)

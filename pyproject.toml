@@ -6,13 +6,13 @@
 [tool.robotpy]
 
 # Version of robotpy this project depends on
-robotpy_version = "2025.2.1.0"
+robotpy_version = "2025.2.1.1"
 
 # Which extra RobotPy components should be installed
 # -> equivalent to `pip install robotpy[extra1, ...]
 robotpy_extras = [
     # "all",
-    # "apriltag",
+    "apriltag",
     "commands2",
     # "cscore",
     "navx",
@@ -31,5 +31,5 @@ robotpy_extras = [
 requires = [
     "pyntcore",
     "photonlibpy",
-    "robotpy-apriltag",
+    "robotpy-playingwithfusion"
 ]
