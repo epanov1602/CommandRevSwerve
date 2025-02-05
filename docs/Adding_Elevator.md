@@ -46,8 +46,8 @@ class ElevatorConstants:
     absEncoderRevolutionsPerInch = motorRevolutionsPerInch / 20  # is gear ratio == 20?
 
     # other settings
-    leadMotorInverted = False
-    followMotorInverted = True
+    leadMotorInverted = True
+    followMotorInverted = False
     findingZeroSpeed = 0.1
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
@@ -62,7 +62,7 @@ class ElevatorConstants:
     minPositionGoal = 15  # inches
     maxPositionGoal = 70  # inches
 
-    # PID configuration
+    # PID configuration (only after you are done with calibrating=True)
     kP = 0.02  # at first make it very small, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0  # make it 3.5?
@@ -182,6 +182,9 @@ class Elevator(Subsystem):
             self.followMotor.clearFaults()
 
     def drive(self, speed, deadband=0.1, maxSpeedInchesPerSecond=5):
+        # if we aren't calibrating, zero must be found first (before we can drive)
+        if not self.zeroFound and not ElevatorConstants.calibrating:
+            return
         # speed is assumed to be between -1.0 and +1.0
         if abs(speed) < deadband:
             speed = 0
@@ -191,7 +194,7 @@ class Elevator(Subsystem):
             return
         # we are here if we have a pid controller
         if speed != 0:
-            self.setPositionGoal(self.positionGoal + speed * maxSpeedInchesPerSecond / 50.0)  # we have 50 decisions/sec 
+            self.setPositionGoal(self.positionGoal + speed * maxSpeedInchesPerSecond / 50.0)  # we have 50 decisions/sec
 
     def findZero(self):
         # did we find the zero previously?
