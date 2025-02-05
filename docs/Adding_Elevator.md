@@ -213,7 +213,7 @@ class Elevator(Subsystem):
 
     def getState(self) -> str:
         if self.forwardLimit.get():
-            return "forward limit" if not self.reverseLimit.get() else "both limits"
+            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
         elif self.reverseLimit.get():
             return "reverse limit"
         elif not self.zeroFound:
