@@ -201,7 +201,7 @@ class Elevator(Subsystem):
         if self.zeroFound:
             return
         # did we find the zero just now?
-        if self.reverseLimit.get():
+        if self.reverseLimit.get() and not self.forwardLimit.get():
             self.zeroFound = True
             self.leadMotor.set(0)  # zero setpoint now
             self.relativeEncoder.setPosition(0.0)  # reset the relative encoder
