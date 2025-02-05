@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 
 import commands2
+import rev
 import wpimath
 import wpilib
 import typing
@@ -21,6 +22,7 @@ from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
 
 
+
 class RobotContainer:
     """
     This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -34,15 +36,29 @@ class RobotContainer:
         from subsystems.limelight_camera import LimelightCamera
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
+        from subsystems.intake import Intake
+        self.intake = Intake()
+
         self.robotDrive = DriveSubsystem()
+        # The robots Elevator
+        from subsystems.elevator import Elevator
+        from rev import LimitSwitchConfig
+        self.elevator = Elevator(leadMotorCANId=DriveConstants.kFollowElevationCanId,
+                                 followMotorCANId=DriveConstants.kLeadElevationCanId,
+                                 presetSwitchPositions=(10, 20, 70), motorClass=rev.SparkMax,
+                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyOpen)
+        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+
+        LeftTrigger = JoystickButton(self.driverController, XboxController.Button.kLeftTrigger)
+        LeftTrigger.onTrue(InstantCommand(self.elevator.switchDown, self.elevator ))
 
         from subsystems.localizer import Localizer
+
         self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
         self.localizer.addPhotonCamera("left_camera", directionDegrees=+90, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
 
-        from subsystems.intake import Intake
-        self.intake = Intake()
 
 
         # The driver's controller
@@ -82,18 +98,22 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
         from commands.pickup import PickupGamepiece
+        from subsystems.intake import Intake
         pickupCommand = PickupGamepiece(self.intake, self.robotDrive, drivingSpeed=0.3)
+
+        from commands2 import InstantCommand, RunCommand
+        # RightStick = JoystickButton(self.driverController, XboxController.Button.kRightStick)
+        # RightStick.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
 
         # assign this command to run while joystick "right bumper" button is pressed
         rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
-        rightBumper.whileTrue(pickupCommand)
+        # rightBumper.whileTrue(pickupCommand)
 
         aButton = JoystickButton(self.driverController, XboxController.Button.kA)
         # when "A" button is pressed, start intaking the gamepiece
         aButton.onTrue(InstantCommand(self.intake.intakeGamepiece, self.intake))
         # when "A" button is no longer pressed, stop the intake even if it is not done
         aButton.onFalse(InstantCommand(self.intake.stop, self.intake))
-
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
         # when "B" button is pressed, start ejecting the gamepiece
         bButton.onTrue(InstantCommand(self.intake.ejectGamepiece, self.intake))
@@ -140,11 +160,11 @@ class RobotContainer:
         from commands.jerky_trajectory import JerkyTrajectory
         trajectory = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(7.000,6.608,0.000),
+            endpoint=(7.000, 6.608, 0.000),
             waypoints= [
                 (0.779, 6.608, 7.496),
-                (2.469,5.805,14.470),
-                (4.627,7.124,-37.776)
+                (2.469, 5.805, 14.470),
+                (4.627, 7.124, -37.776)
             ],
             speed=0.2
         )
@@ -159,7 +179,7 @@ class RobotContainer:
         swervleft = SwerveToSide(metersToTheLeft=0.2, speed=0.2, drivetrain=self.robotDrive)
         from commands.aimtodirection import AimToDirection
         aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
-        dropCoral = None
+        dropcoral = None
 
         commands = setStartPose.andThen(fallowtag).andThen(alignAndPush).andThen(swervleft).andThen(aimnorth)
         print("I created a command to approach tag")
@@ -182,7 +202,7 @@ class RobotContainer:
         from commands.pickup import PickupGamepiece
         pickupCommand = PickupGamepiece(self.intake, self.robotDrive, drivingSpeed=0.3)
 
-        commands = setStartPose.andThen(FollowCoral).andThen(alignAndPush).andThen(aimnorth).andThen(pickupCommand)
+        commands = setStartPose.andThen(FollowCoral).andThen(alignAndPush).andThen(aimnorth)
         print("I created a command to approach coral")
         return commands
 
@@ -194,9 +214,9 @@ class RobotContainer:
         from commands.jerky_trajectory import JerkyTrajectory
         trajectory = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(3.752,5.422,-72.300),
+            endpoint=(3.752, 5.422, -72.300),
             waypoints=[
-                (0.000, 0.000,0.000),
+                (0.000, 0.000, 0.000),
                 (3.600, 5,222, -72.300)
 
             ],
@@ -227,9 +247,9 @@ class RobotContainer:
 
         from commands.jerky_trajectory import JerkyTrajectory
         gotoFinish = JerkyTrajectory(drivetrain=self.robotDrive,
-                                     endpoint=(7.336,6.273,86.009),
+                                     endpoint=(7.336, 6.273, 86.009),
                                      waypoints=[
-                                         (3.860,7.100,-25.544), (6.066,5.865,-26.565)
+                                         (3.860, 7.100, -25.544), (6.066, 5.865, -26.565)
                                      ], swerve=False,
                                      speed=0.8)
         from commands.aimtodirection import AimToDirection

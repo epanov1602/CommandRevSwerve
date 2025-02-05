@@ -67,6 +67,8 @@ class DriveConstants:
     kFrontRightTurningCanId = 7
     kRearRightTurningCanId = 8
 
+    kLeadElevationCanId = 10
+    kFollowElevationCanId = 11
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
 
 
@@ -104,8 +106,8 @@ class ModuleConstants:
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
     #  , depending which swerve module you have (MK4i, MK4n, Rev, WCP, ThriftyBot, etc)
-    kTurningEncoderInverted = True
-    kTurningMotorInverted = False
+    kTurningEncoderInverted = False
+    kTurningMotorInverted = True
 
     # The MAXSwerve module can be configured with one of three pinion gears: 12T, 13T, or 14T.
     # This changes the drive speed of the module (a pinion gear with more teeth will result in a

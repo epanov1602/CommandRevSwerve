@@ -1,8 +1,8 @@
-robotpy==2024.3.2.2
-robotpy-commands-v2==2024.3.1
-robotpy-rev==2024.2.4
-robotpy-navx==2024.1.1
-wpilib==2024.3.2.1
+robotpy==2025.2.1.0
+robotpy-commands-v2
+robotpy-rev
+robotpy-navx
+wpilib
 pyntcore
-photonlibpy==2024.3.1
-robotpy-apriltag==2024.3.2.1
+photonlibpy
+robotpy-apriltag
