@@ -505,6 +505,12 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.5).withTimeout(0.3)
         bButton.onTrue(intakeFeedFwdCmd)
 
+        # when "Y" button is pressed, start feeding the gamepiece forward at intake motor1 speed different from intake motor2 speed
+        # (to spin the gamepiece, one intake motor can be spinning faster than another)
+        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        intakeFeedFwdCmd2 = IntakeFeedGamepieceForward(self.intake, speed=0.5, speed2=0.8).withTimeout(0.3)
+        yButton.onTrue(intakeFeedFwdCmd2)
+
         # end of the code that must be added
 
         # ...
