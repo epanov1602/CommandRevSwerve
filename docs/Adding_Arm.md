@@ -35,12 +35,9 @@ class ArmConstants:
     fudgeFactor = 1  # empirical, if needed
     motorRevolutionsPerDegree = gearReduction * chainReduction / 360 * fudgeFactor
 
-    kArmAngleToEjectIntoAmp = 106  # start ejecting note into amp from this angle
-    kArmAngleToPushIntoAmp = 79  # after ejecting note into, drop the arm to this angle to push the note in
-    kArmAgleToSaveEnergy = 75  # increase after we use both absolute and relative encoders
-    kArmAngleToShootDefault = 55
     kArmMinAngle = 15
     kArmMaxAngle = 130
+    kArmMaxWeightAngle = 30
 
     # PID coefficients
     initialStaticGainTimesP = 3.5  # we are normally this many degrees off because of static forces
@@ -68,7 +65,7 @@ class Arm(Subsystem):
         self,
         leadMotorCANId: int,
         followMotorCANId: int,
-        dontSlam: bool,
+        dontSlam: bool=False,
         limitSwitchType=LimitSwitchConfig.Type.kNormallyOpen,  # make NormallyOpen if you don't have limit switches yet
     ) -> None:
         """Constructs an arm. Be very very careful with setting PIDs -- arms are dangerous"""
@@ -84,13 +81,15 @@ class Arm(Subsystem):
         self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
         self.reverseLimit = self.leadMotor.getReverseLimitSwitch()
 
-        self.followMotor = SparkMax(followMotorCANId, SparkMax.MotorType.kBrushless)
-        followConfig = SparkBaseConfig()
-        followConfig.follow(leadMotorCANId, invert=True)
-        self.followMotor.configure(
-            followConfig,
-            SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters)
+        self.followMotor = None
+        if followMotorCANId is not None:
+            self.followMotor = SparkMax(followMotorCANId, SparkMax.MotorType.kBrushless)
+            followConfig = SparkBaseConfig()
+            followConfig.follow(leadMotorCANId, invert=True)
+            self.followMotor.configure(
+                followConfig,
+                SparkBase.ResetMode.kResetSafeParameters,
+                SparkBase.PersistMode.kPersistParameters)
 
         # now initialize pid controller and encoder
         self.pidController = self.leadMotor.getClosedLoopController()
@@ -131,9 +130,11 @@ class Arm(Subsystem):
 
     def stopAndReset(self) -> None:
         self.leadMotor.stopMotor()
-        self.followMotor.stopMotor()
+        if self.followMotor is not None:
+            self.followMotor.stopMotor()
         self.leadMotor.clearFaults()
-        self.followMotor.clearFaults()
+        if self.followMotor is not None:
+            self.followMotor.clearFaults()
 
 
 def _getLeadMotorConfig(
@@ -160,7 +161,6 @@ def _getLeadMotorConfig(
     config.closedLoop.outputRange(ArmConstants.initialMinOutput, ArmConstants.initialMaxOutput)
 
     return config
-
 
 ```
 
