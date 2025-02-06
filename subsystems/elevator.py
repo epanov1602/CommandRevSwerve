@@ -6,7 +6,6 @@ from rev import SparkBaseConfig, SparkBase, SparkMax, LimitSwitchConfig, ClosedL
 from wpilib import SmartDashboard
 from commands2 import Subsystem
 
-
 # constants right here, to simplify
 class ElevatorConstants:
     # very scary setting! (if set wrong, the arm will escape equilibrium and break something)
@@ -19,7 +18,7 @@ class ElevatorConstants:
     motorRevolutionsPerInch = GEAR_RATIO / (GEAR_DIAMETER * PI)
 
     # if using absolute encoder on output shaft, how many output shaft revolutions needed to move elevator by an inch?
-    absEncoderRevolutionsPerInch = motorRevolutionsPerInch / 20  # is gear ratio == 20?
+    absEncoderRevolutionsPerInch = motorRevolutionsPerInch / GEAR_RATIO  # is gear ratio == 20?
 
     # other settings
     leadMotorInverted = True
@@ -38,6 +37,11 @@ class ElevatorConstants:
     minPositionGoal = 15  # inches
     maxPositionGoal = 70  # inches
 
+    # if we have an arm, what is the minimum and maximum safe angle for elevator to move
+    # (we don't want to move with arm extended unsafely)
+    minArmSafeAngleDegrees = 15
+    maxArmSafeAngleDegrees = 80
+
     # PID configuration (after you are done with calibrating=True)
     kP = 0.02  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
@@ -54,14 +58,23 @@ class Elevator(Subsystem):
             useAbsoluteEncoder: bool = False,
             motorClass=SparkMax,
             limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
+            arm=None,
     ) -> None:
-        """Constructs an elevator. Be very, very careful with setting PIDs -- elevators are dangerous"""
+        """
+        Constructs an elevator.
+        Please be very, very careful with setting kP and kD in ElevatorConstants (elevators are dangerous)
+        :param arm: if you want elevator to freeze and not move at times when this arm is in unsafe positions
+        """
         super().__init__()
 
         self.zeroFound = False
         self.positionGoal = None
         self.positionGoalSwitchIndex = 0
         self.presetSwitchPositions = presetSwitchPositions
+
+        # do we have an arm what we must watch for safe angles?
+        self.arm = arm
+        self.unsafeToMove = ""  # empty string = not unsafe
 
         # initialize the motors and switches
         self.leadMotor = motorClass(
@@ -123,6 +136,9 @@ class Elevator(Subsystem):
             self.setPositionGoal(self.presetSwitchPositions[self.positionGoalSwitchIndex])
 
     def setPositionGoal(self, goalInches: float) -> None:
+        if self.unsafeToMove:
+            return
+
         if goalInches < ElevatorConstants.minPositionGoal:
             goalInches = ElevatorConstants.minPositionGoal
         if goalInches > ElevatorConstants.maxPositionGoal:
@@ -157,23 +173,30 @@ class Elevator(Subsystem):
             self.followMotor.clearFaults()
 
     def drive(self, speed, deadband=0.1, maxSpeedInchesPerSecond=5):
-        # if we aren't calibrating, zero must be found first (before we can drive)
+        # 1. driving is not allowed in these situations
         if not self.zeroFound and not ElevatorConstants.calibrating:
-            return
-        # speed is assumed to be between -1.0 and +1.0
+            return  # if we aren't calibrating, zero must be found first (before we can drive)
+        if self.unsafeToMove:
+            return  # driving is not allowed if arm is at an unsafe angle
+
+        # 2. speed is assumed to be between -1.0 and +1.0, with a deadband
         if abs(speed) < deadband:
             speed = 0
         speed = speed * abs(speed)  # quadratic scaling, easier for humans
+
+        # 3. use the speed to drive
         if self.pidController is None:
-            self.leadMotor.set(speed)
-            return
-        # we are here if we have a pid controller
-        if speed != 0:
+            self.leadMotor.set(speed) # if we don't we have a PID controller, we use a speed setpoint
+        elif speed != 0: # if we have a PID controller, we control the position goal instead
             self.setPositionGoal(self.positionGoal + speed * maxSpeedInchesPerSecond / 50.0)  # we have 50 decisions/sec
+
 
     def findZero(self):
         # did we find the zero previously?
         if self.zeroFound:
+            return
+        # is it unsafe to move?
+        if ElevatorConstants.calibrating or self.unsafeToMove:
             return
         # did we find the zero just now?
         if self.reverseLimit.get() and not self.forwardLimit.get():
@@ -186,19 +209,45 @@ class Elevator(Subsystem):
         # otherwise, continue finding it
         self.leadMotor.set(-ElevatorConstants.findingZeroSpeed)
 
+
     def getState(self) -> str:
+        if self.unsafeToMove:
+            return self.unsafeToMove
         if self.forwardLimit.get():
             return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
-        elif self.reverseLimit.get():
+        if self.reverseLimit.get():
             return "reverse limit"
-        elif not self.zeroFound:
+        if not self.zeroFound:
             return "finding zero"
-        else:
-            return "ok"
+        # otherwise, everything is ok
+        return "ok"
+
+
+    def isUnsafeToMove(self):
+        if self.arm is not None:
+            angle = self.arm.getAngle()
+            if angle < ElevatorConstants.minArmSafeAngleDegrees:
+                return "arm angle too low"
+            if angle > ElevatorConstants.maxArmSafeAngleDegrees:
+                return "arm angle too high"
+            angleGoal = self.arm.angleGoal
+            if angleGoal < ElevatorConstants.minArmSafeAngleDegrees:
+                return "arm anglegoal too low"
+            if angleGoal > ElevatorConstants.maxArmSafeAngleDegrees:
+                return "arm anglegoal too high"
+
 
     def periodic(self):
-        if not self.zeroFound and not ElevatorConstants.calibrating:
+        # 1. do we need to stop the elevator because arm is at unsafe angle?
+        unsafeToMove = self.isUnsafeToMove()
+        if unsafeToMove and not self.unsafeToMove:
+            self.leadMotor.set(0)
+            self.setPositionGoal(self.getPosition())
+        self.unsafeToMove = unsafeToMove
+        # 2. do we need to find zero?
+        if not self.zeroFound:
             self.findZero()
+        # 3. report to the dashboard
         SmartDashboard.putString("elevState", self.getState())
         SmartDashboard.putNumber("elevGoal", self.getPositionGoal())
         SmartDashboard.putNumber("elevPosn", self.getPosition())
