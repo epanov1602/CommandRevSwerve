@@ -1,5 +1,5 @@
 ## Blinkin LED Strip Standalone
-This example is for adding this LED strip (see page 8 for numeric codes of different colors):
+This example is for adding this LED strip (see page 14-17 for numeric codes of different colors):
 
 https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
 
