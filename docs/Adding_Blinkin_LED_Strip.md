@@ -1,4 +1,4 @@
-## Blinkin LED Strip
+## Blinkin LED Strip Standalone
 This example is for adding this LED strip (see page 8 for numeric codes of different colors):
 
 https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
@@ -23,7 +23,8 @@ class LedStrip(Subsystem):
 
 ```
 
-## This code goes to `__init__` function of `robotcontainer.py` for every LED strip you add
+## This code goes to `__init__` function of `robotcontainer.py` 
+You can add 1, 2 or more LED strips, just have to connect them to PWM channels of RoboRIO.
 
 ```python
 
