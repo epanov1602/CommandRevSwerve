@@ -12,6 +12,8 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding an Intake Subsystem](docs/Adding_Intake.md)
 - [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
 - [Adding a Localizer by reusing PhotonVision cameras](docs/Adding_Localizer.md)
+- [Adding Standalone Blinkin LED Strips](docs/Adding_Blinkin_LED_Strip.md)
+- [Adding Blinkin LED Strip as part of Intake](docs/Adding_Blinkin_LED_Strip_into_Intake.md)
 
 ## Adding complex behaviors: commands
 - [Autonomous Driving and Aiming](docs/Command_Driving_Aiming.md)
