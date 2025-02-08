@@ -26,7 +26,8 @@ Assuming you already have an intake similar to our [Intake Examples](docs/Adding
         # ...
 
         if self.isGamepieceInside():
-            self.ledStrip.selectColor(0.87)   # blue color (see page 14-17 of Blinkin manual for other colors: https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
+            self.ledStrip.selectColor(0.87)   # blue color
+            # (other colors are on manual page 14-17 : https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
         else:
             self.ledStrip.selectColor(0)  # no color
 
