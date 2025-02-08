@@ -1,6 +1,6 @@
 # LED strip as a part of Intake (light up when it has gamepiece)
 
-Assuming you already have intake from examples here...
+Assuming you already have an intake similar to our [Intake Example](docs/Adding_Intake.md) , this is what you need:
 
 ### this goes to `__init__` function of `subsystems/intake.py`
 
