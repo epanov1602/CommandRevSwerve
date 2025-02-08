@@ -12,6 +12,7 @@ from commands2 import Subsystem
 
 class LedStrip(Subsystem):
     def __init__(self, pwmChannel: int) -> None:
+        super().__init__()
         self.blinkin = Spark(pwmChannel)
 
     def selectColor(self, color: float) -> None:
