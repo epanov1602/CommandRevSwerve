@@ -73,17 +73,16 @@ class TrajectoryPicker(commands2.Command):
 
     def end(self, interrupted: bool):
         if self.running is not None:
-            self.running.end(interrupted=True)
-            self.running = True
+            self.running.end(interrupted=interrupted)
+            self.running = None
 
     def initialize(self):
         if self.running is not None:
             self.end(interrupted=True)
-        command = None
         if self.chosenIndex >= 0 and self.chosenIndex < len(self.commands):
             name, command, trajectory = self.commands[self.chosenIndex]
-        self.running = command
-        self.running.initialize()
+            self.running = command
+            self.running.initialize()
 
     def execute(self):
         if self.running is not None:
@@ -93,7 +92,7 @@ class TrajectoryPicker(commands2.Command):
         if self.running is not None:
             return self.running.isFinished()
         else:
-            return False
+            return True  # if no command to run, we are finished
 
 ```
 </details>
@@ -157,6 +156,12 @@ class TrajectoryPicker(commands2.Command):
         # when the "Y" button is pressed, a command from trajectory picker will run
         yButton = JoystickButton(self.driverController, XboxController.Button.kY)
         yButton.whileTrue(self.trajectoryPicker)
+
+        # or you can make it more fancy -- add a picker for scoring location:
+        #  yButton.whileTrue(self.trajectoryPicker.andThen(self.scoringLocationCommandPicker))
+        #
+        # , but for this to work you need to first add self.scoringLocationCommandPicker = TrajectoryPicker(dashboardName="scoring-location", subsystems=[self.elevator, self.arm, self.intake, self.robotDrive])
+
 
         # left and right bumper buttons will toggle between trajectories
         leftBumperButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
