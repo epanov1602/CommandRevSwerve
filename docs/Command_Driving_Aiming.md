@@ -1,4 +1,4 @@
-r# Autonomous Driving and Aiming Command Examples
+# Autonomous Driving and Aiming Command Examples
 (but you can also bind them to teleop buttons too: in `robotcontainer.py`, inside `configureButtonBindings` function)
 
 ## 1. Pre-requisites
