@@ -1,6 +1,6 @@
 # Code snippet for adding a single-motor or dual-motor intake
 
-- **this goes to a new file `subsystems/intake.py`**
+- **this goes to `subsystems/intake.py` file**
 <details>
     <summary>(click to expand code for intake without rangefinder)</summary>
 
@@ -246,6 +246,7 @@ class Intake(Subsystem):
 
 ```python
 
+
 from commands2 import Subsystem
 from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard
@@ -274,18 +275,19 @@ class Intake(Subsystem):
         self.rangeFinderSensingGamepiece = False
         self.sensingGamepiece = False
 
-        self.desiredSpeed = 0
+        self.desiredSpeedL = 0
+        self.desiredSpeedF = 0
         self.stopIfSensingGamepiece = False
+
+        motorConfig = SparkBaseConfig()
+        motorConfig.inverted(leaderInverted)
+        motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+        motorConfig.limitSwitch.forwardLimitSwitchType(LimitSwitchConfig.Type.kNormallyOpen)
+        motorConfig.limitSwitch.forwardLimitSwitchEnabled(False)
 
         # 1. setup the leader motor
         self.motor = SparkMax(leaderCanID, SparkLowLevel.MotorType.kBrushless)
-
-        self.motorConfig = SparkBaseConfig()
-        self.motorConfig.inverted(leaderInverted)
-        self.motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-        self.motorConfig.limitSwitch.forwardLimitSwitchType(LimitSwitchConfig.Type.kNormallyOpen)
-        self.motorConfig.limitSwitch.forwardLimitSwitchEnabled(False)
-        self.motor.configure(self.motorConfig,
+        self.motor.configure(motorConfig,
                              SparkBase.ResetMode.kResetSafeParameters,
                              SparkBase.PersistMode.kPersistParameters)
 
@@ -295,10 +297,9 @@ class Intake(Subsystem):
         # 2. setup the follower motor, if followerCanID is not None
         self.followerMotor = None
         if followerCanID is not None:
+            motorConfig.inverted(followerInverted)
             self.followerMotor = SparkMax(followerCanID, SparkLowLevel.MotorType.kBrushless)
-            followerConfig = SparkBaseConfig()
-            followerConfig.follow(leaderCanID, leaderInverted != followerInverted)
-            self.followerMotor.configure(followerConfig,
+            self.followerMotor.configure(motorConfig,
                                          SparkBase.ResetMode.kResetSafeParameters,
                                          SparkBase.PersistMode.kPersistParameters)
 
@@ -339,60 +340,72 @@ class Intake(Subsystem):
         # 2. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
         self.sensingGamepiece = self.limitSwitchSensingGamepiece or self.rangeFinderSensingGamepiece
         SmartDashboard.putBoolean("intakeFull", self.sensingGamepiece)
-        SmartDashboard.putNumber("intakeDesiredSpeed", self.desiredSpeed)
+        SmartDashboard.putNumber("intakeDesiredSpeedL", self.desiredSpeedL)
+        if self.followerMotor is not None:
+            SmartDashboard.putNumber("intakeDesiredSpeedF", self.desiredSpeedF)
 
         # 3. if we are sensing the gamepiece, maybe stop that motor (otherwise, spin it)
-        speed = self.desiredSpeed
+        speedL, speedF = self.desiredSpeedL, self.desiredSpeedF
         if self.sensingGamepiece and self.stopIfSensingGamepiece:
-            speed = 0.0
-        self.motor.set(speed)
-        SmartDashboard.putNumber("intakeSpeed", speed)
+            speedL, speedF = 0.0, 0.0
 
+        self.motor.set(speedL)
+        SmartDashboard.putNumber("intakeSpeedL", speedL)
+        if self.followerMotor is not None:
+            self.followerMotor.set(speedF)
+            SmartDashboard.putNumber("intakeSpeedF", speedF)
 
-    def intakeGamepiece(self, speed=0.25):
+    def intakeGamepiece(self, speed=0.25, speedF=None):
         """
         If the gamepiece is not inside, try to intake it
         """
         self.enableLimitSwitch()
-        self._setSpeed(speed)
+        self._setSpeed(speed, speedF)
         print("Intake::intakeGamepiece")
 
 
-    def feedGamepieceForward(self, speed=1.0, speed2=None):
+    def feedGamepieceForward(self, speed=1.0, speedF=None):
         """
         Rush the gamepiece forward into the shooter, at full speed (100%)
         """
         self.disableLimitSwitch()
-        self._setSpeed(speed)
+        self._setSpeed(speed, speedF)
         print("Intake::feedGamepieceForward")
 
 
-    def ejectGamepieceBackward(self, speed=0.25, speed2=None):
+    def ejectGamepieceBackward(self, speed=0.25, speedF=None):
         """
         Eject the gamepiece back out of the intake
         """
         self.disableLimitSwitch()
-        self._setSpeed(-speed)
+        if speedF is None:
+            speedF = speed
+        self._setSpeed(-speed, -speedF)
         print("Intake::ejectGamepiece")
 
 
-    def intakeGamepieceDespiteLimitSwitch(self, speed=0.25):
+    def intakeGamepieceDespiteLimitSwitch(self, speed=0.25, speedF=None):
         """
         Even if (possibly broken) limit switch thinks that the gamepiece is already inside, try to intake it
         """
         self.disableLimitSwitch()
-        self._setSpeed(speed)
+        self._setSpeed(speed, speedF)
 
 
     def stop(self):
-        self.desiredSpeed = 0
+        self.desiredSpeedL, self.desiredSpeedF = 0.0, 0.0
         self.motor.set(0)
+        if self.followerMotor is not None:
+            self.followerMotor.set(0)
         print("Intake::stop")
 
 
-    def _setSpeed(self, speed):
-        self.desiredSpeed = speed
-        SmartDashboard.putNumber("intakeDesiredSpeed", self.desiredSpeed)
+    def _setSpeed(self, speedL, speedF=None):
+        self.desiredSpeedL = speedL
+        if speedF is not None:
+            self.desiredSpeedF = speedF
+        else:
+            self.desiredSpeedF = speedL
 
 ```
 
