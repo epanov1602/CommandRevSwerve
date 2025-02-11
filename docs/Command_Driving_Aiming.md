@@ -1,4 +1,4 @@
-# Autonomous Driving and Aiming Command Examples
+r# Autonomous Driving and Aiming Command Examples
 (but you can also bind them to teleop buttons too: in `robotcontainer.py`, inside `configureButtonBindings` function)
 
 ## 1. Pre-requisites
@@ -509,7 +509,8 @@ class SwerveToSide(commands2.Command):
 
 <details>
 <summary>Trajectory to some endpoint via "waypoints" (skips waypoints that are already behind)</summary>
-Please try to put this code in file `commands/jerky_trajectory.py`:
+    
+Please try to put this code in file `commands/jerky_trajectory.py` :
 
 ```python
 #
@@ -561,6 +562,12 @@ class JerkyTrajectory(commands2.Command):
         self.command = None
 
         self.addRequirements(self.drivetrain)
+
+    def trajectoryToDisplay(self):
+        result = []
+        for translation, rotation in self.waypoints:
+            result.append(Pose2d(translation, rotation))
+        return result
 
     def initialize(self):
         # find the waypoint nearest to the current location: we want to skip all the waypoints before it
