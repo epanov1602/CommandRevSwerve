@@ -513,6 +513,7 @@ class SwerveToSide(commands2.Command):
 Please try to put this code in file `commands/jerky_trajectory.py` :
 
 ```python
+
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -635,7 +636,7 @@ class JerkyTrajectory(commands2.Command):
         elif isinstance(waypoint, (tuple, list)) and len(waypoint) == 3:
             heading = waypoint[2]
             if isinstance(heading, (float, int)):
-                heading = Rotation2d(heading)
+                heading = Rotation2d.fromDegrees(heading)
             point = Translation2d(waypoint[0], waypoint[1])
 
         # did the user just give us a Translation2d with (X, Y) inside?
