@@ -1,5 +1,9 @@
 # How to add a trajectory picker command
 
+Example of how it works:
+[![video](https://img.youtube.com/vi/eYY4uIxZJlo/0.jpg)](https://www.youtube.com/watch?v=eYY4uIxZJlo)
+
+
 ### This goes to `commands/trajectory_picker.py`
 
 <details>
