@@ -156,7 +156,7 @@ class TrajectoryPicker(commands2.Command):
 
         # when the "Y" button is pressed, a command from trajectory picker will run
         yButton = JoystickButton(self.driverController, XboxController.Button.kY)
-        yButton.whileTrue(self.trajectoryPicker.nextTrajectory)
+        yButton.whileTrue(self.trajectoryPicker)
 
         # left and right bumper buttons will toggle between trajectories
         leftBumperButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
