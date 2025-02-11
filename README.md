@@ -12,7 +12,7 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Adding an Intake Subsystem](docs/Adding_Intake.md)
 - [Adding a Shooter Subsystem](docs/Adding_Shooter.md)
 - [Adding a Localizer by reusing PhotonVision cameras](docs/Adding_Localizer.md)
-- [Adding Standalone Blinkin LED Strips](docs/Adding_Blinkin_LED_Strip.md)
+- [Adding Blinkin LED Strips Standalone](docs/Adding_Blinkin_LED_Strip.md)
 - [Adding Blinkin LED Strip as part of Intake](docs/Adding_Blinkin_LED_Strip_into_Intake.md)
 - [Adding Trajectory Picker](docs/Adding_TrajectoryPicker.md) (https://www.youtube.com/watch?v=eYY4uIxZJlo)
 
