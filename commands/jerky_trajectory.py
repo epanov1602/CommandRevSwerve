@@ -48,6 +48,12 @@ class JerkyTrajectory(commands2.Command):
 
         self.addRequirements(self.drivetrain)
 
+    def trajectoryToDisplay(self):
+        result = []
+        for translation, rotation in self.waypoints:
+            result.append(Pose2d(translation, rotation))
+        return result
+
     def initialize(self):
         # find the waypoint nearest to the current location: we want to skip all the waypoints before it
         nearest, distance = None, None
@@ -114,7 +120,7 @@ class JerkyTrajectory(commands2.Command):
         elif isinstance(waypoint, (tuple, list)) and len(waypoint) == 3:
             heading = waypoint[2]
             if isinstance(heading, (float, int)):
-                heading = Rotation2d(heading)
+                heading = Rotation2d.fromDegrees(heading)
             point = Translation2d(waypoint[0], waypoint[1])
 
         # did the user just give us a Translation2d with (X, Y) inside?
