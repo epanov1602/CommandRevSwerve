@@ -33,10 +33,6 @@ class RobotContainer:
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
-        # add LED strip
-        from subsystems.ledstrip import LedStrip
-        self.ledStrip1 = LedStrip(pwmChannel=1)
-
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
