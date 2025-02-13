@@ -195,7 +195,6 @@ def _getLeadMotorConfig(
     relPositionFactor = 1.0  # can also make it = 1.0 / ArmConstants.motorRevolutionsPerDegree
     config.encoder.positionConversionFactor(relPositionFactor)
     config.encoder.velocityConversionFactor(relPositionFactor / 60)  # 60 seconds per minute
-    config.encoder.inverted(False)
 
     config.absoluteEncoder.positionConversionFactor(absPositionFactor)
     config.absoluteEncoder.velocityConversionFactor(absPositionFactor / 60)  # 60 seconds per minute
