@@ -10,12 +10,10 @@ import typing
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
 from wpilib import XboxController
-from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
-from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
-from commands.followobject import StopWhen
-from constants import AutoConstants, DriveConstants, OIConstants
+from commands.jerky_trajectory import JerkyTrajectory
+from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
 from commands.gotopoint import GoToPoint
 
