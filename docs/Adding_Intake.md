@@ -90,7 +90,7 @@ class Intake(Subsystem):
         self._setSpeed(-speed)
         print("Intake::ejectGamepiece")
 
-    def intakeGamepieceDespiteLimitSwitch(self, speed=0.25):
+    def intakeGamepieceDespiteLimitSwitch(self, speed=0.25, speed2=None):
         """
         Even if (possibly broken) limit switch thinks that the gamepiece is already inside, try to intake it
         """
@@ -168,6 +168,7 @@ class Intake(Subsystem):
                 self.followerConfig,
                 SparkBase.ResetMode.kNoResetSafeParameters,
                 SparkBase.PersistMode.kNoPersistParameters)
+            self.followerMotor.resumeFollowerMode()
             self.following = True
         # ^^ do not reset and do not persist, just enable the switch
 
@@ -181,6 +182,7 @@ class Intake(Subsystem):
                 self.notFollowingConfig,
                 SparkBase.ResetMode.kNoResetSafeParameters,
                 SparkBase.PersistMode.kNoPersistParameters)
+            self.followerMotor.pauseFollowerMode()
             self.following = False
         # ^^ do not reset and do not persist, just disable the switch
 
