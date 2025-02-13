@@ -49,7 +49,7 @@ class RobotContainer:
                                  limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed)
 
         self.elevator.setDefaultCommand(
-           commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY(), self.elevator), self.elevator)
+           commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
         )
 
         self.robotDrive = DriveSubsystem()
