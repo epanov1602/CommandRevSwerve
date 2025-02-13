@@ -4,13 +4,15 @@
 
 * Make sure that your absolute encoder is zeroed in such a way that the arm never has to go through zero (or get even close to it) during normal operation
 
-* You can safely verify the direction of angle encoder by checking if `armAngle` and `armPosition` move in same direction on SmartDashboard (move that arm by hand, while robot is disabled)
+* You can safely verify the direction of angle encoder by checking if `armAngle` and `armPosition` move in same direction on SmartDashboard (when you move that arm by hand, while robot is disabled for safety)
 
 * For safety, use low value of `initialP` and zero `initialD` while verifying the directions, please watch the video
 
-* To tune initialP, keep increasing it by factor of no more than 2 until you see oscillations (each robot geometry/mass/gear-ratio needs its own P)
+* After you are confident in encoder direction, to tune initialP keep increasing it by factor of no more than 2 until you see oscillations (each robot geometry/mass/gear-ratio needs its own P)
 
-* If you see oscillations at the level of `initialP` that you prefer, you can set nonzero value of `initialD` to dampen them (start `initialD` with a small value and keep doubling it until you see desired effect)
+* If you see oscillations at the level of `initialP` that you prefer, you can set nonzero value of `initialD` to dampen them (start `initialD` with a small value and keep doubling it until you see desired effect).
+
+(if you need a more systematic way to tune P and D without involving I, consider Cohen-Coon method)
 
 
 **This code snippet can go to `subsystems/arm.py`**
