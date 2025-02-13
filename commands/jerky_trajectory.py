@@ -9,6 +9,7 @@ from __future__ import annotations
 import typing
 
 import commands2
+from commands2 import InstantCommand
 
 from subsystems.drivesubsystem import DriveSubsystem
 from commands.aimtodirection import AimToDirection
@@ -55,25 +56,8 @@ class JerkyTrajectory(commands2.Command):
         return result
 
     def initialize(self):
-        # find the waypoint nearest to the current location: we want to skip all the waypoints before it
-        nearest, distance = None, None
-        location = self.drivetrain.getPose()
-        for point, heading in self.waypoints:
-            d = location.translation().distance(point)
-            if nearest is None or d < distance:
-                nearest, distance = point, d
-
-        # only use the waypoints that we must not skip (those past the nearest waypoint, i.e. not already behind)
-        waypoints = []
-        if nearest is not None:
-            skip = True
-            for point, heading in self.waypoints:
-                if not skip:
-                    waypoints.append((point, heading))
-                elif point == nearest:
-                    skip = False
-        if len(waypoints) == 0:
-            waypoints = [self.waypoints[-1]]
+        # skip the waypoints that are already behind
+        waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0
         last = len(waypoints) - 1
         direction = None
@@ -92,6 +76,27 @@ class JerkyTrajectory(commands2.Command):
         # connect all these commands together and start
         self.command = commands2.SequentialCommandGroup(*commands)
         self.command.initialize()
+
+    def getRemainingWaypointsAheadOfUs(self):
+        # find the waypoint nearest to the current location: we want to skip all the waypoints before it
+        nearest, distance = None, None
+        location = self.drivetrain.getPose()
+        for point, heading in self.waypoints:
+            d = location.translation().distance(point)
+            if nearest is None or d < distance:
+                nearest, distance = point, d
+        # only use the waypoints that we must not skip (those past the nearest waypoint, i.e. not already behind)
+        waypoints = []
+        if nearest is not None:
+            skip = True
+            for point, heading in self.waypoints:
+                if not skip:
+                    waypoints.append((point, heading))
+                elif point == nearest:
+                    skip = False
+        if len(waypoints) == 0:
+            waypoints = [self.waypoints[-1]]
+        return waypoints
 
     def execute(self):
         if self.command is not None:
@@ -144,3 +149,70 @@ class JerkyTrajectory(commands2.Command):
             return GoToPoint(
                 point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
             )
+
+
+class SwerveTrajectory(JerkyTrajectory):
+
+    def initialize(self):
+        # skip the waypoints that are already behind
+        waypoints = self.getRemainingWaypointsAheadOfUs()
+        assert len(waypoints) > 0
+        endPoint, endRotation = waypoints[-1]
+
+        last = len(waypoints) - 1
+        direction = None
+
+        import math
+        from constants import DriveConstants, AutoConstants
+        from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
+        from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
+
+        # Create config for trajectory
+        config = TrajectoryConfig(
+            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared,
+        )
+        # Add kinematics to ensure max speed is actually obeyed
+        config.setKinematics(DriveConstants.kDriveKinematics)
+
+        # An example trajectory to follow. All units in meters.
+        trajectory = TrajectoryGenerator.generateTrajectory(
+            # Start at the current point
+            self.drivetrain.getPose(),
+            # Pass through these interior waypoints
+            [w[0] for w in waypoints[0:-1]],
+            # End 1.5 meters straight ahead of where we started, facing forward
+            Pose2d(endPoint, endRotation),
+            config,
+        )
+
+        thetaController = ProfiledPIDControllerRadians(
+            AutoConstants.kPThetaController,
+            0,
+            0,
+            AutoConstants.kThetaControllerConstraints,
+        )
+        thetaController.enableContinuousInput(-math.pi, math.pi)
+
+        driveController = HolonomicDriveController(
+            PIDController(AutoConstants.kPXController, 0, 0),
+            PIDController(AutoConstants.kPXController, 0, 0),
+            thetaController,
+        )
+
+        swerveControllerCommand = commands2.SwerveControllerCommand(
+            trajectory,
+            self.drivetrain.getPose,  # Functional interface to feed supplier
+            DriveConstants.kDriveKinematics,
+            driveController,
+            self.drivetrain.setModuleStates,
+            (self.drivetrain,),
+        )
+
+        # Run path following command, then stop at the end
+        stop = InstantCommand(
+            lambda: self.drivetrain.drive(0, 0, 0, False, False),
+            self.drivetrain,
+        )
+        self.command = swerveControllerCommand.andThen(stop)
+        self.command.initialize()
