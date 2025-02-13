@@ -2,11 +2,15 @@
 
 **WARNINGS**
 
+* Make sure that your absolute encoder is zeroed in such a way that the arm never has to go through zero (or get even close to it) during normal operation
+
 * You can safely verify the direction of angle encoder by checking if `armAngle` and `armPosition` move in same direction on SmartDashboard (move that arm by hand, while robot is disabled)
 
-* YOU DEFINITELY NEED TO VERIFYT THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD, please watch the video
+* For safety, use low value of `initialP` and zero `initialD` while verifying the directions, please watch the video
 
-* YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for your own robot geometry mass and gear ratio
+* To tune initialP, keep increasing it by factor of no more than 2 until you see oscillations (each robot geometry/mass/gear-ratio needs its own P)
+
+* If you see oscillations at the level of `initialP` that you prefer, you can set nonzero value of `initialD` to dampen them (start `initialD` with a small value and keep doubling it until you see desired effect)
 
 
 **This code snippet can go to `subsystems/arm.py`**
@@ -70,7 +74,7 @@ class Arm(Subsystem):
         followMotorCANId: int,
         dontSlam: bool=False,
         limitSwitchType=LimitSwitchConfig.Type.kNormallyOpen,  # make NormallyOpen if you don't have limit switches yet
-        dashboardPrefix="",  # set it to "front_" if this is a front arm in two-arm robot
+        dashboardPrefix="",  # set it to "front_" if this is a front arm in a multi-arm robot
     ) -> None:
         """Constructs an arm. Be very very careful with setting PIDs -- arms are dangerous"""
         super().__init__()
