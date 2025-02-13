@@ -2,19 +2,21 @@
 
 **WARNINGS**
 
-* YOU DEFINITELY NEED TO CHECK THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD, please watch the video
+* You can safely verify the direction of angle encoder by checking if `armAngle` and `armPosition` move in same direction on SmartDashboard (move that arm by hand, while robot is disabled)
+
+* YOU DEFINITELY NEED TO VERIFYT THE SENSOR/MOTOR DIRECTIONS at low values of initialP and zero initialD, please watch the video
 
 * YOU DEFINITELY NEED TO TUNE THE initialP and initialD constants yourself, for your own robot geometry mass and gear ratio
-
-* You might need to assign different addresses (CAN IDs), inside the snippet below
 
 
 **This code snippet can go to `subsystems/arm.py`**
 
 ```python
+
 from rev import SparkMax, SparkBase, SparkBaseConfig, LimitSwitchConfig, ClosedLoopConfig
 from wpimath.geometry import Rotation2d
 from commands2 import Subsystem
+from wpilib import SmartDashboard
 
 # constants right here, to simplify the video
 class ArmConstants:
@@ -38,6 +40,7 @@ class ArmConstants:
     kArmMinAngle = 15
     kArmMaxAngle = 130
     kArmMaxWeightAngle = 30
+    kAngleTolerance = 2.0
 
     # PID coefficients
     initialStaticGainTimesP = 3.5  # we are normally this many degrees off because of static forces
@@ -67,10 +70,15 @@ class Arm(Subsystem):
         followMotorCANId: int,
         dontSlam: bool=False,
         limitSwitchType=LimitSwitchConfig.Type.kNormallyOpen,  # make NormallyOpen if you don't have limit switches yet
+        dashboardPrefix="",  # set it to "front_" if this is a front arm in two-arm robot
     ) -> None:
         """Constructs an arm. Be very very careful with setting PIDs -- arms are dangerous"""
         super().__init__()
         self.dontSlam = dontSlam
+        self.armAngleLabel = dashboardPrefix + "armAngle"
+        self.armAngleGoalLabel = dashboardPrefix + "armAngleGoal"
+        self.armPositionLabel = dashboardPrefix + "armPosition"
+        self.armStateLabel = dashboardPrefix + "armState"
 
         self.leadMotor = SparkMax(leadMotorCANId, SparkMax.MotorType.kBrushless)
         self.leadMotor.configure(
@@ -94,10 +102,35 @@ class Arm(Subsystem):
         # now initialize pid controller and encoder
         self.pidController = self.leadMotor.getClosedLoopController()
         self.encoder = self.leadMotor.getAbsoluteEncoder()
+        self.relativeEncoder = self.leadMotor.getEncoder()
 
         # first angle goal
         self.angleGoal = ArmConstants.kArmMinAngle
         self.setAngleGoal(self.angleGoal)
+
+
+    def periodic(self) -> None:
+        SmartDashboard.putNumber(self.armAngleGoalLabel, self.angleGoal)
+        SmartDashboard.putNumber(self.armAngleLabel, self.getAngle())
+        SmartDashboard.putNumber(self.armPositionLabel, self.relativeEncoder.getPosition())
+        SmartDashboard.putString(self.armStateLabel, self.getState())
+
+
+    def getState(self) -> str:
+        if self.forwardLimit.get():
+            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
+        if self.reverseLimit.get():
+            return "reverse limit"
+        # otherwise, everything is ok
+        return "ok"
+
+
+    def isDoneMoving(self) -> bool:
+        return abs(self.getAngleGoal() - self.getAngle()) < ArmConstants.kAngleTolerance
+
+
+    def getAngleGoal(self) -> float:
+        return self.angleGoal
 
 
     def getAngle(self) -> float:
@@ -151,10 +184,22 @@ def _getLeadMotorConfig(
     config.limitSwitch.forwardLimitSwitchType(limitSwitchType)
     config.limitSwitch.reverseLimitSwitchType(limitSwitchType)
 
+    relPositionFactor = 1.0  # can also make it = 1.0 / ArmConstants.motorRevolutionsPerDegree
+    config.encoder.positionConversionFactor(relPositionFactor)
+    config.encoder.velocityConversionFactor(relPositionFactor / 60)  # 60 seconds per minute
+    config.encoder.inverted(False)
+
     config.absoluteEncoder.positionConversionFactor(absPositionFactor)
     config.absoluteEncoder.velocityConversionFactor(absPositionFactor / 60)  # 60 seconds per minute
     config.absoluteEncoder.inverted(absEncoderInverted)
     config.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kAbsoluteEncoder)
+
+    assert ArmConstants.kArmMaxAngle > ArmConstants.kArmMinAngle, (
+        f"ArmConstants.kArmMaxAngle={ArmConstants.kArmMaxAngle} is not greater than " +
+        f"ArmConstants.kArmMinAngle={ArmConstants.kArmMinAngle}"
+    )
+    config.softLimit.reverseSoftLimit(ArmConstants.kArmMinAngle)
+    config.softLimit.forwardSoftLimit(ArmConstants.kArmMaxAngle)
 
     config.closedLoop.pid(ArmConstants.initialP, 0.0, ArmConstants.initialD)
     config.closedLoop.velocityFF(0.0)  # because position control
