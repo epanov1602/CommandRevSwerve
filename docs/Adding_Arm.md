@@ -12,6 +12,8 @@
 
 * If you see oscillations at the level of `initialP` that you prefer, you can set nonzero value of `initialD` to dampen them (start `initialD` with a small value and keep doubling it until you see desired effect).
 
+* If you are seeing arm not exactly reaching its angle goal (on SmartDashboard), you need to change `initialStaticGainTimesP`
+
 (if you need a more systematic way to tune P and D without involving I, look up Cohen-Coon or Ziegler-Nichols method on Wikipedia, use the version with I=0)
 
 
