@@ -44,8 +44,6 @@ class RobotContainer:
         from subsystems.intake import Intake
         self.intake = Intake(leaderCanID=20, followerCanID=21, leaderInverted=True, followerInverted=False)
 
-        self.robotDrive = DriveSubsystem()
-
         # The robots Elevator
         from rev import LimitSwitchConfig
         from subsystems.elevator import Elevator
@@ -57,6 +55,8 @@ class RobotContainer:
         self.elevator.setDefaultCommand(
            commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY(), self.elevator), self.elevator)
         )
+
+        self.robotDrive = DriveSubsystem()
 
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
         leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
