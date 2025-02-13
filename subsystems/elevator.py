@@ -39,11 +39,11 @@ class ElevatorConstants:
 
     # if we have an arm, what is the minimum and maximum safe angle for elevator to move
     # (we don't want to move with arm extended unsafely)
-    minArmSafeAngleDegrees = 15
-    maxArmSafeAngleDegrees = 80
+    minArmSafeAngleDegrees = 100
+    maxArmSafeAngleDegrees = 120
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 0.90  # at first make it very small like this, then start tuning by increasing from there
+    kP = 0.09  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0.018  # make it 3.5?
     kMaxOutput = 1.0
@@ -244,7 +244,7 @@ class Elevator(Subsystem):
                 return "arm angle too low"
             if angle > ElevatorConstants.maxArmSafeAngleDegrees:
                 return "arm angle too high"
-            angleGoal = self.arm.angleGoal
+            angleGoal = self.arm.getAngleGoal()
             if angleGoal < ElevatorConstants.minArmSafeAngleDegrees:
                 return "arm anglegoal too low"
             if angleGoal > ElevatorConstants.maxArmSafeAngleDegrees:

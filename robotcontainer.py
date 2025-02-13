@@ -33,6 +33,15 @@ class RobotContainer:
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
+        from subsystems.arm import Arm
+        self.arm = None #  Arm(leadMotorCANId=18, followMotorCANId=None)
+
+        if self.arm is not None:
+            aButton = JoystickButton(self.driverController, XboxController.Button.kA)
+            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(90), self.arm))
+            bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+            bButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(105), self.arm))
+
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
@@ -43,22 +52,24 @@ class RobotContainer:
         # The robots Elevator
         from rev import LimitSwitchConfig
         from subsystems.elevator import Elevator
+
         self.elevator = Elevator(leadMotorCANId=DriveConstants.kLeadElevationCanId,
-                                 followMotorCANId=DriveConstants.kFollowElevationCanId,
-                                 presetSwitchPositions=(15, 20, 25), motorClass=rev.SparkMax,
-                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed)
+                                followMotorCANId=DriveConstants.kFollowElevationCanId,
+                                presetSwitchPositions=(15, 20, 25), motorClass=rev.SparkMax,
+                                limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
+                                arm=self.arm)
 
         self.elevator.setDefaultCommand(
-           commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+               commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
         )
-
-        self.robotDrive = DriveSubsystem()
 
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
         leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
 
         rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
         rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+
+        self.robotDrive = DriveSubsystem()
 
         from subsystems.localizer import Localizer
         self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
