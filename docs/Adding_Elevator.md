@@ -367,11 +367,11 @@ class SetElevatorPosition(commands2.Command):
     def __init__(self) -> None:
         # The robot's subsystems
         from subsystems.elevator import Elevator
-        self.elevator = Elevator(leadMotorCANId=9, presetSwitchPositions=(10, 20, 70), motorClass=rev.CANSparkMax)
+        self.elevator = Elevator(leadMotorCANId=9, presetSwitchPositions=(15, 20, 25), motorClass=rev.CANSparkMax)
         
         # or you can do any of these:
-        # self.elevator = Elevator(leadMotorCANId=9, followMotorCANId=10, presetSwitchPositions=(10, 20, 70), motorClass=rev.CANSparkMax)
-        # self.elevator = Elevator(leadMotorCANId=9, followMotorCANId=10, useAbsoluteEncoder=True, presetSwitchPositions=(10, 20, 70), motorClass=rev.CANSparkMax)
+        # self.elevator = Elevator(leadMotorCANId=9, followMotorCANId=10, presetSwitchPositions=(15, 20, 25), motorClass=rev.CANSparkMax)
+        # self.elevator = Elevator(leadMotorCANId=9, followMotorCANId=10, useAbsoluteEncoder=True, presetSwitchPositions=(15, 20, 25), motorClass=rev.CANSparkMax)
         ...
 ```
 
