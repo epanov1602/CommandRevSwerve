@@ -23,8 +23,12 @@ import navx
 
 
 class DriveSubsystem(Subsystem):
-    def __init__(self) -> None:
+    def __init__(self, maxSpeedScaleFactor=None) -> None:
         super().__init__()
+        if maxSpeedScaleFactor is not None:
+            assert callable(maxSpeedScaleFactor)
+
+        self.maxSpeedScaleFactor = maxSpeedScaleFactor
 
         enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
 
@@ -198,6 +202,13 @@ class DriveSubsystem(Subsystem):
             norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
+
+        if (xSpeed != 0 or ySpeed != 0) and self.maxSpeedScaleFactor is not None:
+            norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
+            scale = abs(self.maxSpeedScaleFactor() / norm)
+            if scale < 1:
+                xSpeed = xSpeed * scale
+                ySpeed = ySpeed * scale
 
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed
