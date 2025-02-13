@@ -61,6 +61,9 @@ class RobotContainer:
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
         leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
 
+        rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+
         from subsystems.localizer import Localizer
         self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2024-crescendo.json")
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))

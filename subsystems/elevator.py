@@ -125,13 +125,13 @@ class Elevator(Subsystem):
 
     def switchDown(self):
         if self.presetSwitchPositions:
-            self.positionGoalSwitchIndex = self.positionGoalSwitchIndex - 1
+            self.positionGoalSwitchIndex = self.getNearestPresetPositionIndex() - 1
             self.positionGoalSwitchIndex = max([self.positionGoalSwitchIndex, 0])
             self.setPositionGoal(self.presetSwitchPositions[self.positionGoalSwitchIndex])
 
     def switchUp(self):
         if self.presetSwitchPositions:
-            self.positionGoalSwitchIndex = self.positionGoalSwitchIndex + 1
+            self.positionGoalSwitchIndex = self.getNearestPresetPositionIndex() + 1
             self.positionGoalSwitchIndex = min([self.positionGoalSwitchIndex, len(self.presetSwitchPositions) - 1])
             self.setPositionGoal(self.presetSwitchPositions[self.positionGoalSwitchIndex])
 
@@ -221,6 +221,20 @@ class Elevator(Subsystem):
             return "finding zero"
         # otherwise, everything is ok
         return "ok"
+
+
+    def getNearestPresetPositionIndex(self) -> int:
+        if not self.presetSwitchPositions:
+            return -1
+        currentPosition = self.getPosition()
+
+        result, distance = None, None
+        for index, presetPosition in enumerate(self.presetSwitchPositions):
+            if distance is None or abs(currentPosition - presetPosition) < distance:
+                distance = abs(currentPosition - presetPosition)
+                result = index
+
+        return result
 
 
     def isUnsafeToMove(self):
