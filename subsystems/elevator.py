@@ -34,8 +34,8 @@ class ElevatorConstants:
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
-    minPositionGoal = 15  # inches
-    maxPositionGoal = 70  # inches
+    minPositionGoal = 0.5  # inches
+    maxPositionGoal = 32  # inches
 
     # if we have an arm, what is the minimum and maximum safe angle for elevator to move
     # (we don't want to move with arm extended unsafely)
