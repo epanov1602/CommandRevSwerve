@@ -90,7 +90,7 @@ class Localizer(commands2.Subsystem):
             if not camera.photonCamera.isConnected():
                 continue  # skip! this camera is not connected
             detections = camera.photonCamera.getLatestResult()
-            cameraFrameTime = detections.getTimestamp()
+            cameraFrameTime = detections.getTimestampSeconds()
             if camera.lastProcessedCameraTime == cameraFrameTime:
                 continue  # skip! we already saw this camera frame result
             camera.lastProcessedCameraTime = cameraFrameTime
