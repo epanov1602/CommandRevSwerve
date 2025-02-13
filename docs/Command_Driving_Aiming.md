@@ -571,25 +571,8 @@ class JerkyTrajectory(commands2.Command):
         return result
 
     def initialize(self):
-        # find the waypoint nearest to the current location: we want to skip all the waypoints before it
-        nearest, distance = None, None
-        location = self.drivetrain.getPose()
-        for point, heading in self.waypoints:
-            d = location.translation().distance(point)
-            if nearest is None or d < distance:
-                nearest, distance = point, d
-
-        # only use the waypoints that we must not skip (those past the nearest waypoint, i.e. not already behind)
-        waypoints = []
-        if nearest is not None:
-            skip = True
-            for point, heading in self.waypoints:
-                if not skip:
-                    waypoints.append((point, heading))
-                elif point == nearest:
-                    skip = False
-        if len(waypoints) == 0:
-            waypoints = [self.waypoints[-1]]
+        # skip the waypoints that are already behind
+        waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0
         last = len(waypoints) - 1
         direction = None
@@ -621,6 +604,27 @@ class JerkyTrajectory(commands2.Command):
         if self.command is not None:
             self.command.end(interrupted)
             self.command = None
+
+    def getRemainingWaypointsAheadOfUs(self):
+        # find the waypoint nearest to the current location: we want to skip all the waypoints before it
+        nearest, distance = None, None
+        location = self.drivetrain.getPose()
+        for point, heading in self.waypoints:
+            d = location.translation().distance(point)
+            if nearest is None or d < distance:
+                nearest, distance = point, d
+        # only use the waypoints that we must not skip (those past the nearest waypoint, i.e. not already behind)
+        waypoints = []
+        if nearest is not None:
+            skip = True
+            for point, heading in self.waypoints:
+                if not skip:
+                    waypoints.append((point, heading))
+                elif point == nearest:
+                    skip = False
+        if len(waypoints) == 0:
+            waypoints = [self.waypoints[-1]]
+        return waypoints
 
     def _makeWaypoint(self, waypoint):
         point, heading = None, None
