@@ -12,7 +12,7 @@
 
 * If you see oscillations at the level of `initialP` that you prefer, you can set nonzero value of `initialD` to dampen them (start `initialD` with a small value and keep doubling it until you see desired effect).
 
-(if you need a more systematic way to tune P and D without involving I, consider Cohen-Coon method)
+(if you need a more systematic way to tune P and D without involving I, look up Cohen-Coon or Ziegler-Nichols method on Wikipedia, use the version with I=0)
 
 
 **This code snippet can go to `subsystems/arm.py`**
