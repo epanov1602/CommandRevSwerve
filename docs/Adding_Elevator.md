@@ -22,11 +22,9 @@
 **Adding elevator subsystem to `subsystems/elevator.py`**
 
 <details>
-<summary>(click to expand the subsystem code) </summary>
+<summary>(click to expand)</summary>
 
 ```python
-
-
 
 from __future__ import annotations
 
@@ -396,4 +394,137 @@ class SetElevatorPosition(commands2.Command):
         aButton = JoystickButton(self.driverController, XboxController.Button.kA)
         aButton.onTrue(InstantCommand(lambda: self.elevator.setPositionGoal(33.0), self.elevator))
         ...
+```
+
+**Advanced elevator commands (you can put them into `commands/elevatorcommands.py`)**
+
+<details>
+<summary>(click to expand)</summary>
+
+```python
+
+from __future__ import annotations
+import commands2
+from wpilib import Timer
+
+import constants
+from subsystems.elevator import Elevator
+
+class MoveElevator(commands2.Command):
+    def __init__(self, elevator: Elevator, position: float, additionalTimeoutSeconds=0.0):
+        super().__init__()
+        self.position = position
+        self.elevator = elevator
+        self.addRequirements(elevator)
+        self.additionalTimeoutSeconds = additionalTimeoutSeconds
+        self.endTime = 0.0
+
+    def initialize(self):
+        self.endTime = 0.0
+        self.elevator.setPositionGoal(self.position)
+
+    def isFinished(self) -> bool:
+        return self.endTime != 0 and Timer.getFPGATimestamp() >= self.endTime
+
+    def execute(self):
+        if self.endTime == 0.0 and self.elevator.isDoneMoving():
+            self.endTime = Timer.getFPGATimestamp() + self.additionalTimeoutSeconds
+
+    def end(self, interrupted: bool):
+        pass
+
+
+
+class MoveElevatorAndArm(commands2.Command):
+    def __init__(self, elevator: Elevator, position: float, arm: Arm, angle: float, additionalTimeoutSeconds=0.0):
+        super().__init__()
+        # elevator stuff
+        self.positionGoal = position
+        self.elevator = elevator
+        self.addRequirements(elevator)
+        # arm stuff
+        self.angleGoal = angle
+        self.arm = arm
+        self.addRequirements(arm)
+        # additional timeout at the end
+        self.additionalTimeoutSeconds = additionalTimeoutSeconds
+        self.endTime = 0.0
+
+    def initialize(self):
+        self.endTime = 0.0
+        self.elevator.setPositionGoal(self.positionGoal)
+        self.arm.setAngleGoal(self.angleGoal)
+
+    def isFinished(self) -> bool:
+        return self.endTime != 0 and Timer.getFPGATimestamp() >= self.endTime
+
+    def execute(self):
+        if self.endTime != 0.0:
+            return
+        nextAngleGoal = self._safeAngleGoal()
+        if self.arm.getAngleGoal() != nextAngleGoal:
+            # case 1: must move the arm out of the way
+            self.arm.setAngleGoal(nextAngleGoal)
+            print(f"MoveElevatorAndArm: next arm angle goal {nextAngleGoal}")
+        elif self.elevator.getPositionGoal() != self.positionGoal and not self.elevator.unsafeToMove:
+            # case 2: can proceed with moving the elevator further
+            self.elevator.setPositionGoal(self.positionGoal)
+            print(f"MoveElevatorAndArm: next elevator position goal {self.positionGoal}")
+        elif self.elevator.isDoneMoving() and self.arm.isDoneMoving():
+            # case 3: both subsystems cannot move further
+            if nextAngleGoal != self.angleGoal:
+                print(f"WARNING: MoveElevatorAndArm is done, but safe arm angle {nextAngleGoal} is different from angle goal {self.angleGoal}")
+            self.endTime = Timer.getFPGATimestamp() + self.additionalTimeoutSeconds
+
+    def end(self, interrupted: bool):
+        pass
+
+    def _safeAngleGoal(self, intervals=5):
+        assert intervals > 0
+        # start from the angle goal and walk backwards towards current elevator position
+        # (if that angle goal bumps against limits, adjust it)
+        safeAngle = self.angleGoal
+        start = self.elevator.getPosition()
+        interval = (self.positionGoal - start) / intervals
+        positions = [start + i * interval for i in range(intervals)]
+        for elevatorPosition in reversed(positions + [self.positionGoal]):
+            lowest, highest = constants.safeArmAngleRange(elevatorPosition)
+            padding = 0.1 * (highest - lowest)
+            if safeAngle < lowest + padding:
+                safeAngle = lowest + padding
+            if safeAngle > highest - padding:
+                safeAngle = highest - padding
+        return safeAngle
+
+```
+</details>
+
+
+For the second of the commands to work, you need to add something like this to the end of your `constants.py`:
+```python
+
+def safeArmAngleRange(elevatorPosition: float):
+    if elevatorPosition < 5:
+        return 80, 110
+    elif elevatorPosition < 15:
+        return 90, 120
+    else:
+        return 100, 120
+
+```
+
+And you can use such elevator command together with 'gamepiece eject' command from `configureButtonBindings()` this way:
+```python
+
+        # the "B" button will request elevator to go to a special position of 20.0 inches, wait until it's done moving and then run the intake
+        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+
+        from commands.elevatorcommands import MoveElevator
+        moveElevator = MoveElevator(self.elevator, position=20, additionalTimeoutSeconds=0.5)
+
+        from commands.intakecommands import IntakeFeedGamepieceForward
+        ejectGamepiece = IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)
+
+        bButton.onTrue(moveElevator.andThen(ejectGamepiece))
+
 ```
