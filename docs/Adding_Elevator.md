@@ -531,15 +531,15 @@ def safeArmAngleRange(elevatorPosition: float):
 And you can use such elevator command together with 'gamepiece eject' command from `configureButtonBindings()` this way:
 ```python
 
-        # the "B" button: make elevator to go to position=20.0 inches, wait until it's there and eject gamepiece
+        # the "B" button: make elevator to go to position=5.0 inches, wait until it's there and score the gamepiece
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
 
-        from commands.elevatorcommands import MoveElevator
-        moveElevator = MoveElevator(self.elevator, position=20, additionalTimeoutSeconds=0.5)
+        from commands.elevatorcommands import MoveElevatorAndArm
+        moveToScoringPosition = MoveElevatorAndArm(elevator=self.elevator, position=5, arm=self.arm, angle=140, additionalTimeoutSeconds=0.5)
 
         from commands.intakecommands import IntakeFeedGamepieceForward
-        ejectGamepiece = IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)
+        scoreGamepiece = IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)
 
-        bButton.onTrue(moveElevator.andThen(ejectGamepiece))
+        bButton.onTrue(moveToScoringPosition.andThen(scoreGamepiece))
 
 ```
