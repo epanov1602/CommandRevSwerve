@@ -73,10 +73,13 @@ class RobotContainer:
         )
 
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
-        leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+        #leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+        from commands.elevatorcommands import MoveElevatorAndArm
+        leftBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0, arm=self.arm, angle=42))
 
         rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
-        rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+        #rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+        rightBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm, angle=130))
 
         self.robotDrive = DriveSubsystem()
 

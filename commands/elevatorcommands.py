@@ -59,11 +59,11 @@ class MoveElevatorAndArm(commands2.Command):
         nextAngleGoal, nextPositionGoal = self._safeAngleGoal()
         if self.arm.getAngleGoal() != nextAngleGoal:
             # case 1: must move the arm out of the way
-            #self.arm.setAngleGoal(nextAngleGoal)
+            self.arm.setAngleGoal(nextAngleGoal)
             print(f"MoveElevatorAndArm: next arm angle goal {nextAngleGoal} (for elevator position {nextPositionGoal})")
-        elif self.elevator.getPositionGoal() != nextPositionGoal and not self.elevator.unsafeToMove:
+        elif self.arm.isDoneMoving() and self.elevator.getPositionGoal() != nextPositionGoal and not self.elevator.unsafeToMove:
             # case 2: can proceed with moving the elevator further
-            #self.elevator.setPositionGoal(self.positionGoal)
+            self.elevator.setPositionGoal(self.positionGoal)
             print(f"MoveElevatorAndArm: next elevator position goal {self.positionGoal} (for angle goal {nextAngleGoal})")
         elif self.elevator.isDoneMoving() and self.arm.isDoneMoving() and not self.elevator.unsafeToMove:
             # case 3: both subsystems cannot move further, whether they reached their real goals or not
@@ -74,7 +74,9 @@ class MoveElevatorAndArm(commands2.Command):
             self.endTime = Timer.getFPGATimestamp() + self.additionalTimeoutSeconds
 
     def end(self, interrupted: bool):
-        pass
+        if interrupted:
+            self.elevator.stopAndReset()
+            self.arm.stopAndReset()
 
     def _safeAngleGoal(self, intervals=10):
         assert intervals > 0
@@ -87,7 +89,7 @@ class MoveElevatorAndArm(commands2.Command):
         positions = [start + i * interval for i in range(intervals)]
         for elevatorPosition in reversed(positions + [self.positionGoal]):
             lowest, highest = constants.safeArmAngleRange(elevatorPosition)
-            padding = 0.1 * (highest - lowest)
+            padding = 0.05 * (highest - lowest)
             if safeAngle < lowest + padding:
                 safeAngle = lowest + padding
                 safePosition = elevatorPosition

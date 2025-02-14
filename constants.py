@@ -186,9 +186,9 @@ class AutoConstants:
 
 
 def safeArmAngleRange(elevatorPosition: float):
-    if elevatorPosition < 0.5:
-        return 40, 200
+    if elevatorPosition < 0.15:
+        return 24, 160
     elif elevatorPosition < 25:
-        return 130, 200
+        return 125, 160
     else:
-        return 135, 200
+        return 130, 160

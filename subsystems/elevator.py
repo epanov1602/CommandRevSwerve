@@ -39,6 +39,7 @@ class ElevatorConstants:
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0.1  # inches
     maxPositionGoal = 32  # inches
+    positionTolerance = 0.2
 
     # PID configuration (after you are done with calibrating=True)
     kP = 0.09  # 0.9 was our real choice  # at first make it very small like this, then start tuning by increasing from there
@@ -148,6 +149,9 @@ class Elevator(Subsystem):
         if self.pidController is not None:
             self.pidController.setReference(goalInches + ElevatorConstants.kStaticGain,
                                             SparkLowLevel.ControlType.kPosition)
+
+    def isDoneMoving(self) -> bool:
+        return abs(self.getPosition() - self.getPositionGoal()) < ElevatorConstants.positionTolerance
 
     def getPositionGoal(self) -> float:
         return self.positionGoal

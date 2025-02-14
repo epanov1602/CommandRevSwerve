@@ -23,11 +23,11 @@ class ArmConstants:
     fudgeFactor = 1  # empirical, if needed
     motorRevolutionsPerDegree = gearReduction * chainReduction / 360 * fudgeFactor
 
-    kArmMinAngle = 45
+    kArmMinAngle = 35
     kArmMaxAngle = 200
     kArmSafeStartingAngle = 135
     kArmMaxWeightAngle = 84.2 - 90
-    kAngleTolerance = 2.0
+    kAngleTolerance = 5.0
 
     # PID coefficients
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
