@@ -62,8 +62,9 @@ class ElevatorConstants:
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
-    minPositionGoal = 15  # inches
-    maxPositionGoal = 70  # inches
+    minPositionGoal = 0.5  # inches
+    maxPositionGoal = 32  # inches
+    positionTolerance = 0.2  # inches
 
     # if we have an arm, what is the minimum and maximum safe angle for elevator to move
     # (we don't want to move with arm extended unsafely)
@@ -186,6 +187,9 @@ class Elevator(Subsystem):
             return self.absoluteEncoder.getPosition()
         else:
             return self.relativeEncoder.getPosition()
+
+    def isDoneMoving(self) -> bool:
+        return abs(self.positionGoal - self.getPosition()) <= ElevatorConstants.positionTolerance
 
     def getVelocity(self) -> float:
         if self.absoluteEncoder is not None:
