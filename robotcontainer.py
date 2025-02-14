@@ -12,6 +12,7 @@ from commands2.button import JoystickButton
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 
+import constants
 from commands.jerky_trajectory import JerkyTrajectory
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
@@ -59,8 +60,16 @@ class RobotContainer:
                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
                                 arm=self.arm)
 
+        # make sure the arm respects a possibly tighter safe angle range, depending on current elevator pos
+        if self.arm is not None:
+            def safeArmAngleRange():
+                elevatorPosition = self.elevator.getPosition()
+                return constants.safeArmAngleRange(elevatorPosition)
+
+            self.arm.setSafeAngleRangeFunction(safeArmAngleRange)
+
         self.elevator.setDefaultCommand(
-               commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+            commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
         )
 
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)

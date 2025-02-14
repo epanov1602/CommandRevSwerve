@@ -6,6 +6,9 @@ from rev import SparkBaseConfig, SparkBase, SparkMax, LimitSwitchConfig, ClosedL
 from wpilib import SmartDashboard
 from commands2 import Subsystem
 
+import constants
+
+
 # constants right here, to simplify
 class ElevatorConstants:
     # very scary setting! (if set wrong, the arm will escape equilibrium and break something)
@@ -36,11 +39,6 @@ class ElevatorConstants:
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0.5  # inches
     maxPositionGoal = 32  # inches
-
-    # if we have an arm, what is the minimum and maximum safe angle for elevator to move
-    # (we don't want to move with arm extended unsafely)
-    minArmSafeAngleDegrees = 100
-    maxArmSafeAngleDegrees = 120
 
     # PID configuration (after you are done with calibrating=True)
     kP = 0.9  # at first make it very small like this, then start tuning by increasing from there
@@ -75,6 +73,7 @@ class Elevator(Subsystem):
         # do we have an arm what we must watch for safe angles?
         self.arm = arm
         self.unsafeToMove = ""  # empty string = not unsafe
+        self.stopReason = ""
 
         # initialize the motors and switches
         self.leadMotor = motorClass(
@@ -144,6 +143,7 @@ class Elevator(Subsystem):
         if goalInches > ElevatorConstants.maxPositionGoal:
             goalInches = ElevatorConstants.maxPositionGoal
         self.positionGoal = goalInches
+        self.stopReason = ""  # new position goal resets the stop reason
 
         if self.pidController is not None:
             self.pidController.setReference(goalInches + ElevatorConstants.kStaticGain,
@@ -219,6 +219,8 @@ class Elevator(Subsystem):
             return "reverse limit"
         if not self.zeroFound:
             return "finding zero"
+        if self.stopReason:
+            return "stopped early"
         # otherwise, everything is ok
         return "ok"
 
@@ -240,14 +242,15 @@ class Elevator(Subsystem):
     def isUnsafeToMove(self):
         if self.arm is not None:
             angle = self.arm.getAngle()
-            if angle < ElevatorConstants.minArmSafeAngleDegrees:
+            minSafeAngle, maxSafeAngle = constants.safeArmAngleRange(self.getPosition())
+            if angle < minSafeAngle:
                 return "arm angle too low"
-            if angle > ElevatorConstants.maxArmSafeAngleDegrees:
+            if angle > maxSafeAngle:
                 return "arm angle too high"
             angleGoal = self.arm.getAngleGoal()
-            if angleGoal < ElevatorConstants.minArmSafeAngleDegrees:
+            if angleGoal < minSafeAngle:
                 return "arm anglegoal too low"
-            if angleGoal > ElevatorConstants.maxArmSafeAngleDegrees:
+            if angleGoal > maxSafeAngle:
                 return "arm anglegoal too high"
 
 
@@ -257,11 +260,15 @@ class Elevator(Subsystem):
         if unsafeToMove and not self.unsafeToMove:
             self.leadMotor.set(0)
             self.setPositionGoal(self.getPosition())
+            print(f"WARNING: elevator stopped because {unsafeToMove}")
+        if unsafeToMove:
+            self.stopReason = unsafeToMove
         self.unsafeToMove = unsafeToMove
         # 2. do we need to find zero?
         if not self.zeroFound:
             self.findZero()
         # 3. report to the dashboard
+        SmartDashboard.putString("elevStopReason", self.stopReason)
         SmartDashboard.putString("elevState", self.getState())
         SmartDashboard.putNumber("elevGoal", self.getPositionGoal())
         SmartDashboard.putNumber("elevPosn", self.getPosition())

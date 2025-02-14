@@ -182,3 +182,12 @@ class AutoConstants:
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(
         kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared
     )
+
+
+def safeArmAngleRange(elevatorPosition: float):
+    if elevatorPosition < 5:
+        return 80, 110
+    elif elevatorPosition < 15:
+        return 90, 120
+    else:
+        return 100, 120

@@ -90,12 +90,17 @@ class Arm(Subsystem):
         self.pidController = self.leadMotor.getClosedLoopController()
         self.encoder = self.leadMotor.getAbsoluteEncoder()
         self.relativeEncoder = self.leadMotor.getEncoder()
+        self.safeAngleRangeFunction = None
 
         # first angle goal
         assert ArmConstants.kArmSafeStartingAngle <= ArmConstants.kArmMaxAngle
         assert ArmConstants.kArmSafeStartingAngle >= ArmConstants.kArmMinAngle
         self.angleGoal = ArmConstants.kArmSafeStartingAngle
         self.setAngleGoal(self.angleGoal)
+
+
+    def setSafeAngleRangeFunction(self, safeAngleRangeFunction):
+        self.safeAngleRangeFunction = safeAngleRangeFunction
 
 
     def periodic(self) -> None:
@@ -132,6 +137,14 @@ class Arm(Subsystem):
 
     def setAngleGoal(self, angle: float) -> None:
         self.angleGoal = angle
+        if self.safeAngleRangeFunction is not None:
+            minSafe, maxSafe = self.safeAngleRangeFunction()
+            if self.angleGoal < minSafe:
+                print(f"WARNING: arm goal {self.angleGoal} clamped to safe range ({minSafe}, {maxSafe}), ={minSafe}")
+                self.angleGoal = minSafe
+            if self.angleGoal > maxSafe:
+                print(f"WARNING: arm goal {self.angleGoal} clamped to safe range ({minSafe}, {maxSafe}), ={maxSafe}")
+                self.angleGoal = maxSafe
         if self.angleGoal < ArmConstants.kArmMinAngle:
             self.angleGoal = ArmConstants.kArmMinAngle
         if self.angleGoal > ArmConstants.kArmMaxAngle:
