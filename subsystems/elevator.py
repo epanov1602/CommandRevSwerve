@@ -41,7 +41,7 @@ class ElevatorConstants:
     maxPositionGoal = 32  # inches
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 0.9  # at first make it very small like this, then start tuning by increasing from there
+    kP = 0.09  # 0.9 is the real value we want
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0.018  # make it 3.5?
     kMaxOutput = 1.0

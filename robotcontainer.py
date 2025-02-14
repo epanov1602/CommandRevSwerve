@@ -35,7 +35,7 @@ class RobotContainer:
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
 
         from subsystems.arm import Arm
-        self.arm = None #  Arm(leadMotorCANId=18, followMotorCANId=None)
+        self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
 
         if self.arm is not None:
             aButton = JoystickButton(self.driverController, XboxController.Button.kA)
