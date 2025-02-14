@@ -516,7 +516,7 @@ def safeArmAngleRange(elevatorPosition: float):
 And you can use such elevator command together with 'gamepiece eject' command from `configureButtonBindings()` this way:
 ```python
 
-        # the "B" button will request elevator to go to a special position of 20.0 inches, wait until it's done moving and then run the intake
+        # the "B" button: make elevator to go to position=20.0 inches, wait until it's there and eject gamepiece
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
 
         from commands.elevatorcommands import MoveElevator
