@@ -11,8 +11,8 @@ from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
-
 import constants
+
 from commands.jerky_trajectory import JerkyTrajectory
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
@@ -39,9 +39,9 @@ class RobotContainer:
 
         if self.arm is not None:
             aButton = JoystickButton(self.driverController, XboxController.Button.kA)
-            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(90), self.arm))
+            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(43), self.arm))
             bButton = JoystickButton(self.driverController, XboxController.Button.kB)
-            bButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(105), self.arm))
+            bButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(160), self.arm))
 
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
@@ -56,7 +56,7 @@ class RobotContainer:
 
         self.elevator = Elevator(leadMotorCANId=DriveConstants.kLeadElevationCanId,
                                 followMotorCANId=DriveConstants.kFollowElevationCanId,
-                                presetSwitchPositions=(15, 20, 25), motorClass=rev.SparkMax,
+                                presetSwitchPositions=(2, 15, 28), motorClass=rev.SparkMax,
                                 limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
                                 arm=self.arm)
 
@@ -69,7 +69,7 @@ class RobotContainer:
             self.arm.setSafeAngleRangeFunction(safeArmAngleRange)
 
         self.elevator.setDefaultCommand(
-            commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+               commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
         )
 
         leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)

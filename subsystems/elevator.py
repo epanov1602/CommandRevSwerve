@@ -37,12 +37,11 @@ class ElevatorConstants:
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
-    minPositionGoal = 0.5  # inches
+    minPositionGoal = 0.1  # inches
     maxPositionGoal = 32  # inches
-    positionTolerance = 0.2  # inches
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 0.09  # 0.9 is the real value we want
+    kP = 0.09  # 0.9 was our real choice  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0.018  # make it 3.5?
     kMaxOutput = 1.0
@@ -158,9 +157,6 @@ class Elevator(Subsystem):
             return self.absoluteEncoder.getPosition()
         else:
             return self.relativeEncoder.getPosition()
-
-    def isDoneMoving(self) -> bool:
-        return abs(self.positionGoal - self.getPosition()) <= ElevatorConstants.positionTolerance
 
     def getVelocity(self) -> float:
         if self.absoluteEncoder is not None:
