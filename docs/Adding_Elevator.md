@@ -534,8 +534,11 @@ And you can use such elevator command together with 'gamepiece eject' command fr
         # the "B" button: make elevator to go to position=5.0 inches, wait until it's there and score the gamepiece
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
 
-        from commands.elevatorcommands import MoveElevatorAndArm
+        from commands.elevatorcommands import MoveElevatorAndArm, MoveElevator
         moveToScoringPosition = MoveElevatorAndArm(elevator=self.elevator, position=5, arm=self.arm, angle=140, additionalTimeoutSeconds=0.5)
+
+        # if you don't have an arm, you can do this:
+        # moveToScoringPosition = MoveElevator(elevator=self.elevator, position=5, additionalTimeoutSeconds=0.5)
 
         from commands.intakecommands import IntakeFeedGamepieceForward
         scoreGamepiece = IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)
