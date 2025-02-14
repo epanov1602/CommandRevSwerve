@@ -39,6 +39,7 @@ class ElevatorConstants:
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0.5  # inches
     maxPositionGoal = 32  # inches
+    positionTolerance = 0.2  # inches
 
     # PID configuration (after you are done with calibrating=True)
     kP = 0.09  # 0.9 is the real value we want
@@ -157,6 +158,9 @@ class Elevator(Subsystem):
             return self.absoluteEncoder.getPosition()
         else:
             return self.relativeEncoder.getPosition()
+
+    def isDoneMoving(self) -> bool:
+        return abs(self.positionGoal - self.getPosition()) <= ElevatorConstants.positionTolerance
 
     def getVelocity(self) -> float:
         if self.absoluteEncoder is not None:
