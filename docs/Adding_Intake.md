@@ -2,7 +2,7 @@
 
 - **this goes to `subsystems/intake.py` file**
 <details>
-    <summary>(click to expand code for intake without rangefinder)</summary>
+    <summary>(option 1: click to expand code for intake without rangefinder)</summary>
 
 ```python
 from commands2 import Subsystem
@@ -110,7 +110,7 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed (to spin the object being ejected)</summary>
+    <summary>(option 2: click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed (to spin the object being ejected)</summary>
 
 ```python
 
@@ -244,10 +244,9 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(click to expand code for intake with an optional rangefinder!)</summary>
+    <summary>(option 3: click to expand code for intake with an optional rangefinder!)</summary>
 
 ```python
-
 
 from commands2 import Subsystem
 from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
