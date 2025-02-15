@@ -28,7 +28,8 @@ class MoveElevator(commands2.Command):
             self.endTime = Timer.getFPGATimestamp() + self.additionalTimeoutSeconds
 
     def end(self, interrupted: bool):
-        pass
+        if interrupted:
+            self.elevator.stopAndReset()
 
 
 
@@ -57,15 +58,22 @@ class MoveElevatorAndArm(commands2.Command):
         if self.endTime != 0.0:
             return
         nextAngleGoal, nextPositionGoal = self._safeAngleGoal()
+
         if self.arm.getAngleGoal() != nextAngleGoal:
             # case 1: must move the arm out of the way
             self.arm.setAngleGoal(nextAngleGoal)
             print(f"MoveElevatorAndArm: next arm angle goal {nextAngleGoal} (for elevator position {nextPositionGoal})")
-        elif self.arm.isDoneMoving() and self.elevator.getPositionGoal() != nextPositionGoal and not self.elevator.unsafeToMove:
+        elif not self.arm.isDoneMoving():
+            pass  # and wait for arm to finish the move
+
+        elif self.elevator.getPositionGoal() != nextPositionGoal and not self.elevator.unsafeToMove:
             # case 2: can proceed with moving the elevator further
             self.elevator.setPositionGoal(self.positionGoal)
             print(f"MoveElevatorAndArm: next elevator position goal {self.positionGoal} (for angle goal {nextAngleGoal})")
-        elif self.elevator.isDoneMoving() and self.arm.isDoneMoving() and not self.elevator.unsafeToMove:
+        elif not self.elevator.isDoneMoving():
+            pass  # and wait for that elevator to finish the move
+
+        else:
             # case 3: both subsystems cannot move further, whether they reached their real goals or not
             if nextAngleGoal != self.angleGoal:
                 print(f"WARNING: MoveElevatorAndArm is done, but safe arm angle {nextAngleGoal} is different from angle goal {self.angleGoal}")
@@ -78,7 +86,7 @@ class MoveElevatorAndArm(commands2.Command):
             self.elevator.stopAndReset()
             self.arm.stopAndReset()
 
-    def _safeAngleGoal(self, intervals=10):
+    def _safeAngleGoal(self, intervals=5):
         assert intervals > 0
         # start from the angle goal and walk backwards towards current elevator position
         # (if that angle goal bumps against limits, adjust it)
