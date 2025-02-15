@@ -18,7 +18,7 @@ class ArmConstants:
     # calculating how many motor revolutions are needed to move arm by one degree
     chainSprocket = 60  # teeth
     driveSprocket = 14  # teeth
-    gearReduction = 12.0
+    gearReduction = 12 # 12.0
     chainReduction = chainSprocket / driveSprocket
     fudgeFactor = 1  # empirical, if needed
     motorRevolutionsPerDegree = gearReduction * chainReduction / 360 * fudgeFactor
@@ -32,7 +32,7 @@ class ArmConstants:
     # PID coefficients
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
-    initialP = 0.0128 * 0.5  # 0.0128 was very strong, 0.01 of that is safe starting value
+    initialP = 0.0128 * 0.01  # 0.0128 was very strong, 0.01 of that is safe starting value
     additionalPMult = 3.0  # when close to target angle
 
     initialMaxOutput = 1

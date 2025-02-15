@@ -1,7 +1,7 @@
 
 
 from __future__ import annotations
-
+import math
 from rev import SparkBaseConfig, SparkBase, SparkMax, LimitSwitchConfig, ClosedLoopConfig, SparkLowLevel
 from wpilib import SmartDashboard
 from commands2 import Subsystem
@@ -16,12 +16,11 @@ class ElevatorConstants:
 
     # if using relative encoder, how many motor revolutions are needed to move the elevator by one inch?
     GEAR_RATIO = 25
-    PI = 3.1416
     GEAR_DIAMETER = 2.0
-    motorRevolutionsPerInch = GEAR_RATIO / (GEAR_DIAMETER * PI)
+    motorRevolutionsPerInch = GEAR_RATIO / (GEAR_DIAMETER * math.pi)
 
     # if using absolute encoder on output shaft, how many output shaft revolutions needed to move elevator by an inch?
-    absEncoderRevolutionsPerInch = motorRevolutionsPerInch / GEAR_RATIO  # is gear ratio == 20?
+    absEncoderRevolutionsPerInch = motorRevolutionsPerInch / GEAR_RATIO
 
     # other settings
     leadMotorInverted = True
@@ -38,11 +37,12 @@ class ElevatorConstants:
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0.1  # inches
-    maxPositionGoal = 32  # inches
+    maxPositionGoal = 30  # inches limit switch is at 31
     positionTolerance = 0.2
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 0.18 # 0.9 was our real choice  # at first make it very small like this, then start tuning by increasing from there
+    kP = 0.9 # 0.9 was our real choice  # at first make it very small like this, then
+    # start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0.13  # drop it by 50% when doubling kP
     kMaxOutput = 1.0
