@@ -498,7 +498,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         # ^^ you can also specify followerCanID= and followerInverted= if the intake has a follower motor
 ```
 
-### Part 4: finally add simple joystick buttons to run simple commands to start/stop/reverse the intake
+### Part 4: finally add joystick buttons to run simple commands to start/stop/reverse the intake
 
 (at the end of `configureButtonBindings(...)` function inside `robotcontainer.py`)
 ```python
@@ -509,25 +509,23 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands2.instantcommand import InstantCommand
 
-        # when "A" button is pressed, intake the gamepiece
+        # while "A" button is pressed, intake the gamepiece
         aButton = JoystickButton(self.driverController, XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
-        aButton.onTrue(intakeCmd)
+        aButton.whileTrue(intakeCmd)
 
-        # when "B" button is pressed, start feeding the gamepiece forward and give it 0.3 seconds to complete
+        # while "B" button is pressed, feed that gamepiece forward for a split second
+        # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
-        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.5).withTimeout(0.3)
-        bButton.onTrue(intakeFeedFwdCmd)
+        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.1).withTimeout(0.3)
+        bButton.whileTrue(intakeFeedFwdCmd)
 
-        # when "Y" button is pressed, start feeding the gamepiece forward at intake motor1 speed different from intake motor2 speed
-        # (to spin the gamepiece, one intake motor can be spinning faster than another)
+        # while "Y" button is pressed, eject the gamepiece backward
         yButton = JoystickButton(self.driverController, XboxController.Button.kY)
-        intakeFeedFwdCmd2 = IntakeFeedGamepieceForward(self.intake, speed=0.5, speed2=0.8).withTimeout(0.3)
-        yButton.onTrue(intakeFeedFwdCmd2)
+        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.5).withTimeout(0.3)
+        yButton.whileTrue(intakeFeedFwdCmd2)
 
         # end of the code that must be added
-
-        # ...
 ```
 
 - **if some of the symbols are showing up as "unresolved" errors in `robotcontainer.py`, these import lines need to be added in the beginning of `robotcontainer.py`**
