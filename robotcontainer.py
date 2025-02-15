@@ -39,7 +39,7 @@ class RobotContainer:
 
         if self.arm is not None:
             aButton = JoystickButton(self.driverController, XboxController.Button.kA)
-            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(75), self.arm))
+            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(70), self.arm))
             bButton = JoystickButton(self.driverController, XboxController.Button.kB)
             bButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(130), self.arm))
 
