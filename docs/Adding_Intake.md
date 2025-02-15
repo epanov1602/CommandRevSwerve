@@ -489,7 +489,8 @@ class IntakeEjectGamepieceBackward(commands2.Command):
 
 </details>
 
-### Part 3: in `robotcontainer.py`, side `__init__` function, we need to add one `Intake` to the list of robot subsystems
+### Part 3: in `robotcontainer.py`, inside `__init__(...)` function, you can add one `Intake` to the list of robot subsystems
+
 ```python
         # these two lines go to __init__ function
         from subsystems.intake import Intake
@@ -499,7 +500,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
 
 ### Part 4: finally add simple joystick buttons to run simple commands to start/stop/reverse the intake
 
-(inside of `robotcontainer.py` in `configureButtonBindings` function)
+(at the end of `configureButtonBindings(...)` function inside `robotcontainer.py`)
 ```python
     def configureButtonBindings(self) -> None:
         # ...
