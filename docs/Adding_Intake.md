@@ -1,6 +1,6 @@
 # Code snippet for adding a single-motor or dual-motor intake
 
-- **this goes to `subsystems/intake.py` file**
+### Part 1: this goes to `subsystems/intake.py` file
 <details>
     <summary>(option A: click to expand code for intake without rangefinder)</summary>
 
@@ -412,8 +412,7 @@ class Intake(Subsystem):
 
 </details>
 
-
-- **these few commands you can put into `commands/intakecommands.py`, so you can later import them**
+## Part 2: these few commands you can put into `commands/intakecommands.py`, so you can later import them for buttons and autos
 <details>
     <summary>(click to expand)</summary>
 
@@ -490,7 +489,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
 
 </details>
 
-- **in `robotcontainer.py`, side `__init__` function, we need to add one `Intake` to the list of robot subsystems**
+### Part 3: in `robotcontainer.py`, side `__init__` function, we need to add one `Intake` to the list of robot subsystems
 ```python
         # these two lines go to __init__ function
         from subsystems.intake import Intake
@@ -498,7 +497,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         # ^^ you can also specify followerCanID= and followerInverted= if the intake has a follower motor
 ```
 
-- **and finally add simple joystick buttons to run simple commands to start/stop/reverse the intake**
+### Part 4: finally add simple joystick buttons to run simple commands to start/stop/reverse the intake
 
 (inside of `robotcontainer.py` in `configureButtonBindings` function)
 ```python
