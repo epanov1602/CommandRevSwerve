@@ -2,7 +2,7 @@
 
 - **this goes to `subsystems/intake.py` file**
 <details>
-    <summary>(option 1: click to expand code for intake without rangefinder)</summary>
+    <summary>(option A: click to expand code for intake without rangefinder)</summary>
 
 ```python
 from commands2 import Subsystem
@@ -110,7 +110,7 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(option 2: click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed (to spin the object being ejected)</summary>
+    <summary>(option B: click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed (to spin the object being ejected)</summary>
 
 ```python
 
@@ -244,7 +244,7 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(option 3: click to expand code for intake with an optional rangefinder!)</summary>
+    <summary>(option C: click to expand code for intake with an optional rangefinder!)</summary>
 
 ```python
 
