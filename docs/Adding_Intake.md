@@ -437,7 +437,7 @@ class IntakeGamepiece(commands2.Command):
         self.intake.intakeGamepiece(self.speed)
 
     def isFinished(self) -> bool:
-        return False  # never finishes, you should use it with "withTimeout(...)"
+        return False  # never finishes, so you should use it with ".withTimeout(...)" or with "button.whileTrue(...)"
 
     def execute(self):
         pass
@@ -458,7 +458,7 @@ class IntakeFeedGamepieceForward(commands2.Command):
         self.intake.feedGamepieceForward(self.speed, self.speed2)
 
     def isFinished(self) -> bool:
-        return False  # never finishes, you should use it with "withTimeout(...)"
+        return False  # never finishes, so you should use it with ".withTimeout(...)" or with "button.whileTrue(...)"
 
     def execute(self):
         pass
@@ -480,7 +480,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         self.intake.ejectGamepieceBackward(self.speed, self.speed2)
 
     def isFinished(self) -> bool:
-        return False  # never finishes, you should use it with "withTimeout(...)"
+        return False  # never finishes, so you should use it with ".withTimeout(...)" or with "button.whileTrue(...)"
 
     def execute(self):
         pass
@@ -509,7 +509,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands2.instantcommand import InstantCommand
 
-        # while "A" button is pressed, intake the gamepiece
+        # while "A" button is pressed, intake the gamepiece until it hits the limit switch (or rangefinder, if connected)
         aButton = JoystickButton(self.driverController, XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
         aButton.whileTrue(intakeCmd)
