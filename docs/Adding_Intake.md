@@ -412,7 +412,7 @@ class Intake(Subsystem):
 
 </details>
 
-## Part 2: these few commands you can put into `commands/intakecommands.py`, so you can later import them for buttons and autos
+### Part 2: these few commands you can put into `commands/intakecommands.py`, so you can later import them for buttons and autos
 <details>
     <summary>(click to expand)</summary>
 
