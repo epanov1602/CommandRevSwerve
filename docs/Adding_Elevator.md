@@ -396,7 +396,7 @@ class SetElevatorPosition(commands2.Command):
         ...
 ```
 
-**Advanced elevator commands (you can put them into `commands/elevatorcommands.py`)**
+**Handy elevator commands (you can put them into `commands/elevatorcommands.py`)**
 
 <details>
 <summary>(click to expand)</summary>
