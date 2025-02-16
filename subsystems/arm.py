@@ -27,13 +27,13 @@ class ArmConstants:
     kArmMaxAngle = 200
     kArmSafeStartingAngle = 135
     kArmMaxWeightAngle = 84.2 - 90
-    kAngleTolerance = 1.0
+    kAngleTolerance = 5.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
     # PID coefficients
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
-    initialP = 0.0128 * 0.1  # 0.0128 was very strong, 0.01 of that is safe starting value
-    additionalPMult = 3.0  # when close to target angle
+    initialP = 0.0128 * 0.05  # 0.0128 was very strong, 0.05 of that is safe starting value
+    additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
 
     initialMaxOutput = 1
     initialMinOutput = -1
@@ -67,11 +67,21 @@ class Arm(Subsystem):
         self.armPositionLabel = dashboardPrefix + "armPosition"
         self.armStateLabel = dashboardPrefix + "armState"
 
+        self.defaultLeadMotorConfig = _getLeadMotorConfig(
+            limitSwitchType, ArmConstants.kEncoderPositionFactor, ArmConstants.kEncoderInverted,
+            ArmConstants.initialP
+        )
+        self.highGainLeadMotorConfig = _getLeadMotorConfig(
+            limitSwitchType, ArmConstants.kEncoderPositionFactor, ArmConstants.kEncoderInverted,
+            ArmConstants.initialP * ArmConstants.additionalPMult
+        )
+
         self.leadMotor = SparkMax(leadMotorCANId, SparkMax.MotorType.kBrushless)
         self.leadMotor.configure(
-            _getLeadMotorConfig(limitSwitchType, ArmConstants.kEncoderPositionFactor, ArmConstants.kEncoderInverted),
             SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters)
+            SparkBase.PersistMode.kPersistParameters,
+            self.defaultLeadMotorConfig
+        )
 
         self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
         self.reverseLimit = self.leadMotor.getReverseLimitSwitch()
@@ -176,6 +186,7 @@ def _getLeadMotorConfig(
     limitSwitchType: LimitSwitchConfig.Type,
     absPositionFactor: float,
     absEncoderInverted: bool,
+    pGain: float,
 ) -> SparkBaseConfig:
 
     config = SparkBaseConfig()
@@ -202,7 +213,7 @@ def _getLeadMotorConfig(
     config.softLimit.reverseSoftLimit(ArmConstants.kArmMinAngle)
     config.softLimit.forwardSoftLimit(ArmConstants.kArmMaxAngle)
 
-    config.closedLoop.pid(ArmConstants.initialP, 0.0, ArmConstants.initialD)
+    config.closedLoop.pid(pGain, 0.0, ArmConstants.initialD)
     config.closedLoop.velocityFF(0.0)  # because position control
     config.closedLoop.outputRange(ArmConstants.initialMinOutput, ArmConstants.initialMaxOutput)
 

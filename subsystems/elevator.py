@@ -38,13 +38,12 @@ class ElevatorConstants:
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0.1  # inches
     maxPositionGoal = 30  # inches limit switch is at 31
-    positionTolerance = 0.2
+    positionTolerance = 0.5
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 1.8 # 0.9 was our real choice  # at first make it very small like this, then
-    # start tuning by increasing from there
-    kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kStaticGain = 0.13  # drop it by 50% when doubling kP
+    kP = 0.18 # 0.9 was our real choice  # at first make it very small like 0.05 and then start doubling
+    kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kMaxOutput = 1.0
 
 
