@@ -1,4 +1,4 @@
-
+import rev
 from rev import SparkMax, SparkBase, SparkBaseConfig, LimitSwitchConfig, ClosedLoopConfig
 from wpimath.geometry import Rotation2d
 from commands2 import Subsystem
@@ -158,10 +158,15 @@ class Arm(Subsystem):
             adjustment = ArmConstants.initialStaticGainTimesP * \
                          Rotation2d.fromDegrees(self.angleGoal - ArmConstants.kArmMaxWeightAngle).cos()
             # ^^ static forces for the arm depend on arm angle
-            # (if the arm is at the top there are no static forces
+            # (example: if the arm is at the top there are no static forces and pid controller will make arm reach goal
             # , but if the arm is hanging on its side its weight will cause a bias between position goal and reality
-            # => classic angle-dependent adjustment is needed to correct for this)
+            # => classic angle-dependent adjustment or feed-forward gain is needed to correct for this)
             self.pidController.setReference(self.angleGoal + adjustment, SparkBase.ControlType.kPosition)
+
+            # yes, ChatGPT recommends adding a constant feed-forward term proportional to cos(angle - maxWeightAngle)
+            # (try asking ChatGPT "how to correct pid controller for static forces in an arm that changes angle")
+            # , trouble is rev.ClosedLoopConfig only supports feed-forward terms are proportional angle, not cos(angle)
+            # (good news is that mathematically such feed-forward term can also be represented as `adjustment` above)
 
 
     def stopAndReset(self) -> None:
