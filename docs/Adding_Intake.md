@@ -437,7 +437,7 @@ class IntakeGamepiece(commands2.Command):
         self.intake.intakeGamepiece(self.speed)
 
     def isFinished(self) -> bool:
-        return False  # never finishes, so you should use it with ".withTimeout(...)" or with "button.whileTrue(...)"
+        return self.intake.isGamepieceInside()
 
     def execute(self):
         pass
