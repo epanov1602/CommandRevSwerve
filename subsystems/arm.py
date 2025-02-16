@@ -29,26 +29,14 @@ class ArmConstants:
     kArmMaxWeightAngle = 84.2 - 90
     kAngleTolerance = 5.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
-    # PID coefficients
+    # PID controller settings
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
     initialP = 0.0128 * 0.05  # 0.0128 was very strong, 0.05 of that is safe starting value
-    additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
-
     initialMaxOutput = 1
     initialMinOutput = -1
-    initialMaxRPM = 5700
 
-    # Smart Motion Coefficients, but maybe they apply outside of SmartMotion too?
-    initialMaxVel = 2000  # rpm
-    initialMinVel = -2000  # rpm
-    initialMaxAcc = 2500
-    initialAllowedError = .02  # was 0.02
-
-    # Hacks
-    kAngleGoalRadius = 10
-    kExtraDelayForOscillationsToStop = 0.1  # seconds (until the PID coefficients below are tuned to avoid oscillations)
-
+    additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
 
 class Arm(Subsystem):
     def __init__(
@@ -167,9 +155,12 @@ class Arm(Subsystem):
             else:
                 self.stopAndReset()
         else:
-            # static forces for the arm depend on arm angle (e.g. if it's at the top, no static forces)
             adjustment = ArmConstants.initialStaticGainTimesP * \
-                         Rotation2d.fromDegrees(self.angleGoal - ArmConstants.kArmMinAngle).cos()
+                         Rotation2d.fromDegrees(self.angleGoal - ArmConstants.kArmMaxWeightAngle).cos()
+            # ^^ static forces for the arm depend on arm angle
+            # (if the arm is at the top there are no static forces
+            # , but if the arm is hanging on its side its weight will cause a bias between position goal and reality
+            # => classic angle-dependent adjustment is needed to correct for this)
             self.pidController.setReference(self.angleGoal + adjustment, SparkBase.ControlType.kPosition)
 
 
