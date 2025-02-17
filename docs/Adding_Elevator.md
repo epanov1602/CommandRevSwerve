@@ -546,3 +546,34 @@ And you can use such elevator command together with 'gamepiece eject' command fr
         bButton.onTrue(moveToScoringPosition.andThen(scoreGamepiece))
 
 ```
+
+## Using LED strip together with elevator (setting LED to a certain color after elevator arrives to position)
+In this example:
+ * B button: make elevator to go to position=30.0 inches and angle=130, and turn to color=yellow
+ * Y button: make elevator to go to position=15.0 inches and angle=70, and turn to color=pink
+(see numbers for every color on page 17 of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf)
+
+This assumes that you added `self.ledStrip1` to your robotcontainer
+( as shown in https://github.com/epanov1602/CommandRevSwerve/blob/main/docs/Adding_Blinkin_LED_Strip.md ).
+
+The example code below goes to the end of `configureButtonBindings()`: 
+```python
+        # the "B" and "Y" button:
+        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+
+        from commands.elevatorcommands import MoveElevatorAndArm, MoveElevator
+        moveToScoringPosition3 = MoveElevatorAndArm(elevator=self.elevator, position=30, arm=self.arm, angle=130, additionalTimeoutSeconds=0.5)
+        moveToScoringPosition2 = MoveElevatorAndArm(elevator=self.elevator, position=15, arm=self.arm, angle=70, additionalTimeoutSeconds=0.5)
+
+        from commands2 import InstantCommand
+        bButton.onTrue(moveToScoringPosition3.andThen(InstantCommand(lambda: self.ledStrip1.selectColor(0.69), self.ledStrip1)))
+        yButton.onTrue(moveToScoringPosition3.andThen(InstantCommand(lambda: self.ledStrip1.selectColor(0.57), self.ledStrip1)))
+
+        ## if you already have intake and intake commands (from https://github.com/epanov1602/CommandRevSwerve/blob/main/docs/Adding_Intake_Strip.md)
+        ## then you can also add the gamepiece scoring at the end:
+        #
+        # bButton.onTrue(moveToScoringPosition3.andThen(InstantCommand(lambda: self.ledStrip1.selectColor(0.69), self.ledStrip1)).andThen(IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)))
+        # yButton.onTrue(moveToScoringPosition3.andThen(InstantCommand(lambda: self.ledStrip1.selectColor(0.57), self.ledStrip1)).andThen(IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)))
+        #
+```
