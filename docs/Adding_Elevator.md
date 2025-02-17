@@ -553,10 +553,8 @@ In this example:
  * Y button: make elevator to go to position=15.0 inches and angle=70, and turn to color=pink
  * (see numbers for every color on page 17 of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf)
 
-This assumes that you added `self.ledStrip1` to your robotcontainer
-( as shown in https://github.com/epanov1602/CommandRevSwerve/blob/main/docs/Adding_Blinkin_LED_Strip.md ).
+The example code below goes to the end of `configureButtonBindings()` (but it assumes that you added `self.ledStrip1` to your `robotcontainer.py` as shown [HERE](docs/Adding_Blinkin_LED_Strip.md) ):
 
-The example code below goes to the end of `configureButtonBindings()`: 
 ```python
         # the "B" and "Y" button:
         bButton = JoystickButton(self.driverController, XboxController.Button.kB)
