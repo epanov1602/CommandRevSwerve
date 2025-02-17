@@ -547,7 +547,7 @@ And you can use such elevator command together with 'gamepiece eject' command fr
 
 ```
 
-## Using LED strip together with elevator (setting LED to a certain color after elevator arrives to position)
+## Using LED strip together with elevator (LEDs take certain color after elevator arrives to position)
 In this example:
  * B button: make elevator to go to position=30.0 inches and angle=130, and turn to color=yellow
  * Y button: make elevator to go to position=15.0 inches and angle=70, and turn to color=pink
