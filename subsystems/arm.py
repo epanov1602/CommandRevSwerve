@@ -66,9 +66,9 @@ class Arm(Subsystem):
 
         self.leadMotor = SparkMax(leadMotorCANId, SparkMax.MotorType.kBrushless)
         self.leadMotor.configure(
+            self.defaultLeadMotorConfig,
             SparkBase.ResetMode.kResetSafeParameters,
             SparkBase.PersistMode.kPersistParameters,
-            self.defaultLeadMotorConfig
         )
 
         self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
