@@ -37,12 +37,6 @@ class RobotContainer:
         from subsystems.arm import Arm
         self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
 
-        if self.arm is not None:
-            aButton = JoystickButton(self.driverController, XboxController.Button.kA)
-            aButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(70), self.arm))
-            bButton = JoystickButton(self.driverController, XboxController.Button.kB)
-            bButton.onTrue(InstantCommand(lambda: self.arm.setAngleGoal(130), self.arm))
-
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
