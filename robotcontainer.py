@@ -43,7 +43,7 @@ class RobotContainer:
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
         from subsystems.intake import Intake
-        self.intake = Intake(leaderCanID=20, followerCanID=21, leaderInverted=True, followerInverted=False)
+        self.intake = Intake(leaderCanID=19, followerCanID=None, leaderInverted=True, followerInverted=False)
 
         # The robots Elevator
         from rev import LimitSwitchConfig
@@ -133,6 +133,28 @@ class RobotContainer:
 
         yButton = self.driverController.button(XboxController.Button.kY)
         yButton.onTrue(ResetSwerveFront(self.robotDrive))
+
+        # this code must be added: see how "A" and "B" button handlers are defined
+        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
+        from commands2.instantcommand import InstantCommand
+
+        # while "A" button is pressed, intake the gamepiece until it hits the limit switch (or rangefinder, if connected)
+        leftBumper = self.scoringController.button(wpilib.XboxController.Button.kLeftBumper)
+        intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
+        leftBumper.whileTrue(intakeCmd)
+
+        # while "B" button is pressed, feed that gamepiece forward for a split second
+        # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
+        rightBumper = self.scoringController.button(wpilib.XboxController.Button.kRightBumper)
+        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.1).withTimeout(0.3)
+        rightBumper.whileTrue(intakeFeedFwdCmd)
+
+        # while "Y" button is pressed, eject the gamepiece backward
+        leftstick = self.scoringController.button(wpilib.XboxController.Button.kLeftStick)
+        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.5).withTimeout(0.3)
+        leftstick.whileTrue(intakeFeedFwdCmd2)
+
+        # end of the code that must be added
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
