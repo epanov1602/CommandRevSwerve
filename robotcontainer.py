@@ -35,7 +35,7 @@ class RobotContainer:
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
 
-        from subsystems.arm import Arm
+        from subsystems.arm import Arm, ArmConstants
         self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
 
         # The robot's subsystems
@@ -65,18 +65,26 @@ class RobotContainer:
 
         self.elevator.setDefaultCommand(
             commands2.RunCommand(lambda: self.elevator.drive(
-                self.driverController.getRawAxis(XboxController.Axis.kRightY)
+                self.scoringController.getRawAxis(XboxController.Axis.kRightY)
             ), self.elevator)
         )
 
-        leftBumper = self.driverController.button(XboxController.Button.kLeftBumper)
-        #leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+        intakingPosButton = self.scoringController.povLeft()  # position for intaking
         from commands.elevatorcommands import MoveElevatorAndArm
-        leftBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.2, arm=self.arm, angle=42))
+        intakingPosButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42))
 
-        rightBumper = self.driverController.button(XboxController.Button.kRightBumper)
-        #rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
-        rightBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm, angle=130))
+        level0DropButton = self.scoringController.button(XboxController.Button.kA)  # button(XboxController.Button.kRightBumper)
+        level0DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
+
+        level1DropButton = self.scoringController.button(XboxController.Button.kB)
+        level1DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 6.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+
+        level2DropButton = self.scoringController.button(XboxController.Button.kY)
+        level2DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 15.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+
+        level3DropButton = self.scoringController.button(XboxController.Button.kX)
+        level3DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135))
+
 
         self.robotDrive = DriveSubsystem()
 

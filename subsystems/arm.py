@@ -25,14 +25,14 @@ class ArmConstants:
 
     kArmMinAngle = 35
     kArmMaxAngle = 200
-    kArmSafeStartingAngle = 135
+    kArmSafeStartingAngle = 71.4
     kArmMaxWeightAngle = 84.2 - 90
-    kAngleTolerance = 5.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
+    kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
     # PID controller settings
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
-    initialP = 0.0128 * 0.05  # 0.0128 was very strong, 0.05 of that is safe starting value
+    initialP = 0.0128 * 1.0  # 0.0128 was very strong, 0.05 of that is safe starting value
     initialMaxOutput = 1
     initialMinOutput = -1
 

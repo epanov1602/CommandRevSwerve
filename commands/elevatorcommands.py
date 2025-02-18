@@ -57,7 +57,7 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  position: float,
                  arm: Arm,
                  angle: float | None,
-                 safeTravelAngle=70,
+                 safeTravelAngle=71.4,
                  additionalTimeoutSeconds=0.0):
         # 1. sequential command group with three safe steps: [get to safe travel angle, move to new altitude, move arm]
         super().__init__(

@@ -187,9 +187,9 @@ class AutoConstants:
 # arm angle scoring position Max = 135 Mid&Min=75
 
 def safeArmAngleRange(elevatorPosition: float):
-    if elevatorPosition < 0.23:
+    if elevatorPosition < 0.5:
         return 35, 160
-    elif elevatorPosition < 25:
-        return 70, 160
+    elif elevatorPosition < 28:
+        return 65, 75
     else:
-        return 70, 160
+        return 35, 160
