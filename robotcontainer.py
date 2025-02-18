@@ -8,7 +8,7 @@ import wpilib
 import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
-from commands2.button import JoystickButton
+from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
@@ -32,7 +32,7 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The driver's controller
-        self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
+        self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
 
         from subsystems.arm import Arm
         self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
@@ -63,15 +63,17 @@ class RobotContainer:
             self.arm.setSafeAngleRangeFunction(safeArmAngleRange)
 
         self.elevator.setDefaultCommand(
-               commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+            commands2.RunCommand(lambda: self.elevator.drive(
+                self.driverController.getRawAxis(XboxController.Axis.kRightY)
+            ), self.elevator)
         )
 
-        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumper = self.driverController.button(XboxController.Button.kLeftBumper)
         #leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
         from commands.elevatorcommands import MoveElevatorAndArm
         leftBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.2, arm=self.arm, angle=42))
 
-        rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumper = self.driverController.button(XboxController.Button.kRightBumper)
         #rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
         rightBumper.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm, angle=130))
 
@@ -93,13 +95,13 @@ class RobotContainer:
             commands2.RunCommand(
                 lambda: self.robotDrive.drive(
                     -wpimath.applyDeadband(
-                        self.driverController.getLeftY(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kLeftY), OIConstants.kDriveDeadband
                     ),
                     -wpimath.applyDeadband(
-                        self.driverController.getLeftX(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kLeftX), OIConstants.kDriveDeadband
                     ),
                     -wpimath.applyDeadband(
-                        self.driverController.getRightX(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kRightX), OIConstants.kDriveDeadband
                     ),
                     True,
                     True,
@@ -112,15 +114,15 @@ class RobotContainer:
     def configureButtonBindings(self) -> None:
         """
         Use this method to define your button->command mappings. Buttons can be created by
-        instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
+        instantiating a :GenericHID or one of its subclasses (CommandGenericHID or XboxController),
         and then passing it to a JoystickButton.
         """
 
-        xButton = JoystickButton(self.driverController, XboxController.Button.kX)
+        xButton = self.driverController.button(XboxController.Button.kX)
         xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
         xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
 
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton = self.driverController.button(XboxController.Button.kY)
         yButton.onTrue(ResetSwerveFront(self.robotDrive))
 
     def disablePIDSubsystems(self) -> None:
