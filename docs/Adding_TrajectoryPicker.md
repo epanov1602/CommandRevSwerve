@@ -189,9 +189,9 @@ Yes we can, but let's call it "position picker" or something, and this can go to
         aButton = self.driverController.button(XboxController.Button.kA)
         aButton.whileTrue(positionPicker)
 
-        # povLeft/povRight button to toggle between previous/next arm position
-        leftPOVButton = self.driverController.povLeft()
-        leftPOVButton.onTrue(InstantCommand(positionPicker.previousTrajectory))
-        rightPOVButton = self.driverController.povRight()
-        rightPOVButton.onTrue(InstantCommand(positionPicker.nextTrajectory))
+        # "POV down" / "POV up" button to toggle between previous/next position picker commands
+        downPOVButton = self.driverController.povDown()
+        downPOVButton.onTrue(InstantCommand(positionPicker.previousTrajectory))
+        upPOVButton = self.driverController.povUp()
+        upPOVButton.onTrue(InstantCommand(positionPicker.nextTrajectory))
 ```
