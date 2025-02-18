@@ -385,13 +385,13 @@ class SetElevatorPosition(commands2.Command):
         from commands2 import InstantCommand, RunCommand
 
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above) 
-        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumper = self.driverController.button(XboxController.Button.kLeftBumper)
         leftBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
-        rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumper = self.driverController.button(XboxController.Button.kRightBumper)
         rightBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
 
         # the "A" button will request elevator to go to a special position of 33.0 inches
-        aButton = JoystickButton(self.driverController, XboxController.Button.kA)
+        aButton = self.driverController.button(XboxController.Button.kA)
         aButton.onTrue(InstantCommand(lambda: self.elevator.setPositionGoal(33.0), self.elevator))
         ...
 ```
@@ -532,7 +532,7 @@ And you can use such elevator command together with 'gamepiece eject' command fr
 ```python
 
         # the "B" button: make elevator to go to position=5.0 inches, wait until it's there and score the gamepiece
-        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+        bButton = self.driverController.button(XboxController.Button.kB)
 
         from commands.elevatorcommands import MoveElevatorAndArm, MoveElevator
         moveToScoringPosition = MoveElevatorAndArm(elevator=self.elevator, position=5, arm=self.arm, angle=140, additionalTimeoutSeconds=0.5)
@@ -557,8 +557,8 @@ The example code below goes to the end of `configureButtonBindings()` (but it as
 
 ```python
         # the "B" and "Y" button:
-        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        bButton = self.driverController.button(XboxController.Button.kB)
+        yButton = self.driverController.button(XboxController.Button.kY)
 
         from commands.elevatorcommands import MoveElevatorAndArm, MoveElevator
         moveToScoringPosition3 = MoveElevatorAndArm(elevator=self.elevator, position=30, arm=self.arm, angle=130, additionalTimeoutSeconds=0.5)
