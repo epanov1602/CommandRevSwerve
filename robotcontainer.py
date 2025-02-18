@@ -32,7 +32,8 @@ class RobotContainer:
 
     def __init__(self) -> None:
         # The driver's controller
-        self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
+        self.driverController = CommandGenericHID(0)
+        self.scoringController = CommandGenericHID(1)
 
         from subsystems.arm import Arm
         self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
