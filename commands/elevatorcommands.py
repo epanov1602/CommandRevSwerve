@@ -56,13 +56,16 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  elevator: Elevator,
                  position: float,
                  arm: Arm,
-                 angle: float,
-                 safeAngle=70,
+                 angle: float | None,
+                 safeTravelAngle=70,
                  additionalTimeoutSeconds=0.0):
-        # 1. make the sequential command group with three safe steps: [go to safe angle, move elevator, move arm]
+        # 1. sequential command group with three safe steps: [get to safe travel angle, move to new altitude, move arm]
         super().__init__(
-            MoveArm(arm, safeAngle),
+            # - first make sure the arm is at safe travel angle
+            MoveArm(arm, angle=safeTravelAngle),
+            # - then move the elevator to the new altitude
             MoveElevator(elevator, position=position),
+            # - and only then go to the desired arm angle and wait a split second for things to stabilize
             MoveArm(arm, angle=angle),
             WaitCommand(seconds=additionalTimeoutSeconds)
         )
