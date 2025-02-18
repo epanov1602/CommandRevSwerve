@@ -63,6 +63,6 @@ class PickupGamepiece(Command):
         pickupCommand = PickupGamepiece(self.intake, self.robotDrive, drivingSpeed=0.3)
 
         # assign this command to run *while* joystick "right bumper" button is pressed
-        rightBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumper = self.driverController.button(XboxController.Button.kRightBumper)
         rightBumper.whileTrue(pickupCommand)
 ```

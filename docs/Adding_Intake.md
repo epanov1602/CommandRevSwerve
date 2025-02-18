@@ -510,18 +510,18 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         from commands2.instantcommand import InstantCommand
 
         # while "A" button is pressed, intake the gamepiece until it hits the limit switch (or rangefinder, if connected)
-        aButton = JoystickButton(self.driverController, XboxController.Button.kA)
+        aButton = self.driverController.button(wpilib.XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
         aButton.whileTrue(intakeCmd)
 
         # while "B" button is pressed, feed that gamepiece forward for a split second
         # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
-        bButton = JoystickButton(self.driverController, XboxController.Button.kB)
+        bButton = self.driverController.button(wpilib.XboxController.Button.kB)
         intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.1).withTimeout(0.3)
         bButton.whileTrue(intakeFeedFwdCmd)
 
         # while "Y" button is pressed, eject the gamepiece backward
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton = self.driverController.button(wpilib.XboxController.Button.kY)
         intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.5).withTimeout(0.3)
         yButton.whileTrue(intakeFeedFwdCmd2)
 
@@ -531,6 +531,6 @@ class IntakeEjectGamepieceBackward(commands2.Command):
 - **if some of the symbols are showing up as "unresolved" errors in `robotcontainer.py`, these import lines need to be added in the beginning of `robotcontainer.py`**
 ```python
 from commands2 import cmd, InstantCommand, RunCommand
-from commands2.button import JoystickButton
+from commands2.button import CommandGenericHID
 from wpilib import XboxController
 ```

@@ -226,13 +226,13 @@ def _getLeadMotorConfig(
         """
 
         ## start of arm joystick control code
-        from commands2.button import JoystickButton
+        from commands2.button import CommandGenericHID
         from commands2 import RunCommand
 
-        aButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kA)
+        aButton = self.driverController.button(wpilib.XboxController.Button.kA)
         aButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(ArmConstants.kArmMinAngle)))
 
-        yButton = JoystickButton(self.driverController, wpilib.XboxController.Button.kY)
+        yButton = self.driverController.button(wpilib.XboxController.Button.kY)
         yButton.onTrue(commands2.InstantCommand(lambda: self.arm.setAngleGoal(70)))
         ## end of arm joystick control code
 ```

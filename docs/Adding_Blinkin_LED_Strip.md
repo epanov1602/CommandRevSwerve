@@ -52,7 +52,7 @@ You can add 1, 2 or more LED strips, just have to connect them to PWM channels o
 
         # left bumper button can turn LED blue
         # (but you can also call ledStrip1.selectColor(0.87) from any real command)
-        leftBumperButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumperButton = self.driverController.button(XboxController.Button.kLeftBumper)
         # 0.87 = blue (says page 8 of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf)
         from commands2 import InstantCommand
         leftBumperButton.onTrue(InstantCommand(lambda: self.ledStrip1.selectColor(0.87), self.ledStrip1))

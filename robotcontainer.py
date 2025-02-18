@@ -7,7 +7,7 @@ import wpilib
 import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
-from commands2.button import JoystickButton
+from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
@@ -31,7 +31,7 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem()
 
         # The driver's controller
-        self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
+        self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
 
         # Configure the button bindings and autos
         self.configureButtonBindings()
@@ -44,13 +44,13 @@ class RobotContainer:
             commands2.RunCommand(
                 lambda: self.robotDrive.drive(
                     -wpimath.applyDeadband(
-                        self.driverController.getLeftY(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kLeftY), OIConstants.kDriveDeadband
                     ),
                     -wpimath.applyDeadband(
-                        self.driverController.getLeftX(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kLeftX), OIConstants.kDriveDeadband
                     ),
                     -wpimath.applyDeadband(
-                        self.driverController.getRightX(), OIConstants.kDriveDeadband
+                        self.driverController.getRawAxis(XboxController.Axis.kRightX), OIConstants.kDriveDeadband
                     ),
                     True,
                     True,
@@ -67,11 +67,11 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        xButton = JoystickButton(self.driverController, XboxController.Button.kX)
+        xButton = self.driverController.button(XboxController.Button.kX)
         xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
         xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
 
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton = self.driverController.button(XboxController.Button.kY)
         yButton.onTrue(ResetSwerveFront(self.robotDrive))
 
     def disablePIDSubsystems(self) -> None:

@@ -154,7 +154,7 @@ class TrajectoryPicker(commands2.Command):
         # part B: which buttons control the trajectory picker?
 
         # when the "Y" button is pressed, a command from trajectory picker will run
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton = self.driverController.button(wpilib.XboxController.Button.kY)
         yButton.whileTrue(self.trajectoryPicker)
 
         # or you can make it more fancy -- add a picker for scoring location:
@@ -164,10 +164,10 @@ class TrajectoryPicker(commands2.Command):
 
 
         # left and right bumper buttons will toggle between trajectories
-        leftBumperButton = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumperButton = self.driverController.button(wpilib.XboxController.Button.kLeftBumper)
         leftBumperButton.onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
-        rightBumperButton = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
+        rightBumperButton = self.driverController.button(wpilib.XboxController.Button.kRightBumper)
         rightBumperButton.onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
 ```
 

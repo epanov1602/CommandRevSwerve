@@ -86,6 +86,6 @@ class ShootGamepiece(Command):
         shootCommand = ShootGamepiece(self.intake, self.shooter, shooterRPM=1500).withTimeout(5.0)
 
         # assign this command to run *while* joystick "left bumper" is pressed (if you release button, command aborts)
-        leftBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
+        leftBumper = self.driverController.button(XboxController.Button.kLeftBumper)
         leftBumper.whileTrue(shootCommand)
 ```

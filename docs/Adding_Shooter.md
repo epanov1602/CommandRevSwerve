@@ -109,7 +109,7 @@ def _getFollowMotorConfig():
         # ...
  
         # this code must be added: see how "Y" button handlers are defined
-        yButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yButton = self.driverController.button(wpilib.XboxController.Button.kY)
         # when "Y" button is pressed, set the speed goal on the shooter to 1500 rpm
         yButton.onTrue(InstantCommand(lambda: self.shooter.setVelocityGoal(1500), self.shooter))
         # when "Y" button is no longer pressed, stop wasting energy on the shooter
@@ -120,6 +120,5 @@ def _getFollowMotorConfig():
 - **if some of the symbols are showing up as "unresolved" errors, these import lines need to be added in the beginning of `robotcontainer.py`**
 ```python
 from commands2 import cmd, InstantCommand, RunCommand
-from commands2.button import JoystickButton
 from wpilib import XboxController
 ```

@@ -56,7 +56,7 @@ class ElevatorConstants:
 
     # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
     # self.elevator.setDefaultCommand(
-    #    commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRightY()), self.elevator)
+    #    commands2.RunCommand(lambda: self.elevator.drive(self.driverController.getRawAxis(XboxController.Axis.kRightY)), self.elevator)
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
