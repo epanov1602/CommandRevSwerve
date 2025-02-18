@@ -77,10 +77,10 @@ class RobotContainer:
         level0DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
 
         level1DropButton = self.scoringController.button(XboxController.Button.kB)
-        level1DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 6.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+        level1DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
 
         level2DropButton = self.scoringController.button(XboxController.Button.kY)
-        level2DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 15.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+        level2DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
 
         level3DropButton = self.scoringController.button(XboxController.Button.kX)
         level3DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135))
@@ -145,14 +145,14 @@ class RobotContainer:
 
         # while "B" button is pressed, feed that gamepiece forward for a split second
         # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
-        rightBumper = self.scoringController.button(wpilib.XboxController.Button.kRightBumper)
+        leftstick = self.scoringController.button(wpilib.XboxController.Button.kLeftStick)
         intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.1).withTimeout(0.3)
-        rightBumper.whileTrue(intakeFeedFwdCmd)
+        leftstick.whileTrue(intakeFeedFwdCmd)
 
         # while "Y" button is pressed, eject the gamepiece backward
-        leftstick = self.scoringController.button(wpilib.XboxController.Button.kLeftStick)
-        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.5).withTimeout(0.3)
-        leftstick.whileTrue(intakeFeedFwdCmd2)
+        rightBumper = self.scoringController.button(wpilib.XboxController.Button.kRightBumper)
+        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
+        rightBumper.whileTrue(intakeFeedFwdCmd2)
 
         # end of the code that must be added
 
