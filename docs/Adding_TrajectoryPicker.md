@@ -170,3 +170,30 @@ class TrajectoryPicker(commands2.Command):
         rightBumperButton = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
         rightBumperButton.onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
 ```
+
+### Can we use trajectory picker to pick other commands (for example, arm position commands)?
+
+Yes we can, but let's call it "position picker" or something, and this can go to `configureButtonBindings(...)`:
+
+```python3
+        from commands.trajectory_picker import TrajectoryPicker
+        positionPicker = TrajectoryPicker(None, dashboardName="positionPicker", subsystems=[self.arm, self.elevator])
+
+        # add a few position commands into position picker
+        from commands.elevatorcommands import MoveElevatorAndArm
+        positionPicker.addCommands("lvl-i", MoveElevatorAndArm(self.elevator, 0.0, self.arm, angle=40))
+        positionPicker.addCommands("lvl 0", MoveElevatorAndArm(self.elevator, 0.0, self.arm, angle=80))
+        positionPicker.addCommands("lvl 1", MoveElevatorAndArm(self.elevator, 6.0, self.arm, angle=80))
+        positionPicker.addCommands("lvl 2", MoveElevatorAndArm(self.elevator, 15.0, self.arm, angle=80))
+        positionPicker.addCommands("lvl 3", MoveElevatorAndArm(self.elevator, 30.0, self.arm, angle=130))
+
+        # when the "A" button is pressed, a command from position picker will run
+        aButton = self.driverController.button(XboxController.Button.kA)
+        aButton.whileTrue(positionPicker)
+
+        # povLeft/povRight button to toggle between previous/next arm position
+        leftPOVButton = self.driverController.povLeft()
+        leftPOVButton.onTrue(InstantCommand(positionPicker.previousTrajectory))
+        rightPOVButton = self.driverController.povRight()
+        rightPOVButton.onTrue(InstantCommand(positionPicker.nextTrajectory))
+```
