@@ -184,8 +184,6 @@ Yes we can, but let's call it "position picker" or something, and this can go to
         positionPicker.addCommands("lvl-i", MoveElevatorAndArm(self.elevator, 0.0, self.arm, angle=40))
         positionPicker.addCommands("lvl 0", MoveElevatorAndArm(self.elevator, 0.0, self.arm, angle=80))
         positionPicker.addCommands("lvl 1", MoveElevatorAndArm(self.elevator, 6.0, self.arm, angle=80))
-        positionPicker.addCommands("lvl 2", MoveElevatorAndArm(self.elevator, 15.0, self.arm, angle=80))
-        positionPicker.addCommands("lvl 3", MoveElevatorAndArm(self.elevator, 30.0, self.arm, angle=130))
 
         # when the "A" button is pressed, a command from position picker will run
         aButton = self.driverController.button(XboxController.Button.kA)
