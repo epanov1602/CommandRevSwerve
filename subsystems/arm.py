@@ -137,6 +137,11 @@ class Arm(Subsystem):
         self.angleGoal = angle
         if self.safeAngleRangeFunction is not None:
             minSafe, maxSafe = self.safeAngleRangeFunction()
+            # pad with 5% if we are close to the limits of safe angle range
+            padding = min([0.05 * (maxSafe - minSafe), 2 * ArmConstants.kAngleTolerance])
+            if padding > 0:
+                minSafe += padding
+                maxSafe -= padding
             if self.angleGoal < minSafe:
                 print(f"WARNING: arm goal {self.angleGoal} clamped to safe range ({minSafe}, {maxSafe}), ={minSafe}")
                 self.angleGoal = minSafe
