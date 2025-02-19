@@ -377,12 +377,19 @@ class SetElevatorPosition(commands2.Command):
         ...
 ```
 
-**Adding buttons to control that elevator in `configureButtonBindings()` function**
+**Adding buttons to test that elevator in `configureButtonBindings()` function**
 
 ```python
     def configureButtonBindings(self) -> None:
         ...
         from commands2 import InstantCommand, RunCommand
+
+        # right stick of the joystick to move the elevator up and down 
+        self.elevator.setDefaultCommand(
+            commands2.RunCommand(lambda: self.elevator.drive(
+                self.driverController.getRawAxis(XboxController.Axis.kRightY)
+            ), self.elevator)
+        )
 
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above) 
         leftBumper = self.driverController.button(XboxController.Button.kLeftBumper)
