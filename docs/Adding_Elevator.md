@@ -2,7 +2,7 @@
 
 **READ FIRST**
 
-* Your elevator must have limit switches, ideally normally-closed which is safest (if you don't have them or they are normally-open, you need to change `limitSwitchType=` to normally-open in the `__init__` function in `subsystems/elevator.py` below, but it is not safe to have normally-open or missing limit switches)
+* Safety first: your elevator must have limit switches, the safe ones are normally-closed (if you don't have them at the moment or they are normally-open, you need to change `limitSwitchType=` to normally-open in the `__init__` function in `subsystems/elevator.py` below and the code will work, but it is not safe to have normally-open or missing limit switches)
 
 * Before you run this first time, check the values of every constant in `ElevatorConstants`
 
