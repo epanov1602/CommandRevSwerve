@@ -752,8 +752,11 @@ We need to add the code for the new subsystem (Localizer) into `subsystems/local
 
 ```python
 
+from __future__ import annotations
+import typing
+
 import commands2
-from wpilib import Timer, Field2d, SmartDashboard, SendableChooser
+from wpilib import Timer, Field2d, SmartDashboard, SendableChooser, DriverStation
 
 # new dependencies!
 from robotpy_apriltag import AprilTagFieldLayout
@@ -782,39 +785,78 @@ class Localizer(commands2.Subsystem):
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
     IMPORTANT_TAG_WEIGHT_FACTOR = 2.0  # if a tag is important (for example, located on a shooting target)
 
-    REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in Elastic/Shuffleboard
+    REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
 
-    def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=()):
+    def __init__(
+        self,
+        drivetrain,
+        fieldLayoutFile: str,
+        ignoreTagIDs=(),
+        importantTagIDs=(),
+        flippedFromAllianceColor: typing.Callable[[DriverStation.Alliance], bool] | None = None
+    ):
         super().__init__()
 
         self.cameras = {}  # empty list of cameras, until cameras are added using addPhotonCamera
         self.drivetrain = drivetrain
         self.fieldDrawing: Field2d = drivetrain.field
 
-        # enabled or not?
-        self.enabled = SendableChooser()
-        self.enabled.setDefaultOption("off", None)
-        self.enabled.addOption("demo", False)
-        self.enabled.addOption("on", True)
-        SmartDashboard.putData("Localizer", self.enabled)
+        # enabled or not? (depends on how we convert alliance color to flipped)
+        self.enabled: SendableChooser | None = None
+        self.flippedFromAllianceColor = flippedFromAllianceColor
 
         from os.path import isfile, join
+        from getpass import getuser
 
+        self.username = getuser()
         self.fieldLayout = None
+        self.fieldLength = None
+        self.fieldWidth = None
         for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
             candidate = join(prefix, fieldLayoutFile)
             print(f"Localizer: trying field layout from {candidate}")
             if isfile(candidate):
                 self.fieldLayout = AprilTagFieldLayout(candidate)
+                self.fieldLength = self.fieldLayout.getFieldLength()
+                self.fieldWidth = self.fieldLayout.getFieldWidth()
                 break
         assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
         print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
+
+        self.learningRateMult = SendableChooser()
+        self.learningRateMult.setDefaultOption("100%", 1.0)
+        self.learningRateMult.addOption("10%", 0.1)
+        self.learningRateMult.addOption("1%", 0.01)
+        self.learningRateMult.addOption("0.1%", 0.001)
+        SmartDashboard.putData("LoclzrLearnRate", self.learningRateMult)
 
         self.ignoreTagIDs = set(ignoreTagIDs)
         self.importantTagIDs = set(importantTagIDs)
         self.recentlySeenTags = deque()
         self.skippedTags = set()
+
+
+    def initEnabledChooser(self):
+        flipped = None
+        if self.username == "admin" and self.flippedFromAllianceColor is not None:
+            # if we are running on RoboRIO, wait until driver station gives us alliance color
+            color = DriverStation.getAlliance()
+            if color is None:
+                return  # we cannot yet decide on whether the field should be flipped
+            flipped = self.flippedFromAllianceColor(color)
+        print("Localizer will assume flipped={}".format(flipped))
+
+        self.enabled = SendableChooser()
+        self.enabled.setDefaultOption("off", (None, False))
+        if flipped in (None, False):
+            self.enabled.addOption("demo", (False, False))
+            self.enabled.addOption("on", (True, False))
+        if flipped in (None, True):
+            self.enabled.addOption("demo-flip", (False, True))
+            self.enabled.addOption("on-flip", (True, True))
+        SmartDashboard.putData("Localizer", self.enabled)
+
 
     def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0)):
         """
@@ -840,16 +882,21 @@ class Localizer(commands2.Subsystem):
 
 
     def periodic(self):
+        enabled, flipped = None, False
+        if self.enabled is None:
+            self.initEnabledChooser()
+        if self.enabled is not None:
+            enabled, flipped = self.enabled.getSelected()
+
         self.skippedTags.clear()
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
-        enabled = self.enabled.getSelected()
-
-        while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
-            self.recentlySeenTags.popleft()
+        learningRate = Localizer.LEARNING_RATE * self.learningRateMult.getSelected()
+        ready = True
 
         # if saw more multiple tags in the last 0.25s, then apply adjustments (if enabled)
-        ready = True
+        while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
+            self.recentlySeenTags.popleft()
         if Localizer.ONLY_WORK_IF_SEEING_MULTIPLE_TAGS:
             ready = self.recentlySawMoreThanOneTag(now - 0.25)
 
@@ -900,11 +947,10 @@ class Localizer(commands2.Subsystem):
                 if tagFieldPosition is None:
                     self.skippedTags.add(tagId)
                     continue  # our field map does not know this tag
-
                 self.recentlySeenTags.append((now, tagId))
 
                 odometryAdjustment = self.calculateOdometryAdjustment(
-                    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition)
+                    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
                 if enabled and ready and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
@@ -915,8 +961,12 @@ class Localizer(commands2.Subsystem):
                 self.eraseUnusedLastDrawnTags(camera, tagsSeen)
                 camera.lastDrawnTags = tagsSeen
 
-        skipped = ",".join(str(t) for t in self.skippedTags) if self.skippedTags else ""
-        SmartDashboard.putString("LocalizerSkipped", skipped)
+        # if waiting for alliance color, then all tags are skipped
+        if self.enabled is None:
+            SmartDashboard.putString("LocalizerSkipped", "waiting for alliance color")
+        else:
+            skipped = ",".join(str(t) for t in self.skippedTags) if self.skippedTags else ""
+            SmartDashboard.putString("LocalizerSkipped", skipped)
 
     def eraseUnusedLastDrawnTags(self, camera, tagsSeen):
         for tagId in camera.lastDrawnTags:
@@ -925,9 +975,13 @@ class Localizer(commands2.Subsystem):
                 self.fieldDrawing.getObject(lineToTag).setPoses([])
                 self.fieldDrawing.getObject(lineFromTag).setPoses([])
 
-    def calculateOdometryAdjustment(self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition):
+    def calculateOdometryAdjustment(
+        self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
+    ):
         tagId = tag.getFiducialId()
         tagLocation2d = tagFieldPosition.toPose2d().translation()
+        if flipped:
+            tagLocation2d = Translation2d(x=self.fieldLength, y=self.fieldWidth) - tagLocation2d
 
         cameraPoseOnRobot: Pose2d = camera.cameraPoseOnRobot
         cameraLocation2d = robotLocation2d + cameraPoseOnRobot.translation().rotateBy(robotDirection2d)
@@ -959,7 +1013,6 @@ class Localizer(commands2.Subsystem):
         turnDegrees = Rotation2d.fromDegrees((turnDegrees + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's -10 deg
 
         # use "learning rate" (for example, 0.05) to partly apply this (X, Y) shift and partly the shift in heading
-        learningRate = Localizer.LEARNING_RATE
         if tagId in self.importantTagIDs:
             learningRate = learningRate * Localizer.IMPORTANT_TAG_WEIGHT_FACTOR
 
