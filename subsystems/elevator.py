@@ -207,7 +207,7 @@ class Elevator(Subsystem):
             self.leadMotor.set(0)  # zero setpoint now
             self.relativeEncoder.setPosition(0.0)  # reset the relative encoder
             self.pidController = self.leadMotor.getClosedLoopController()
-            self.setPositionGoal(self.positionGoal)
+            self.setPositionGoal(ElevatorConstants.minPositionGoal)
             return
         # otherwise, continue finding it
         self.leadMotor.set(-ElevatorConstants.findingZeroSpeed)
