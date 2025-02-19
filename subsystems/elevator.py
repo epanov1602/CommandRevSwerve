@@ -223,7 +223,7 @@ class Elevator(Subsystem):
         if not self.zeroFound:
             return "finding zero"
         if self.stopReason:
-            return "stopped early"
+            return self.stopReason
         # otherwise, everything is ok
         return "ok"
 
@@ -264,8 +264,8 @@ class Elevator(Subsystem):
             self.leadMotor.set(0)
             self.setPositionGoal(self.getPosition())
             print(f"WARNING: elevator stopped because {unsafeToMove}")
-        if unsafeToMove:
-            self.stopReason = unsafeToMove
+        if unsafeToMove and not self.stopReason:
+            self.stopReason = f"safe stop ({unsafeToMove})"
         self.unsafeToMove = unsafeToMove
         # 2. do we need to find zero?
         if not self.zeroFound:
