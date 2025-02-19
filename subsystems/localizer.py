@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import commands2
 from wpilib import Timer, Field2d, SmartDashboard, SendableChooser
 
@@ -22,6 +24,7 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
+    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = False  # avoid making adjustments to odometry if only one tag is seen
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
@@ -30,7 +33,7 @@ class Localizer(commands2.Subsystem):
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
 
-    def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=()):
+    def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=(), flipped:bool | None=None):
         super().__init__()
 
         self.cameras = {}  # empty list of cameras, until cameras are added using addPhotonCamera
@@ -39,25 +42,44 @@ class Localizer(commands2.Subsystem):
 
         # enabled or not?
         self.enabled = SendableChooser()
-        self.enabled.setDefaultOption("off", None)
-        self.enabled.addOption("demo", False)
-        self.enabled.addOption("on", True)
+        self.enabled.setDefaultOption("off", (None, False))
+        if flipped in (None, False):
+            self.enabled.addOption("demo", (False, False))
+        if flipped in (None, True):
+            self.enabled.addOption("demo-flip", (False, True))
+        if flipped in (None, False):
+            self.enabled.addOption("on", (True, False))
+        if flipped in (None, True):
+            self.enabled.addOption("on-flip", (True, True))
         SmartDashboard.putData("Localizer", self.enabled)
 
         from os.path import isfile, join
 
         self.fieldLayout = None
+        self.fieldLength = None
+        self.fieldWidth = None
         for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
             candidate = join(prefix, fieldLayoutFile)
             print(f"Localizer: trying field layout from {candidate}")
             if isfile(candidate):
                 self.fieldLayout = AprilTagFieldLayout(candidate)
+                self.fieldLength = self.fieldLayout.getFieldLength()
+                self.fieldWidth = self.fieldLayout.getFieldWidth()
                 break
         assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
         print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
 
+        # enabled or not?
+        self.learningRateMult = SendableChooser()
+        self.learningRateMult.setDefaultOption("100%", 1.0)
+        self.learningRateMult.addOption("10%", 0.1)
+        self.learningRateMult.addOption("1%", 0.01)
+        self.learningRateMult.addOption("0.1%", 0.001)
+        SmartDashboard.putData("LoclzrLearnRate", self.learningRateMult)
+
         self.ignoreTagIDs = set(ignoreTagIDs)
         self.importantTagIDs = set(importantTagIDs)
+        self.recentlySeenTags = deque()
         self.skippedTags = set()
 
     def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0)):
@@ -72,11 +94,31 @@ class Localizer(commands2.Subsystem):
         self.cameras[name] = CameraState(name, cameraPose, photonCamera, 0, [], 0, deque())
 
 
+    def recentlySawMoreThanOneTag(self, horizonTime):
+        lastTagSeen = None
+        for t, tagId in reversed(self.recentlySeenTags):
+            if t < horizonTime:
+                break
+            if lastTagSeen is None:
+                lastTagSeen = tagId
+            elif tagId != lastTagSeen:
+                return True  # saw lastTagSeen and this other tagId => more than one seen recently
+
+
     def periodic(self):
         self.skippedTags.clear()
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
-        enabled = self.enabled.getSelected()
+
+        enabled, flipped = self.enabled.getSelected()
+        learningRate = Localizer.LEARNING_RATE * self.learningRateMult.getSelected()
+        ready = True
+
+        # if saw more multiple tags in the last 0.25s, then apply adjustments (if enabled)
+        while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
+            self.recentlySeenTags.popleft()
+        if Localizer.ONLY_WORK_IF_SEEING_MULTIPLE_TAGS:
+            ready = self.recentlySawMoreThanOneTag(now - 0.25)
 
         for name, camera in self.cameras.items():
             if enabled is None:
@@ -125,11 +167,12 @@ class Localizer(commands2.Subsystem):
                 if tagFieldPosition is None:
                     self.skippedTags.add(tagId)
                     continue  # our field map does not know this tag
+                self.recentlySeenTags.append((now, tagId))
 
                 odometryAdjustment = self.calculateOdometryAdjustment(
-                    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition)
+                    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
-                if enabled and (odometryAdjustment is not None):
+                if enabled and ready and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
                     self.drivetrain.adjustOdometry(shift, turn)
 
@@ -148,9 +191,13 @@ class Localizer(commands2.Subsystem):
                 self.fieldDrawing.getObject(lineToTag).setPoses([])
                 self.fieldDrawing.getObject(lineFromTag).setPoses([])
 
-    def calculateOdometryAdjustment(self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition):
+    def calculateOdometryAdjustment(
+        self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
+    ):
         tagId = tag.getFiducialId()
         tagLocation2d = tagFieldPosition.toPose2d().translation()
+        if flipped:
+            tagLocation2d = Translation2d(x=self.fieldLength, y=self.fieldWidth) - tagLocation2d
 
         cameraPoseOnRobot: Pose2d = camera.cameraPoseOnRobot
         cameraLocation2d = robotLocation2d + cameraPoseOnRobot.translation().rotateBy(robotDirection2d)
@@ -182,7 +229,6 @@ class Localizer(commands2.Subsystem):
         turnDegrees = Rotation2d.fromDegrees((turnDegrees + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's -10 deg
 
         # use "learning rate" (for example, 0.05) to partly apply this (X, Y) shift and partly the shift in heading
-        learningRate = Localizer.LEARNING_RATE
         if tagId in self.importantTagIDs:
             learningRate = learningRate * Localizer.IMPORTANT_TAG_WEIGHT_FACTOR
 
