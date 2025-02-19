@@ -156,6 +156,19 @@ class RobotContainer:
 
         # end of the code that must be added
 
+        from commands.trajectory_picker import TrajectoryPicker
+        positionPicker = TrajectoryPicker(
+            self.robotDrive.field,
+            # which subsystems must be locked for exclusive use?
+            subsystems=[self.arm, self.elevator],
+        )
+        leftPOVButton = self.driverController.povDown()
+        leftPOVButton.onTrue(InstantCommand(positionPicker.nextTrajectory))
+
+        from commands.elevatorcommands import MoveElevatorAndArm
+        MoveElevatorAndArm(self.elevator, 0.0, self.arm, angle=40)
+
+
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
         This should be called on robot disable to prevent integral windup."""
