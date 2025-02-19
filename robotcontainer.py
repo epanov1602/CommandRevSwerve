@@ -89,7 +89,16 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem()
 
         from subsystems.localizer import Localizer
-        self.localizer = Localizer(drivetrain=self.robotDrive, fieldLayoutFile="2025-reefscape.json")
+
+        # tell the localizer to only allow flipped field, if it's known that the alliance color is red
+        def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
+            return allianceColor == wpilib.DriverStation.Alliance.kRed
+
+        self.localizer = Localizer(
+            drivetrain=self.robotDrive,
+            fieldLayoutFile="2025-reefscape.json",
+            flippedFromAllianceColor=fieldShouldBeFlipped
+        )
         self.localizer.addPhotonCamera("front_camera", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
         self.localizer.addPhotonCamera("left_camera", directionDegrees=+90, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
 
