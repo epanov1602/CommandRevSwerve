@@ -1,7 +1,8 @@
 from __future__ import annotations
+import typing
 
 import commands2
-from wpilib import Timer, Field2d, SmartDashboard, SendableChooser
+from wpilib import Timer, Field2d, SmartDashboard, SendableChooser, DriverStation
 
 # new dependencies!
 from robotpy_apriltag import AprilTagFieldLayout
@@ -33,28 +34,28 @@ class Localizer(commands2.Subsystem):
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
 
-    def __init__(self, drivetrain, fieldLayoutFile: str, ignoreTagIDs=(), importantTagIDs=(), flipped:bool | None=None):
+    def __init__(
+        self,
+        drivetrain,
+        fieldLayoutFile: str,
+        ignoreTagIDs=(),
+        importantTagIDs=(),
+        flippedFromAllianceColor: typing.Callable[[DriverStation.Alliance], bool] | None = None
+    ):
         super().__init__()
 
         self.cameras = {}  # empty list of cameras, until cameras are added using addPhotonCamera
         self.drivetrain = drivetrain
         self.fieldDrawing: Field2d = drivetrain.field
 
-        # enabled or not?
-        self.enabled = SendableChooser()
-        self.enabled.setDefaultOption("off", (None, False))
-        if flipped in (None, False):
-            self.enabled.addOption("demo", (False, False))
-        if flipped in (None, True):
-            self.enabled.addOption("demo-flip", (False, True))
-        if flipped in (None, False):
-            self.enabled.addOption("on", (True, False))
-        if flipped in (None, True):
-            self.enabled.addOption("on-flip", (True, True))
-        SmartDashboard.putData("Localizer", self.enabled)
+        # enabled or not? (depends on how we convert alliance color to flipped)
+        self.enabled: SendableChooser | None = None
+        self.flippedFromAllianceColor = flippedFromAllianceColor
 
         from os.path import isfile, join
+        from getpass import getuser
 
+        self.username = getuser()
         self.fieldLayout = None
         self.fieldLength = None
         self.fieldWidth = None
@@ -69,7 +70,6 @@ class Localizer(commands2.Subsystem):
         assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
         print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
 
-        # enabled or not?
         self.learningRateMult = SendableChooser()
         self.learningRateMult.setDefaultOption("100%", 1.0)
         self.learningRateMult.addOption("10%", 0.1)
@@ -81,6 +81,28 @@ class Localizer(commands2.Subsystem):
         self.importantTagIDs = set(importantTagIDs)
         self.recentlySeenTags = deque()
         self.skippedTags = set()
+
+
+    def initEnabledChooser(self):
+        flipped = None
+        if self.username == "admin" and self.flippedFromAllianceColor is not None:
+            # if we are running on RoboRIO, wait until driver station gives us alliance color
+            color = DriverStation.getAlliance()
+            if color is None:
+                return  # we cannot yet decide on whether the field should be flipped
+            flipped = self.flippedFromAllianceColor(color)
+        print("Localizer will assume flipped={}".format(flipped))
+
+        self.enabled = SendableChooser()
+        self.enabled.setDefaultOption("off", (None, False))
+        if flipped in (None, False):
+            self.enabled.addOption("demo", (False, False))
+            self.enabled.addOption("on", (True, False))
+        if flipped in (None, True):
+            self.enabled.addOption("demo-flip", (False, True))
+            self.enabled.addOption("on-flip", (True, True))
+        SmartDashboard.putData("Localizer", self.enabled)
+
 
     def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0)):
         """
@@ -106,11 +128,15 @@ class Localizer(commands2.Subsystem):
 
 
     def periodic(self):
+        enabled, flipped = None, False
+        if self.enabled is None:
+            self.initEnabledChooser()
+        if self.enabled is not None:
+            enabled, flipped = self.enabled.getSelected()
+
         self.skippedTags.clear()
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
-
-        enabled, flipped = self.enabled.getSelected()
         learningRate = Localizer.LEARNING_RATE * self.learningRateMult.getSelected()
         ready = True
 
@@ -181,8 +207,12 @@ class Localizer(commands2.Subsystem):
                 self.eraseUnusedLastDrawnTags(camera, tagsSeen)
                 camera.lastDrawnTags = tagsSeen
 
-        skipped = ",".join(str(t) for t in self.skippedTags) if self.skippedTags else ""
-        SmartDashboard.putString("LocalizerSkipped", skipped)
+        # if waiting for alliance color, then all tags are skipped
+        if self.enabled is None:
+            SmartDashboard.putString("LocalizerSkipped", "waiting for alliance color")
+        else:
+            skipped = ",".join(str(t) for t in self.skippedTags) if self.skippedTags else ""
+            SmartDashboard.putString("LocalizerSkipped", skipped)
 
     def eraseUnusedLastDrawnTags(self, camera, tagsSeen):
         for tagId in camera.lastDrawnTags:
