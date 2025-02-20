@@ -118,20 +118,21 @@ class SwerveToPoint(commands2.Command):
 
 
 class SwerveToSide(commands2.Command):
-    def __init__(self, metersToTheLeft: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
+    def __init__(self, metersToTheLeft: float, metersBackwards: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
+        self.metersBackwards = metersBackwards
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
         heading = position.rotation()
-        target = position.translation() + Translation2d(x=0, y=self.metersToTheLeft).rotateBy(heading)
+        tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
-            x=target.x, y=target.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
+            x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
         )
         self.subcommand.initialize()
 

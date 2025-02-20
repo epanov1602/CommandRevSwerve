@@ -229,7 +229,8 @@ class RobotContainer:
         alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
 
         from commands.swervetopoint import SwerveToSide
-        swervleft = SwerveToSide(metersToTheLeft=0.2, speed=0.2, drivetrain=self.robotDrive)
+        swervleft = SwerveToSide(metersToTheLeft=0.2, metersBackwards=0.01, speed=0.2, drivetrain=self.robotDrive)
+
         from commands.aimtodirection import AimToDirection
         aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
 
