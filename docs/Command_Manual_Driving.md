@@ -4,6 +4,8 @@
 If you want to reset odometry (position on the field) to some known location, something like this goes to `configureButtonBindings(...)`:
 
 ```python3
+        from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+
         # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 60 degrees **east**)
         startButton = self.drivingController.button(XboxController.Button.kStart)
         startButton.onTrue(
