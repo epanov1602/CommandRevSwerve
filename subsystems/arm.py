@@ -101,6 +101,21 @@ class Arm(Subsystem):
         self.safeAngleRangeFunction = safeAngleRangeFunction
 
 
+    def isUnsafeToMoveElevator(self):
+        if self.safeAngleRangeFunction is not None:
+            minSafeAngle, maxSafeAngle = self.safeAngleRangeFunction()
+            angle = self.getAngle()
+            if angle < minSafeAngle:
+                return "arm angle too low"
+            if angle > maxSafeAngle:
+                return "arm angle too high"
+            angleGoal = self.getAngleGoal()
+            if angleGoal < minSafeAngle:
+                return "arm anglegoal too low"
+            if angleGoal > maxSafeAngle:
+                return "arm anglegoal too high"
+
+
     def periodic(self) -> None:
         SmartDashboard.putNumber(self.armAngleGoalLabel, self.angleGoal)
         SmartDashboard.putNumber(self.armAngleLabel, self.getAngle())

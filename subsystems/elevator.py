@@ -57,6 +57,7 @@ class Elevator(Subsystem):
             motorClass=SparkMax,
             limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
             arm=None,
+            intake=None,
     ) -> None:
         """
         Constructs an elevator.
@@ -72,7 +73,8 @@ class Elevator(Subsystem):
         self.presetSwitchPositions = presetSwitchPositions
 
         # do we have an arm what we must watch for safe angles?
-        self.arm = arm
+        self.arm = arm if hasattr(arm, "isUnsafeToMoveElevator") else None
+        self.intake = intake if hasattr(intake, "isUnsafeToMoveElevator") else None
         self.unsafeToMove = ""  # empty string = not unsafe
         self.stopReason = ""
 
@@ -248,17 +250,14 @@ class Elevator(Subsystem):
 
     def isUnsafeToMove(self):
         if self.arm is not None:
-            angle = self.arm.getAngle()
-            minSafeAngle, maxSafeAngle = constants.safeArmAngleRange(self.getPosition())
-            if angle < minSafeAngle:
-                return "arm angle too low"
-            if angle > maxSafeAngle:
-                return "arm angle too high"
-            angleGoal = self.arm.getAngleGoal()
-            if angleGoal < minSafeAngle:
-                return "arm anglegoal too low"
-            if angleGoal > maxSafeAngle:
-                return "arm anglegoal too high"
+            reason = self.arm.isUnsafeToMoveElevator()
+            if reason:
+                return reason
+        if self.intake is not None:
+            reason = self.intake.isUnsafeToMoveElevator()
+            if reason:
+                return reason
+        return ""  # return empty string by default (safe to move)
 
 
     def periodic(self):

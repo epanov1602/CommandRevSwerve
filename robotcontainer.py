@@ -49,11 +49,14 @@ class RobotContainer:
         from rev import LimitSwitchConfig
         from subsystems.elevator import Elevator
 
-        self.elevator = Elevator(leadMotorCANId=DriveConstants.kLeadElevationCanId,
-                                followMotorCANId=DriveConstants.kFollowElevationCanId,
-                                presetSwitchPositions=(2, 15, 28), motorClass=rev.SparkMax,
-                                limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
-                                arm=self.arm)
+        self.elevator = Elevator(
+            leadMotorCANId=DriveConstants.kLeadElevationCanId,
+            followMotorCANId=DriveConstants.kFollowElevationCanId,
+            presetSwitchPositions=(2, 15, 28), motorClass=rev.SparkMax,
+            limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
+            arm=self.arm,
+            intake=self.intake
+        )
 
         # make sure the arm respects a possibly tighter safe angle range, depending on current elevator pos
         if self.arm is not None:

@@ -75,6 +75,15 @@ class Intake(Subsystem):
         return self.sensingGamepiece
 
 
+    def isGamepiecePartlyIn(self):
+        return self.rangeFinderSensingGamepiece
+
+
+    def isUnsafeToMoveElevator(self):
+        if self.rangeFinderSensingGamepiece:  # when gamepiece is only partly in, it is not safe to move elevator
+            return "intake not done intaking"
+
+
     def noGamepieceInside(self) -> bool:
         return not self.isGamepieceInside()
 
