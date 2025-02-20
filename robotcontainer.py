@@ -91,7 +91,7 @@ class RobotContainer:
                 return 0.25  # if elevator does not know its zero, max speed = 25%
             elevatorPosition = self.elevator.getPosition()
             if elevatorPosition > 7.0:
-                return 0.33  # if elevator position is above 7 inches, max speed = 33%
+                return 0.95  # if elevator position is above 7 inches, max speed = 95% (maybe needs to be much lower?)
             # otherwise, full 100%
             return 1.0
 
