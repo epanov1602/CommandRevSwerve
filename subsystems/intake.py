@@ -66,9 +66,10 @@ class Intake(Subsystem):
 
 
     def enableLimitSwitch(self):
-        self.stopIfSensingGamepiece = True
-        self.timeWhenGamepiecePartlyEntered = 0
-        self.timeWhenGamepieceFullyEntered = 0
+        if not self.stopIfSensingGamepiece:
+            self.stopIfSensingGamepiece = True
+            self.timeWhenGamepiecePartlyEntered = 0
+            self.timeWhenGamepieceFullyEntered = 0
 
 
     def disableLimitSwitch(self):
