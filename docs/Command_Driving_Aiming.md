@@ -476,20 +476,21 @@ class SwerveToPoint(commands2.Command):
 
 
 class SwerveToSide(commands2.Command):
-    def __init__(self, metersToTheLeft: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
+    def __init__(self, metersToTheLeft: float, metersBackwards: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
+        self.metersBackwards = metersBackwards
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
         heading = position.rotation()
-        target = position.translation() + Translation2d(x=0, y=self.metersToTheLeft).rotateBy(heading)
+        tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
-            x=target.x, y=target.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
+            x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
         )
         self.subcommand.initialize()
 
@@ -1081,8 +1082,8 @@ class FindObject(commands2.Command):
         # connect them together
         scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(dropCoralOnLevel2)
 
-        # or you can do this, if you want to score the coral 15 centimeters to the right of above the AprilTag
-        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, speed=0.2)
+        # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
+        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
         # scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide).andThen(dropCoralOnLevel2)
 
 ```
