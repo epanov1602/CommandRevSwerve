@@ -10,7 +10,7 @@ If you want to reset odometry (position on the field) to some known location, so
         startButton = self.drivingController.button(XboxController.Button.kStart)
         startButton.onTrue(
             InstantCommand(
-                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 6.90), Rotation2d.fromDegrees(-60)))
+                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 6.90), Rotation2d.fromDegrees(-54)))
             )
         )
 
@@ -18,7 +18,7 @@ If you want to reset odometry (position on the field) to some known location, so
         backButton = self.drivingController.button(XboxController.Button.kBack)
         backButton.onTrue(
             InstantCommand(
-                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(60)))
+                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(54)))
             )
         )
 ```
