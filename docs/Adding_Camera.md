@@ -283,14 +283,16 @@ class PhotonTagCamera(Subsystem):
                 self.lastHeartbeatTime = resultTime
                 self.ta, self.tx, self.ty = 0, 0, 0
                 self.hb += 1
+                biggest = 0
                 for obj in result.getTargets():
                     if self.onlyTagIds and obj.getFiducialId() not in self.onlyTagIds:
                         continue  # if we are only supposed to look at a few tag IDs, skip other tags
-                    self.tx = obj.getYaw()
-                    self.ty = obj.getPitch()
-                    self.ta = obj.getArea()
-                    if self.tx != 0 or self.ty != 0:
-                        break  # we have a detection
+                    area = obj.getArea()
+                    if area > 0 and area >= biggest:  # between multiple detections, choose the biggest
+                        self.tx = obj.getYaw()
+                        self.ty = obj.getPitch()
+                        self.ta = area
+                        biggest = area
 
         # 2. report the state of the camera
         heartbeating = now < self.lastHeartbeatTime + 5  # no heartbeat for 5s => stale camera
