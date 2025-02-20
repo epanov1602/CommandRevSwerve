@@ -37,26 +37,18 @@ class RobotContainer:
         self.configureButtonBindings()
         self.configureAutos()
 
-        # Configure default commands
+        # Configure default command for driving using sticks
+        from commands.holonomicdrive import HolonomicDrive
         self.robotDrive.setDefaultCommand(
-            # The left stick controls translation of the robot.
-            # Turning is controlled by the X axis of the right stick.
-            commands2.RunCommand(
-                lambda: self.robotDrive.drive(
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kLeftY), OIConstants.kDriveDeadband
-                    ),
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kLeftX), OIConstants.kDriveDeadband
-                    ),
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kRightX), OIConstants.kDriveDeadband
-                    ),
-                    True,
-                    True,
-                    square=True,
-                ),
+            HolonomicDrive(
                 self.robotDrive,
+                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                deadband=OIConstants.kDriveDeadband,
+                fieldRelative=True,
+                rateLimit=True,
+                square=True,
             )
         )
 

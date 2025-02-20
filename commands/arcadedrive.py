@@ -1,8 +1,6 @@
 from __future__ import annotations
 import commands2
 
-from wpimath.geometry import Rotation2d, Pose2d, Translation2d
-
 
 class ArcadeDrive(commands2.Command):
     def __init__(self, driveSpeed, rotationSpeed, drivetrain, assumeManualInput=False):
