@@ -6,7 +6,7 @@ If you want to reset odometry (position on the field) to some known location, so
 ```python3
         from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 
-        # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 60 degrees **east**)
+        # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 54 degrees **east**)
         startButton = self.drivingController.button(XboxController.Button.kStart)
         startButton.onTrue(
             InstantCommand(
@@ -14,13 +14,17 @@ If you want to reset odometry (position on the field) to some known location, so
             )
         )
 
-        # if "end" button pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=1.15, 60 degrees **west**)
+        # if "end" button pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=1.15, 54 degrees **west**)
         backButton = self.drivingController.button(XboxController.Button.kBack)
         backButton.onTrue(
             InstantCommand(
                 lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(54)))
             )
         )
+
+        # coordinates above assume robot bumper length=0.9 meters (width does not matter), but if you need to recompute then:
+        #  - center of feeding station is x=0.84, y=0.65 (lower) and x=0.84, y=7.40 (upper), heading=+-54 degrees
+
 ```
 
 ## 2. Aiming using robot video feed? Switch to FPV driving ("first-person view") if left-trigger is pushed more than 50%
