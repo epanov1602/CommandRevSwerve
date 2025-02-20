@@ -43,7 +43,11 @@ class RobotContainer:
         self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
         from subsystems.intake import Intake
-        self.intake = Intake(leaderCanID=19, followerCanID=None, leaderInverted=True, followerInverted=False)
+        from playingwithfusion import TimeOfFlight
+        self.intake = Intake(
+            leaderCanID=19, followerCanID=None, leaderInverted=True, followerInverted=False,
+            rangeFinder=TimeOfFlight(33), rangeToGamepiece=100,
+        )
 
         # The robots Elevator
         from rev import LimitSwitchConfig
@@ -74,7 +78,7 @@ class RobotContainer:
 
         intakingPosButton = self.scoringController.povLeft()  # position for intaking
         from commands.elevatorcommands import MoveElevatorAndArm
-        intakingPosButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42))
+        intakingPosButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42))
 
         level0DropButton = self.scoringController.button(XboxController.Button.kA)  # button(XboxController.Button.kRightBumper)
         level0DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
