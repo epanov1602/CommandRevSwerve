@@ -159,16 +159,16 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset += dRot
 
+    def stop(self):
+        self.arcadeDrive(0, 0)
+
     def arcadeDrive(
         self,
         xSpeed: float,
         rot: float,
         assumeManualInput: bool = False,
     ) -> None:
-        if assumeManualInput:
-            xSpeed = xSpeed * abs(xSpeed)
-            rot = rot * abs(rot)
-        self.drive(xSpeed, 0, rot, False, False)
+        self.drive(xSpeed, 0, rot, False, False, square=assumeManualInput)
 
     def rotate(self, rotSpeed) -> None:
         """

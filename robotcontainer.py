@@ -106,28 +106,23 @@ class RobotContainer:
         self.configureButtonBindings()
         self.configureAutos()
 
-        # Configure default commands
+        from commands.holonomicdrive import HolonomicDrive
+
+        # Configure drivetrain commands
         self.robotDrive.setDefaultCommand(
-            # The left stick controls translation of the robot.
-            # Turning is controlled by the X axis of the right stick.
-            commands2.RunCommand(
-                lambda: self.robotDrive.drive(
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kLeftY), OIConstants.kDriveDeadband
-                    ),
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kLeftX), OIConstants.kDriveDeadband
-                    ),
-                    -wpimath.applyDeadband(
-                        self.driverController.getRawAxis(XboxController.Axis.kRightX), OIConstants.kDriveDeadband
-                    ),
-                    True,
-                    True,
-                    square=True,
-                ),
+            # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
+            HolonomicDrive(
                 self.robotDrive,
+                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                deadband=OIConstants.kDriveDeadband,
+                fieldRelative=True,
+                rateLimit=True,
+                square=True,
             )
         )
+
 
     def configureButtonBindings(self) -> None:
         """
