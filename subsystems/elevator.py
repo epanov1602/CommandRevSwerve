@@ -66,6 +66,7 @@ class Elevator(Subsystem):
         super().__init__()
 
         self.zeroFound = False
+        self.position = 1.0
         self.positionGoal = None
         self.positionGoalSwitchIndex = 0
         self.presetSwitchPositions = presetSwitchPositions
@@ -156,6 +157,9 @@ class Elevator(Subsystem):
         return self.positionGoal
 
     def getPosition(self) -> float:
+        return self.position
+
+    def _getPosition(self) -> float:
         if self.absoluteEncoder is not None:
             return self.absoluteEncoder.getPosition()
         else:
@@ -258,6 +262,7 @@ class Elevator(Subsystem):
 
 
     def periodic(self):
+        self.position = self._getPosition()
         # 1. do we need to stop the elevator because arm is at unsafe angle?
         unsafeToMove = self.isUnsafeToMove()
         if unsafeToMove and not self.unsafeToMove:
