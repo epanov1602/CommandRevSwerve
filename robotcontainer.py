@@ -104,7 +104,7 @@ class RobotContainer:
                 return 0.25  # if elevator does not know its zero, max speed = 25%
             elevatorPosition = self.elevator.getPosition()
             if elevatorPosition > 7.0:
-                return 0.95  # if elevator position is above 7 inches, max speed = 95% (maybe needs to be much lower?)
+                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
             # otherwise, full 100%
             return 1.0
 
@@ -178,6 +178,46 @@ class RobotContainer:
         rightBumper = self.scoringController.button(XboxController.Button.kRightBumper)
         intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.1).withTimeout(0.3)
         rightBumper.whileTrue(intakeFeedFwdCmd2)
+
+        from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+
+        # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 54 degrees **east**)
+        startButton = self.scoringController.button(XboxController.Button.kStart)
+        startButton.onTrue(
+            InstantCommand(
+                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 6.90), Rotation2d.fromDegrees(-54)))
+            )
+        )
+
+        # if "end" button pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=1.15, 54 degrees **west**)
+        backButton = self.scoringController.button(XboxController.Button.kBack)
+        backButton.onTrue(
+            InstantCommand(
+                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(54)))
+            )
+        )
+
+        # coordinates above assume robot bumper length=0.9 meters (width does not matter), but if you need to recompute then:
+        #  - center of feeding station is x=0.84, y=0.65 (lower) and x=0.84, y=7.40 (upper), heading=+-54 degrees
+
+
+        from commands.holonomicdrive import HolonomicDrive
+
+        # if someone pushes left trigger of scoring controller more than 50%
+        leftTriggerAsButton = self.scoringController.axisGreaterThan(XboxController.Axis.kLeftTrigger, threshold=0.50)
+        # ... then the sticks of the scoring controller start driving the robot FPV-style (not field-relative)
+        leftTriggerAsButton.whileTrue(
+            HolonomicDrive(
+                self.robotDrive,
+                forwardSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kRightX),
+                deadband=0,
+                fieldRelative=False,  # driving FPV (first person view), not field-relative (install an FPV camera on robot?)
+                rateLimit=False,
+                square=False,
+            )
+        )
 
 
     def disablePIDSubsystems(self) -> None:
