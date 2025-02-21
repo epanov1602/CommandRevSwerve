@@ -11,7 +11,8 @@ class Intake(Subsystem):
                  followerCanID=None,
                  followerInverted=False,
                  rangeFinder=None,
-                 rangeToGamepiece=None) -> None:
+                 rangeToGamepiece=None,
+    ) -> None:
         """
         :param leaderCanID: CAN ID of the leader motor (or of your only motor)
         :param leaderInverted: is the leader motor inverted?
@@ -63,6 +64,7 @@ class Intake(Subsystem):
         # 3. if we have a rangefinder, set it up
         self.rangeFinder = rangeFinder
         self.rangeToGamepiece = rangeToGamepiece
+        assert rangeToGamepiece > 0 or rangeFinder is None, f"if rangefinder is specified, rangeToGamepiece must be >0"
 
 
     def enableLimitSwitch(self):
@@ -114,19 +116,7 @@ class Intake(Subsystem):
             range = self.rangeFinder.getRange()
             SmartDashboard.putNumber("intakeRangeToGamepiece", range)
             self.rangefinderBlockedByGamepiece = range != 0 and range <= self.rangeToGamepiece
-            # manage the entry and exit time of gamepiece near rangefinder
-            if self.stopIfSensingGamepiece:
-                now = Timer.getFPGATimestamp()
-                if self.rangefinderT1 == 0:
-                    if self.rangefinderBlockedByGamepiece:
-                        print(f"Intake: at t={now}, range={range} => gamepiece partly entered now")
-                        self.rangefinderT1 = now
-                elif self.rangefinderT2 == 0 and now > self.rangefinderT2 + 0.05:
-                    if range > self.rangeToGamepiece:
-                        print(f"Intake: at t={now}, range={range} => gamepiece fully entered {now - self.rangefinderT1} seconds later at speed {self.desiredSpeedL}")
-                        self.rangefinderT2 = now
-            SmartDashboard.putNumber("intakeT1", self.rangefinderT1)
-            SmartDashboard.putNumber("intakeT2", self.rangefinderT2)
+            self.updateT1T2T3(range)
 
         # 3. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
         limitSwitchThinkingItsInside = self.isLimitSwitchThinkingGamepieceInside()
@@ -151,6 +141,22 @@ class Intake(Subsystem):
             self.followerMotor.set(speedF)
             SmartDashboard.putNumber("intakeSpeedF", speedF)
 
+    def updateT1T2T3(self, range):
+        definitelyBlocked = 0 < range and range <= self.rangeToGamepiece
+        definitelyNotBlocked = range > self.rangeToGamepiece
+        if self.stopIfSensingGamepiece:
+            now = Timer.getFPGATimestamp()
+            if self.rangefinderT1 == 0:
+                if definitelyBlocked:
+                    print(f"Intake: at t={now}, range={range} => gamepiece partly entered now")
+                    self.rangefinderT1 = now
+            elif self.rangefinderT2 == 0 and now > self.rangefinderT2 + 0.05:
+                if definitelyNotBlocked:
+                    print(
+                        f"Intake: at t={now}, range={range} => gamepiece fully entered {now - self.rangefinderT1} seconds later at speed {self.desiredSpeedL}")
+                    self.rangefinderT2 = now
+        SmartDashboard.putNumber("intakeT1", self.rangefinderT1)
+        SmartDashboard.putNumber("intakeT2", self.rangefinderT2)
 
     def intakeGamepiece(self, speed=0.25, speedF=None):
         """
