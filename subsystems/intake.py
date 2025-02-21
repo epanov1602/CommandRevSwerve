@@ -3,6 +3,8 @@ from commands2 import Subsystem
 from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard, Timer
 
+EMA_RATE = 0.05
+
 
 class Intake(Subsystem):
     def __init__(self,
@@ -98,7 +100,7 @@ class Intake(Subsystem):
         if self.rangefinderT2 != 0 and self.stopIfSensingGamepiece:
             return False  # exception: gamepiece is fully inside and nobody tried to eject it yet (2nd condition above)
         if self.rangefinderConsistentlyBlockedByGamepiece > 0.5:
-            return f"intake with toy partly in"  # can cause false alerts if rangefinder has a very long blip
+            return f"intake with toy partly in"  # if this causes false alerts, decrease EMA_RATE
 
 
     def isLimitSwitchThinkingGamepieceInside(self):
@@ -130,16 +132,17 @@ class Intake(Subsystem):
         recoiling = False
         if self.rangeFinder is not None:
             range = self.rangeFinder.getRange()
-            SmartDashboard.putNumber("intakeRangeToGamepiece", range)
+            SmartDashboard.putNumber("intakeRange", range)
             self.rangefinderBlockedByGamepiece = range != 0 and range <= self.rangeToGamepiece
             self.updateT1T2T3(range)
             if self.stopIfSensingGamepiece and self.recoilSpeed > 0:
                 recoiling = self.rangefinderT2 != 0 and self.rangefinderT3 == 0
 
             # exponentially weighted moving average (updates 50 times per second)
-            self.rangefinderConsistentlyBlockedByGamepiece += 0.05 * (
+            self.rangefinderConsistentlyBlockedByGamepiece += EMA_RATE * (
                 int(self.rangefinderBlockedByGamepiece) - self.rangefinderConsistentlyBlockedByGamepiece
             )
+            SmartDashboard.putNumber("intakeRngBlocked", int(100 * self.rangefinderConsistentlyBlockedByGamepiece + 0.5))
 
         # 3. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
         limitSwitchThinkingItsInside = self.isLimitSwitchThinkingGamepieceInside()
