@@ -12,6 +12,7 @@ class Intake(Subsystem):
                  followerInverted=False,
                  rangeFinder=None,
                  rangeToGamepiece=None,
+                 recoilSpeed=0.0
     ) -> None:
         """
         :param leaderCanID: CAN ID of the leader motor (or of your only motor)
@@ -26,6 +27,7 @@ class Intake(Subsystem):
         # 0. state
         self.limitSwitchSensingGamepiece = False
         self.rangefinderBlockedByGamepiece = False
+        self.rangefinderConsistentlyBlockedByGamepiece = 0.0
         self.sensingGamepiece = False
 
         self.desiredSpeedL = 0
@@ -33,6 +35,7 @@ class Intake(Subsystem):
         self.stopIfSensingGamepiece = False
         self.rangefinderT1 = 0  # timestemp when rangefinger got blocked by an incoming gamepiece
         self.rangefinderT2 = 0  # timestamp when rangefinder got unblocked when incoming gamepiece has entered fully
+        self.rangefinderT3 = 0  # if recoil is specified, timestamp when rangefinder got blocked again in recoil
 
         motorConfig = SparkBaseConfig()
         motorConfig.inverted(leaderInverted)
@@ -65,6 +68,10 @@ class Intake(Subsystem):
         self.rangeFinder = rangeFinder
         self.rangeToGamepiece = rangeToGamepiece
         assert rangeToGamepiece > 0 or rangeFinder is None, f"if rangefinder is specified, rangeToGamepiece must be >0"
+        self.recoilSpeed = recoilSpeed
+        assert recoilSpeed >= 0, f"invalid recoilSpeed={recoilSpeed}, must be nonnegative"
+        if recoilSpeed > 0:
+            assert rangeFinder is not None, f"if recoilSpeed>0, rangeFinder must be not None"
 
 
     def enableLimitSwitch(self):
@@ -72,6 +79,7 @@ class Intake(Subsystem):
             self.stopIfSensingGamepiece = True
             self.rangefinderT1 = 0
             self.rangefinderT2 = 0
+            self.rangefinderT3 = 0
 
 
     def disableLimitSwitch(self):
@@ -87,10 +95,10 @@ class Intake(Subsystem):
 
 
     def isUnsafeToMoveElevator(self):
-        if self.rangefinderT2 == 0 and self.rangefinderT1 != 0:
-            # when gamepiece is only partly in, it is not safe to move elevator
-            if self.rangefinderBlockedByGamepiece:
-                return "intake not done intaking"
+        if self.rangefinderT2 != 0 and self.stopIfSensingGamepiece:
+            return False  # exception: gamepiece is fully inside and nobody tried to eject it yet (2nd condition above)
+        if self.rangefinderConsistentlyBlockedByGamepiece > 0.5:
+            return f"intake with toy partly in"  # can cause false alerts if rangefinder has a very long blip
 
 
     def isLimitSwitchThinkingGamepieceInside(self):
@@ -98,11 +106,18 @@ class Intake(Subsystem):
 
 
     def isRangefinderThinkingGamepieceInside(self):
-        return (
-                self.rangefinderT2 != 0 and
-                self.rangefinderT1 != 0 and
-                self.stopIfSensingGamepiece
-        )
+        if self.recoilSpeed > 0:
+            return (
+                    self.rangefinderT3 != 0 and
+                    self.rangefinderT1 != 0 and
+                    self.stopIfSensingGamepiece
+            )
+        else:
+            return (
+                    self.rangefinderT2 != 0 and
+                    self.rangefinderT1 != 0 and
+                    self.stopIfSensingGamepiece
+            )
 
 
     def periodic(self):
@@ -112,11 +127,19 @@ class Intake(Subsystem):
             SmartDashboard.putBoolean("intakeSwitchPressed", self.limitSwitchSensingGamepiece)
 
         # 2. check if rangefinder is sensing that gamepiece
+        recoiling = False
         if self.rangeFinder is not None:
             range = self.rangeFinder.getRange()
             SmartDashboard.putNumber("intakeRangeToGamepiece", range)
             self.rangefinderBlockedByGamepiece = range != 0 and range <= self.rangeToGamepiece
             self.updateT1T2T3(range)
+            if self.stopIfSensingGamepiece and self.recoilSpeed > 0:
+                recoiling = self.rangefinderT2 != 0 and self.rangefinderT3 == 0
+
+            # exponentially weighted moving average (updates 50 times per second)
+            self.rangefinderConsistentlyBlockedByGamepiece += 0.05 * (
+                int(self.rangefinderBlockedByGamepiece) - self.rangefinderConsistentlyBlockedByGamepiece
+            )
 
         # 3. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
         limitSwitchThinkingItsInside = self.isLimitSwitchThinkingGamepieceInside()
@@ -129,6 +152,8 @@ class Intake(Subsystem):
 
         # 4. if we are sensing the gamepiece, maybe stop that motor (otherwise, spin it)
         speedL, speedF = self.desiredSpeedL, self.desiredSpeedF
+        if recoiling:
+            speedL, speedF = -self.recoilSpeed, -self.recoilSpeed
         if self.sensingGamepiece and self.stopIfSensingGamepiece:
             speedL, speedF = 0.0, 0.0
         SmartDashboard.putNumber("intakeDSpeed", self.desiredSpeedL)
@@ -142,21 +167,31 @@ class Intake(Subsystem):
             SmartDashboard.putNumber("intakeSpeedF", speedF)
 
     def updateT1T2T3(self, range):
+        now = Timer.getFPGATimestamp()
+
+        # is the sensor definitely blocked by gamepiece? definily not blocked? or unsure?
         definitelyBlocked = 0 < range and range <= self.rangeToGamepiece
         definitelyNotBlocked = range > self.rangeToGamepiece
-        if self.stopIfSensingGamepiece:
-            now = Timer.getFPGATimestamp()
-            if self.rangefinderT1 == 0:
-                if definitelyBlocked:
-                    print(f"Intake: at t={now}, range={range} => gamepiece partly entered now")
-                    self.rangefinderT1 = now
-            elif self.rangefinderT2 == 0 and now > self.rangefinderT1 + 0.05:
-                if definitelyNotBlocked:
-                    print(
-                        f"Intake: at t={now}, range={range} => gamepiece fully entered {now - self.rangefinderT1} seconds later at speed {self.desiredSpeedL}")
-                    self.rangefinderT2 = now
+
+        if not self.stopIfSensingGamepiece:
+            pass  # we are not intaking a new gamepiece at the moment
+        elif self.rangefinderT1 == 0:
+            if definitelyBlocked:
+                self.rangefinderT1 = now
+                print(f"Intake: at t={now}, range={range} => gamepiece partly entered, speed {self.desiredSpeedL}")
+        elif self.rangefinderT2 == 0:
+            if definitelyNotBlocked and now > self.rangefinderT1 + 0.05:
+                self.rangefinderT2 = now
+                print(f"Intake: at t={now}, range={range} => gamepiece fully entered, speed {self.desiredSpeedL}")
+        elif self.rangefinderT3 == 0:
+            if definitelyBlocked and now > self.rangefinderT2 + 0.025:
+                self.rangefinderT3 = now
+                print(f"Intake: at t={now}, range={range} => gamepiece recoiled, speed {-self.recoilSpeed}")
+
         SmartDashboard.putNumber("intakeT1", self.rangefinderT1)
         SmartDashboard.putNumber("intakeT2", self.rangefinderT2)
+        SmartDashboard.putNumber("intakeT3", self.rangefinderT3)
+
 
     def intakeGamepiece(self, speed=0.25, speedF=None):
         """
