@@ -76,10 +76,6 @@ class Intake(Subsystem):
         self.stopIfSensingGamepiece = False
 
 
-    def isGamepiecePartlyIn(self):
-        return self.rangefinderBlockedByGamepiece
-
-
     def isGamepieceInside(self) -> bool:
         return self.sensingGamepiece
 
