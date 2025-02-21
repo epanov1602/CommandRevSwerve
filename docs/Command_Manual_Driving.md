@@ -7,7 +7,7 @@ If you want to reset odometry (position on the field) to some known location, so
         from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 
         # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 54 degrees **east**)
-        startButton = self.drivingController.button(XboxController.Button.kStart)
+        startButton = self.driverController.button(XboxController.Button.kStart)
         startButton.onTrue(
             InstantCommand(
                 lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 6.90), Rotation2d.fromDegrees(-54)))
@@ -15,7 +15,7 @@ If you want to reset odometry (position on the field) to some known location, so
         )
 
         # if "end" button pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=1.15, 54 degrees **west**)
-        backButton = self.drivingController.button(XboxController.Button.kBack)
+        backButton = self.driverController.button(XboxController.Button.kBack)
         backButton.onTrue(
             InstantCommand(
                 lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(54)))
