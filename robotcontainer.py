@@ -45,10 +45,13 @@ class RobotContainer:
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
+        self.rangefinder = TimeOfFlight(DriveConstants.kIntakeRangefinderCanId)
+        self.rangefinder.setRangingMode(TimeOfFlight.RangingMode.kShort, 24)
+
         self.intake = Intake(
             leaderCanID=DriveConstants.kIntakeLeadMotorCanId,
             followerCanID=None, leaderInverted=True, followerInverted=False,
-            rangeFinder=TimeOfFlight(DriveConstants.kIntakeRangefinderCanId),
+            rangeFinder=self.rangefinder,
             rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count
         )
 
