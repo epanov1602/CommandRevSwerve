@@ -1076,7 +1076,7 @@ class FindObject(commands2.Command):
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         lookForTheseTags = SetCameraPipeline(self.camera, 3)
         approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.5)
-        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.0)
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, None, speed=0.2, pushForwardSeconds=1.0)
         dropCoralOnLevel2 = ... # your robot has a command for this, right?
 
         # connect them together
