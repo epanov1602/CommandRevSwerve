@@ -142,7 +142,7 @@ class Intake(Subsystem):
             self.rangefinderConsistentlyBlockedByGamepiece += EMA_RATE * (
                 int(self.rangefinderBlockedByGamepiece) - self.rangefinderConsistentlyBlockedByGamepiece
             )
-            SmartDashboard.putNumber("intakeRngBlocked", int(100 * self.rangefinderConsistentlyBlockedByGamepiece + 0.5))
+            SmartDashboard.putNumber("intakeRfBlocked", int(100 * self.rangefinderConsistentlyBlockedByGamepiece + 0.5))
 
         # 3. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
         limitSwitchThinkingItsInside = self.isLimitSwitchThinkingGamepieceInside()
