@@ -69,6 +69,10 @@ class DriveConstants:
 
     kLeadElevationCanId = 10
     kFollowElevationCanId = 11
+    kArmLeadMotorCanId = 18
+    kIntakeLeadMotorCanId = 19
+    kIntakeRangefinderCanId = 33
+
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
 
 
