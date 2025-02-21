@@ -132,8 +132,12 @@ class Arm(Subsystem):
         return "ok"
 
 
+    def reachedThisAngleGoal(self, goal, toleranceMult=1) -> bool:
+        return abs(goal - self.getAngle()) < ArmConstants.kAngleTolerance * toleranceMult
+
+
     def isDoneMoving(self) -> bool:
-        return abs(self.getAngleGoal() - self.getAngle()) < ArmConstants.kAngleTolerance
+        return self.reachedThisAngleGoal(self.angleGoal)
 
 
     def getAngleGoal(self) -> float:

@@ -152,8 +152,11 @@ class Elevator(Subsystem):
             self.pidController.setReference(goalInches + ElevatorConstants.kStaticGain,
                                             SparkLowLevel.ControlType.kPosition)
 
+    def reachedThisPositionGoal(self, goal, toleranceMult=1) -> bool:
+        return abs(self.getPosition() - goal) < ElevatorConstants.positionTolerance * toleranceMult
+
     def isDoneMoving(self) -> bool:
-        return abs(self.getPosition() - self.getPositionGoal()) < ElevatorConstants.positionTolerance
+        return self.reachedThisPositionGoal(self.positionGoal)
 
     def getPositionGoal(self) -> float:
         return self.positionGoal
