@@ -165,18 +165,18 @@ class RobotContainer:
 
         # while "A" button is pressed, intake the gamepiece until it hits the limit switch (or rangefinder, if connected)
         leftBumper = self.scoringController.button(XboxController.Button.kLeftBumper)
-        intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
+        intakeCmd = IntakeGamepiece(self.intake, speed=0.115)
         leftBumper.whileTrue(intakeCmd)
 
         # while "B" button is pressed, feed that gamepiece forward for a split second
         # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
         leftstick = self.scoringController.button(XboxController.Button.kLeftStick)
-        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.1).withTimeout(0.3)
+        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
         leftstick.whileTrue(intakeFeedFwdCmd)
 
         # while "Y" button is pressed, eject the gamepiece backward
         rightBumper = self.scoringController.button(XboxController.Button.kRightBumper)
-        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
+        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.1).withTimeout(0.3)
         rightBumper.whileTrue(intakeFeedFwdCmd2)
 
 
