@@ -36,7 +36,7 @@ class RobotContainer:
         self.scoringController = CommandGenericHID(1)
 
         from subsystems.arm import Arm, ArmConstants
-        self.arm = Arm(leadMotorCANId=18, followMotorCANId=None)
+        self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
@@ -44,9 +44,12 @@ class RobotContainer:
 
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
+
         self.intake = Intake(
-            leaderCanID=19, followerCanID=None, leaderInverted=True, followerInverted=False,
-            rangeFinder=TimeOfFlight(33), rangeToGamepiece=100,
+            leaderCanID=DriveConstants.kIntakeLeadMotorCanId,
+            followerCanID=None, leaderInverted=True, followerInverted=False,
+            rangeFinder=TimeOfFlight(DriveConstants.kIntakeRangefinderCanId),
+            rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count
         )
 
         # The robots Elevator
