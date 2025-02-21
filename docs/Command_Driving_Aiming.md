@@ -1067,7 +1067,9 @@ class FindObject(commands2.Command):
 <details>
     <summary>Aligning a swerve robot to an AprilTag in front of it, and then firmly pushing against the tag to score that coral onto reef</summary>
 
-```python
+This should go as a function in `robotcontainer.py`, and you can either bind it to a button or make an auto out of it:
+```python3
+   def makeAlignWithAprilTagCommand(self):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
@@ -1075,16 +1077,17 @@ class FindObject(commands2.Command):
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         lookForTheseTags = SetCameraPipeline(self.camera, 3)
-        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.5)
+        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.3)  # stop when tag size=4 (4% of the frame pixels)
         alignAndPush = AlignWithTag(self.camera, self.robotDrive, None, speed=0.2, pushForwardSeconds=1.0)
-        dropCoralOnLevel2 = ... # your robot has a command for this, right?
 
         # connect them together
-        scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(dropCoralOnLevel2)
+        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(dropCoralOnLevel2)
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
-        # scoreCoral = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide).andThen(dropCoralOnLevel2)
+        # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
+
+        return alignToScore
 
 ```
 
