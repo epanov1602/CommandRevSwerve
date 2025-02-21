@@ -1081,7 +1081,7 @@ This should go as a function in `robotcontainer.py`, and you can either bind it 
         alignAndPush = AlignWithTag(self.camera, self.robotDrive, None, speed=0.2, pushForwardSeconds=1.0)
 
         # connect them together
-        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(dropCoralOnLevel2)
+        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
