@@ -150,7 +150,7 @@ class Intake(Subsystem):
                 if definitelyBlocked:
                     print(f"Intake: at t={now}, range={range} => gamepiece partly entered now")
                     self.rangefinderT1 = now
-            elif self.rangefinderT2 == 0 and now > self.rangefinderT2 + 0.05:
+            elif self.rangefinderT2 == 0 and now > self.rangefinderT1 + 0.05:
                 if definitelyNotBlocked:
                     print(
                         f"Intake: at t={now}, range={range} => gamepiece fully entered {now - self.rangefinderT1} seconds later at speed {self.desiredSpeedL}")
