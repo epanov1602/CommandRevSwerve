@@ -87,16 +87,16 @@ class RobotContainer:
         intakingPosButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42))
 
         level0DropButton = self.scoringController.button(XboxController.Button.kA)  # button(XboxController.Button.kRightBumper)
-        level0DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
+        level0DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
 
         level1DropButton = self.scoringController.button(XboxController.Button.kB)
-        level1DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+        level1DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
 
         level2DropButton = self.scoringController.button(XboxController.Button.kY)
-        level2DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
+        level2DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
 
         level3DropButton = self.scoringController.button(XboxController.Button.kX)
-        level3DropButton.whileTrue(MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135))
+        level3DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135))
 
 
         def maxSpeedScaledownFactor():
@@ -219,6 +219,11 @@ class RobotContainer:
             )
         )
 
+        alignWithAprilTag = self.makeAlignWithAprilTagCommand(desiredHeading=0)
+        aprilaproch = self.scoringController.povDown()
+        aprilaproch.whileTrue(alignWithAprilTag)
+
+
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
@@ -331,3 +336,23 @@ class RobotContainer:
         :returns: the command to run in test mode (to exercise all systems)
         """
         return None
+
+    def makeAlignWithAprilTagCommand(self, desiredHeading):
+        from commands.setcamerapipeline import SetCameraPipeline
+        from commands.followobject import FollowObject, StopWhen
+        from commands.alignwithtag import AlignWithTag
+        from commands.swervetopoint import SwerveToSide
+
+        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
+        lookForTheseTags = SetCameraPipeline(self.camera, 1)
+        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, desiredHeading, speed=0.1, pushForwardSeconds=0.0)
+
+        # connect them together
+        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+
+        # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
+        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
+        # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
+
+        return alignToScore

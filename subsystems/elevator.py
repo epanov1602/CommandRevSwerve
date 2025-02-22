@@ -44,7 +44,7 @@ class ElevatorConstants:
     kStaticGain = 0.38  # drop it by 50% when doubling kP
     kP = 0.06 # 0.9 was our real choice  # at first make it very small like 0.05 and then start doubling
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
-    kMaxOutput = 0.2
+    kMaxOutput = 1.0
 
 
 class Elevator(Subsystem):
