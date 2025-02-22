@@ -15,11 +15,8 @@ from commands.gotopoint import GoToPointConstants
 from wpimath.geometry import Rotation2d
 from wpilib import Timer
 
-from subsystems.limelight_camera import LimelightCamera
-
 
 class AlignWithTag(commands2.Command):
-    FINISH_ALIGNMENT_EXTRA_SECONDS = 0.5  # at least 0.5 seconds to finish the alignment
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
 
     def __init__(self,
@@ -29,7 +26,8 @@ class AlignWithTag(commands2.Command):
                  speed=0.2,
                  reverse=False,
                  pushForwardSeconds=0.0,
-                 pushForwardSpeed=0.1):
+                 pushForwardSpeed=0.1,
+                 detectionTimeoutSeconds=2.0):
         """
         Align the swerve robot to AprilTag precisely and then optionally slowly push it forward for a split second
         :param camera: camera to use, LimelightCamera or PhotonVisionCamera (from https://github.com/epanov1602/CommandRevSwerve/blob/main/docs/Adding_Camera.md)
@@ -38,6 +36,7 @@ class AlignWithTag(commands2.Command):
         :param speed: if the camera is on the back of the robot, please use negative speed
         :param pushForwardSeconds: if you want the robot to push forward at the end of alignment
         :param reverse: set it =True if the camera is on the back of the robot (not front)
+        :param detectionTimeoutSeconds: if no detection within this many seconds, assume the tag is lost
         """
         super().__init__()
         assert hasattr(camera, "getX"), "camera must have `getX()` to give us the object coordinate (in degrees)"
@@ -58,6 +57,8 @@ class AlignWithTag(commands2.Command):
         self.speed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.pushForwardSeconds = pushForwardSeconds
         self.pushForwardSpeed = pushForwardSpeed
+        self.detectionTimeoutSeconds = detectionTimeoutSeconds
+        assert detectionTimeoutSeconds > 0, f"non-positive detectionTimeoutSeconds={detectionTimeoutSeconds}"
 
         # setting the target angle in a way that works for all cases
         self.targetDegrees = specificHeadingDegrees
@@ -69,23 +70,32 @@ class AlignWithTag(commands2.Command):
         # state
         self.targetDirection = None
         self.alignedToTag = False
+        self.lostTag = False
         self.pushForwardCommand = None
-        self.haveNotSeenObjectSinceTime = None
+        self.lastSeenObjectTime = None
+        self.lastSeenObjectX = 0.0
+        self.lastSeenObjectSize = 0.0
         self.everSawObject = False
 
 
     def initialize(self):
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.alignedToTag = False
+        self.lostTag = False
         self.pushForwardCommand = None
-        self.haveNotSeenObjectSinceTime = Timer.getFPGATimestamp()
+        self.lastSeenObjectX = 0.0
+        self.lastSeenObjectSize = 0.0
+        self.lastSeenObjectTime = Timer.getFPGATimestamp()
         self.everSawObject = False
 
 
     def isFinished(self) -> bool:
         now = Timer.getFPGATimestamp()
-        if now > self.haveNotSeenObjectSinceTime + 3.0:
-            print("AlignSwerveWithTag: finished because have not seen the object for >3 seconds")
+        if now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
+            print(f"AlignSwerveWithTag: finished since have not seen the object for {now - self.lastSeenObjectTime} s")
+            return True
+        if self.lostTag:
+            print("AlignSwerveWithTag: finished because lost track of the object")
             return True
         if self.alignedToTag and self.pushForwardCommand is None:
             print("AlignSwerveWithTag: finished because aligned to the tag and don't need to push forward")
@@ -103,8 +113,13 @@ class AlignWithTag(commands2.Command):
 
     def execute(self):
         if self.camera.hasDetection():
-            self.haveNotSeenObjectSinceTime = Timer.getFPGATimestamp()
-            self.everSawObject = True
+            x = self.camera.getX()
+            a = self.camera.getA()
+            if x != 0 and a > 0:
+                self.lastSeenObjectTime = Timer.getFPGATimestamp()
+                self.lastSeenObjectSize = a
+                self.lastSeenObjectX = x
+                self.everSawObject = True
 
         # 0. are we pushing forward already?
         if self.alignedToTag and self.pushForwardCommand is not None:
@@ -159,18 +174,24 @@ class AlignWithTag(commands2.Command):
 
     def getSwerveLeftSpeed(self, degreesRemaining):
         swerveSpeed = 0.0
+
+        now = Timer.getFPGATimestamp()
+        objectXDegrees = self.lastSeenObjectX
+        objectSizePercent = self.lastSeenObjectSize
+        if now > self.lastSeenObjectTime + self.detectionTimeoutSeconds:
+            print(f"AlignSwerveWithTag: have not seen the object for at least {now - self.lastSeenObjectTime} seconds")
+            self.lostTag = True
+            return 0.0  # no swerve speed possible, since last detected object was too far in the past
+
         secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
-        objectSizePercent = self.camera.getA()
-        objectXDegrees = self.camera.getX()
         if secondsSinceHeartbeat > 0.25:
             print(f"AlignSwerveWithTag: camera not usable (dead or too few frames per second), we see {secondsSinceHeartbeat} seconds since last hearbeat")
+            self.lostTag = True
+            return 0.0
+
         elif objectXDegrees == 0 or objectSizePercent <= 0:
             print(f"AlignSwerveWithTag: invalid camera detection (objectX, objectSize) = ({objectXDegrees}, {objectSizePercent})")
-            if not self.alignedToTag and self.everSawObject:
-                now = Timer.getFPGATimestamp()
-                if now > self.haveNotSeenObjectSinceTime + 1.5:
-                    print(f"AlignSwerveWithTag: blind {now - self.haveNotSeenObjectSinceTime} seconds, too close??")
-                    self.alignedToTag = True
+
         else:
             swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
             if not self.alignedToTag and abs(swerveSpeed) <= GoToPointConstants.kMinTranslateSpeed:
