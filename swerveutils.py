@@ -35,7 +35,9 @@ def stepTowardsCircular(current: float, target: float, stepsize: float) -> float
     current = wrapAngle(current)
     target = wrapAngle(target)
 
-    stepDirection = math.copysign(target - current, 1)
+    # looks like the Rev contributor make a slight mistake converting this code from Java to Python here:
+    # https://github.com/robotpy/robotpy-rev/blob/main/examples/maxswerve/swerveutils.py
+    stepDirection = math.copysign(1, target - current)
     difference = abs(current - target)
 
     if difference <= stepsize:
