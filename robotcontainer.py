@@ -51,6 +51,7 @@ class RobotContainer:
         self.intake = Intake(
             leaderCanID=DriveConstants.kIntakeLeadMotorCanId,
             followerCanID=None, leaderInverted=True, followerInverted=False,
+            recoilSpeed=0.15,
             rangeFinder=self.rangefinder,
             rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count
         )
@@ -221,7 +222,7 @@ class RobotContainer:
 
         alignWithAprilTag = self.makeAlignWithAprilTagCommand(desiredHeading=0)
         aprilaproch = self.scoringController.povDown()
-        aprilaproch.whileTrue(alignWithAprilTag)
+        aprilaproch.onTrue(alignWithAprilTag)
 
 
 
@@ -346,7 +347,7 @@ class RobotContainer:
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         lookForTheseTags = SetCameraPipeline(self.camera, 1)
         approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = AlignWithTag(self.camera, self.robotDrive, desiredHeading, speed=0.1, pushForwardSeconds=0.0)
+        alignAndPush = AlignWithTag(self.camera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07)
 
         # connect them together
         alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)

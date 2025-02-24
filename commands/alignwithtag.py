@@ -15,6 +15,8 @@ from commands.gotopoint import GoToPointConstants
 from wpimath.geometry import Rotation2d
 from wpilib import Timer
 
+from commands.swervetopoint import SwerveToSide
+
 
 class AlignWithTag(commands2.Command):
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
@@ -123,6 +125,7 @@ class AlignWithTag(commands2.Command):
 
         # 0. are we pushing forward already?
         if self.alignedToTag and self.pushForwardCommand is not None:
+            print("pushing forward...")
             self.pushForwardCommand.execute()
             return
 
@@ -148,6 +151,7 @@ class AlignWithTag(commands2.Command):
         if not self.alignedToTag:
             self.drivetrain.drive(0, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
         elif self.pushForwardCommand is None and self.pushForwardSeconds > 0:
+            print("created a push forward command")
             self.pushForwardCommand = self.getPushForwardCommand()
             self.pushForwardCommand.initialize()
 
@@ -168,7 +172,9 @@ class AlignWithTag(commands2.Command):
 
     def getPushForwardCommand(self):
         speed = self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed
-        command = AimToDirection(degrees=None, drivetrain=self.drivetrain, fwd_speed=speed)
+        from commands.swervetopoint import SwerveToSide
+        command = SwerveToSide(metersToTheLeft=0, metersBackwards=-1.0, speed=speed, drivetrain=self.drivetrain)
+        # AimToDirection(degrees=None, drivetrain=self.drivetrain, fwd_speed=speed)
         return command.withTimeout(self.pushForwardSeconds)
 
 

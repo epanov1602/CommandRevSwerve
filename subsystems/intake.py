@@ -149,6 +149,7 @@ class Intake(Subsystem):
         rangefinderThinkingItsInside = self.isRangefinderThinkingGamepieceInside()
         self.sensingGamepiece = limitSwitchThinkingItsInside or rangefinderThinkingItsInside
 
+        SmartDashboard.putBoolean("intakeRecoiling", recoiling)
         SmartDashboard.putBoolean("intakeFull", self.sensingGamepiece)
         SmartDashboard.putBoolean("intakeFull_LS", limitSwitchThinkingItsInside)
         SmartDashboard.putBoolean("intakeFull_RF", rangefinderThinkingItsInside)
