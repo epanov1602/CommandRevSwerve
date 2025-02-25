@@ -221,7 +221,7 @@ class RobotContainer:
         # now add the trajectories (please replace these with the real ones):
 
         #  - go to left branch of reef side B
-        goSideBLeftBranch = JerkyTrajectory(
+        goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             endpoint=(5.54, 3.99, -180),
             waypoints=[
@@ -236,14 +236,14 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "d-left",
-            goSideBLeftBranch,
+            goSideDLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
         # button 1 of trajectory byard is "d-left" trajectory
         self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("d-left")))
 
         #  - go to right branch of reef side B
-        goSideDLeftBranch = JerkyTrajectory(
+        goSideBLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             endpoint=(3.92, 2.97, 60.0),
             waypoints=[
@@ -255,7 +255,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "b-left",
-            goSideDLeftBranch,
+            goSideBLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
         # button 2 of trajectory board is "b-left" trajectory
