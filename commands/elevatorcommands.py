@@ -59,6 +59,11 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  angle: float | None,
                  safeTravelAngle=71.4,
                  additionalTimeoutSeconds=0.0):
+        self.arm = arm
+        self.angle = angle
+        self.elevator = elevator
+        self.position = position
+        self.finishedImmediately = False
         # 1. sequential command group with three safe steps: [get to safe travel angle, move to new altitude, move arm]
         super().__init__(
             # - first make sure the arm is at safe travel angle
@@ -75,3 +80,28 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
         )
         # 2. assert that we have the correct requirements
         assert set(self.requirements) == {elevator, arm}, "supposed to have {elevator, arm} requirements"
+
+    def succeeded(self) -> bool:
+        return self.arm.reachedThisAngleGoal(self.angle) and \
+            self.elevator.reachedThisPositionGoal(self.position)
+
+    def initialize(self):
+        # are we already at the goal?
+        self.finishedImmediately = self.succeeded()
+        if not self.finishedImmediately:
+            super().initialize()
+
+    def isFinished(self) -> bool:
+        if self.finishedImmediately:
+            return True
+        return super().isFinished()
+
+    def execute(self):
+        if self.finishedImmediately:
+            return
+        super().execute()
+
+    def end(self, interrupted: bool):
+        if self.finishedImmediately:
+            return
+        super().end(interrupted)
