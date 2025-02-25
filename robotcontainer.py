@@ -35,6 +35,7 @@ class RobotContainer:
         # The driver's controller
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
+        self.trajectoryBoard = CommandGenericHID(2)
 
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
@@ -144,7 +145,7 @@ class RobotContainer:
         # resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
-        startButton = self.scoringController.button(XboxController.Button.kStart)
+        startButton = self.driverController.button(XboxController.Button.kStart)
         startButton.onTrue(ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive))
         # another feeder is located at: ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive)
 
@@ -217,7 +218,7 @@ class RobotContainer:
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
         self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
 
-        # now add the trajectories:
+        # now add the trajectories (please replace these with the real ones):
 
         #  - go to left branch of reef side B
         goSideBLeftBranch = JerkyTrajectory(
@@ -234,10 +235,12 @@ class RobotContainer:
             speed=0.2
         )
         self.trajectoryPicker.addCommands(
-            "b-left",
+            "d-left",
             goSideBLeftBranch,
-            self.makeAlignWithAprilTagCommand(desiredHeading=+60)
+            self.makeAlignWithAprilTagCommand(desiredHeading=+180)
         )
+        # button 1 of trajectory byard is "d-left" trajectory
+        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("d-left")))
 
         #  - go to right branch of reef side B
         goSideDLeftBranch = JerkyTrajectory(
@@ -251,10 +254,12 @@ class RobotContainer:
             speed=0.2
         )
         self.trajectoryPicker.addCommands(
-            "d-left",
+            "b-left",
             goSideDLeftBranch,
-            self.makeAlignWithAprilTagCommand(desiredHeading=+180)
+            self.makeAlignWithAprilTagCommand(desiredHeading=+60)
         )
+        # button 2 of trajectory board is "b-left" trajectory
+        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("b-left")))
 
 
     def disablePIDSubsystems(self) -> None:
