@@ -16,8 +16,9 @@ import constants
 from commands.jerky_trajectory import JerkyTrajectory
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem
-from commands.gotopoint import GoToPoint
+from subsystems.arm import Arm, ArmConstants
 
+from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
 
 
@@ -35,7 +36,6 @@ class RobotContainer:
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
 
-        from subsystems.arm import Arm, ArmConstants
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
         # The robot's subsystems
@@ -82,22 +82,6 @@ class RobotContainer:
                 self.scoringController.getRawAxis(XboxController.Axis.kRightY)
             ), self.elevator)
         )
-
-        intakingPosButton = self.scoringController.povLeft()  # position for intaking
-        from commands.elevatorcommands import MoveElevatorAndArm
-        intakingPosButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42))
-
-        level0DropButton = self.scoringController.button(XboxController.Button.kA)  # button(XboxController.Button.kRightBumper)
-        level0DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70))
-
-        level1DropButton = self.scoringController.button(XboxController.Button.kB)
-        level1DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
-
-        level2DropButton = self.scoringController.button(XboxController.Button.kY)
-        level2DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle))
-
-        level3DropButton = self.scoringController.button(XboxController.Button.kX)
-        level3DropButton.onTrue(MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135))
 
 
         def maxSpeedScaledownFactor():
@@ -153,34 +137,11 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        xButton = self.driverController.button(XboxController.Button.kX)
-        xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
-        xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
+        resetOdometryButton = self.driverController.povUp()
+        resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
 
-        yButton = self.driverController.button(XboxController.Button.kY)
-        yButton.onTrue(ResetSwerveFront(self.robotDrive))
-
-        # this code must be added: see how "A" and "B" button handlers are defined
-        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
-        from commands2.instantcommand import InstantCommand
-
-        # while "A" button is pressed, intake the gamepiece until it hits the limit switch (or rangefinder, if connected)
-        leftBumper = self.scoringController.button(XboxController.Button.kLeftBumper)
-        intakeCmd = IntakeGamepiece(self.intake, speed=0.115)
-        leftBumper.whileTrue(intakeCmd)
-
-        # while "B" button is pressed, feed that gamepiece forward for a split second
-        # (either to ensure it is fully inside, or to eject in that direction if it can eject there)
-        leftstick = self.scoringController.button(XboxController.Button.kLeftStick)
-        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
-        leftstick.whileTrue(intakeFeedFwdCmd)
-
-        # while "Y" button is pressed, eject the gamepiece backward
-        rightBumper = self.scoringController.button(XboxController.Button.kRightBumper)
-        intakeFeedFwdCmd2 = IntakeEjectGamepieceBackward(self.intake, speed=0.1).withTimeout(0.3)
-        rightBumper.whileTrue(intakeFeedFwdCmd2)
-
-        from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+        resetSwerveFrontButton = self.driverController.povDown()
+        resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
 
         # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 54 degrees **east**)
         startButton = self.scoringController.button(XboxController.Button.kStart)
@@ -210,20 +171,47 @@ class RobotContainer:
         leftTriggerAsButton.whileTrue(
             HolonomicDrive(
                 self.robotDrive,
-                forwardSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kLeftY),
-                leftSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kLeftX),
-                rotationSpeed=lambda: -0.1 * self.scoringController.getRawAxis(XboxController.Axis.kRightX),
+                forwardSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kRightX),
                 deadband=0,
                 fieldRelative=False,  # driving FPV (first person view), not field-relative (install an FPV camera on robot?)
                 rateLimit=False,
-                square=False,
+                square=True,
             )
         )
 
-        alignWithAprilTag = self.makeAlignWithAprilTagCommand(desiredHeading=0)
-        aprilaproch = self.scoringController.povDown()
-        aprilaproch.onTrue(alignWithAprilTag)
+        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
+        from commands.elevatorcommands import MoveElevatorAndArm
 
+        # right bumper = intake new gamepiece
+        intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
+        goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
+        intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
+        intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
+
+        # pull the right trigger = eject to score that gamepiece
+        ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
+        ejectForwardCmd = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
+        ejectButton.whileTrue(ejectForwardCmd)
+
+        # elevator buttons for different levels
+        #  - 0
+        level0PosButton = self.scoringController.button(XboxController.Button.kA)
+        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70)
+        level0PosButton.onTrue(level0PositionCmd)
+        #  - 1
+        level1PosButton = self.scoringController.button(XboxController.Button.kB)
+        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level1PosButton.onTrue(level1PositionCmd)
+        #  - 2
+        level2PosButton = self.scoringController.button(XboxController.Button.kY)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PosButton.onTrue(level2PositionCmd)
+        #  - 3
+        level3PosButton = self.scoringController.button(XboxController.Button.kX)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
+        level3PosButton.onTrue(level3PositionCmd)
 
 
     def disablePIDSubsystems(self) -> None:
