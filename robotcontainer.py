@@ -237,7 +237,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "d-left",
             goSideBLeftBranch,
-            self.makeAlignWithAprilTagCommand(desiredHeading=+180)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
         # button 1 of trajectory byard is "d-left" trajectory
         self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("d-left")))
@@ -256,7 +256,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "b-left",
             goSideDLeftBranch,
-            self.makeAlignWithAprilTagCommand(desiredHeading=+60)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
         # button 2 of trajectory board is "b-left" trajectory
         self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("b-left")))
@@ -374,16 +374,16 @@ class RobotContainer:
         """
         return None
 
-    def makeAlignWithAprilTagCommand(self, desiredHeading):
+    def alignToTagCmd(self, camera, desiredHeading):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(self.frontRightCamera, 1)
-        approachTheTag = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07)
+        lookForTheseTags = SetCameraPipeline(camera, 1)
+        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
+        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07)
 
         # connect them together
         alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
