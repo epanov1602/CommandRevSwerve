@@ -26,7 +26,15 @@ class TrajectoryPicker(commands2.Command):
             if hasattr(command, "trajectoryToDisplay"):
                 trajectory = command.trajectoryToDisplay()
                 break
-        self.commands.append((name, SequentialCommandGroup(*commands), trajectory))
+        reversed = None
+        for command in commands:
+            if hasattr(command, "reversed"):
+                reversed = command.reversed()
+                if not isinstance(reversed, commands2.Command):
+                    print("WARNING: command.reversed() didn't return a commands2.Command")
+                    continue
+                break
+        self.commands.append((name, SequentialCommandGroup(*commands), reversed, trajectory))
         self.nameToIndex[name] = index
         if index == 0:
             self.updateDashboard()
@@ -35,7 +43,7 @@ class TrajectoryPicker(commands2.Command):
         name = "?"
         trajectory = []
         if self.chosenIndex >= 0 and self.chosenIndex < len(self.commands):
-            name, command, trajectory = self.commands[self.chosenIndex]
+            name, command, reversed, trajectory = self.commands[self.chosenIndex]
         if self.fieldDashboard is not None:
             self.fieldDashboard.getObject("traj").setPoses(trajectory)
         SmartDashboard.putString(self.dashboardName, name)
@@ -69,9 +77,10 @@ class TrajectoryPicker(commands2.Command):
         if self.running is not None:
             self.end(interrupted=True)
         if self.chosenIndex >= 0 and self.chosenIndex < len(self.commands):
-            name, command, trajectory = self.commands[self.chosenIndex]
+            name, command, reversed, trajectory = self.commands[self.chosenIndex]
             self.running = command
-            self.running.initialize()
+            if self.running is not None:
+                self.running.initialize()
 
     def execute(self):
         if self.running is not None:
@@ -82,3 +91,32 @@ class TrajectoryPicker(commands2.Command):
             return self.running.isFinished()
         else:
             return False
+
+    def initializeReversed(self):
+        if self.running is not None:
+            self.end(interrupted=True)
+        if 0 <= self.chosenIndex < len(self.commands):
+            name, command, reversed, trajectory = self.commands[self.chosenIndex]
+            self.running = reversed
+            if self.running:
+                self.running.initialize()
+
+
+class ReversedTrajectoryPicker(commands2.Command):
+    def __init__(self, trajectoryPicker: TrajectoryPicker):
+        self.trajectoryPicker = trajectoryPicker
+        for subsystem in self.trajectoryPicker.getRequirements():
+            self.addRequirements(subsystem)
+
+    def end(self, interrupted: bool):
+        self.trajectoryPicker.end(interrupted)
+
+    def initialize(self):
+        self.trajectoryPicker.initializeReversed()
+
+    def execute(self):
+        self.trajectoryPicker.execute()
+
+    def isFinished(self) -> bool:
+        return self.trajectoryPicker.isFinished()
+
