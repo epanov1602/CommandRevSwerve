@@ -125,7 +125,6 @@ class AlignWithTag(commands2.Command):
 
         # 0. are we pushing forward already?
         if self.alignedToTag and self.pushForwardCommand is not None:
-            print("pushing forward...")
             self.pushForwardCommand.execute()
             return
 
@@ -151,7 +150,7 @@ class AlignWithTag(commands2.Command):
         if not self.alignedToTag:
             self.drivetrain.drive(0, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
         elif self.pushForwardCommand is None and self.pushForwardSeconds > 0:
-            print("created a push forward command")
+            print("AlignWithTag: making a push forward command")
             self.pushForwardCommand = self.getPushForwardCommand()
             self.pushForwardCommand.initialize()
 
