@@ -137,31 +137,15 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        resetOdometryButton = self.driverController.povUp()
+        resetOdometryButton = self.driverController.button(XboxController.Button.kBack)
         resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
+        # resetSwerveFrontButton = self.driverController.povDown()
+        # resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
 
-        resetSwerveFrontButton = self.driverController.povDown()
-        resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
-
-        # if "start" button pressed, reset X,Y position to the **upper** feeding station (x=1.30, y=6.90, 54 degrees **east**)
+        # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.scoringController.button(XboxController.Button.kStart)
-        startButton.onTrue(
-            InstantCommand(
-                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 6.90), Rotation2d.fromDegrees(-54)))
-            )
-        )
-
-        # if "end" button pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=1.15, 54 degrees **west**)
-        backButton = self.scoringController.button(XboxController.Button.kBack)
-        backButton.onTrue(
-            InstantCommand(
-                lambda: self.robotDrive.resetOdometry(Pose2d(Translation2d(1.30, 1.15), Rotation2d.fromDegrees(54)))
-            )
-        )
-
-        # coordinates above assume robot bumper length=0.9 meters (width does not matter), but if you need to recompute then:
-        #  - center of feeding station is x=0.84, y=0.65 (lower) and x=0.84, y=7.40 (upper), heading=+-54 degrees
-
+        startButton.onTrue(ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive))
+        # another feeder is located at: ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive)
 
         from commands.holonomicdrive import HolonomicDrive
 
