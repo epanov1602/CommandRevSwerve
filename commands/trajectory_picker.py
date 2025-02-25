@@ -71,7 +71,7 @@ class TrajectoryPicker(commands2.Command):
     def end(self, interrupted: bool):
         if self.running is not None:
             self.running.end(interrupted=True)
-            self.running = True
+            self.running = None
 
     def initialize(self):
         if self.running is not None:
@@ -119,4 +119,3 @@ class ReversedTrajectoryPicker(commands2.Command):
 
     def isFinished(self) -> bool:
         return self.trajectoryPicker.isFinished()
-

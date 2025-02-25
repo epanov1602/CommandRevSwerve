@@ -110,6 +110,7 @@ class RobotContainer:
         self.localizer.addPhotonCamera("left_camera", directionDegrees=+90, positionFromRobotCenter=Translation2d(x=0.3, y=0.0))
 
         # Configure the button bindings and autos
+        self.configureTrajectoryPicker()
         self.configureButtonBindings()
         self.configureAutos()
 
@@ -196,6 +197,64 @@ class RobotContainer:
         level3PosButton = self.scoringController.button(XboxController.Button.kX)
         level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
         level3PosButton.onTrue(level3PositionCmd)
+
+
+    def configureTrajectoryPicker(self):
+        from commands.trajectory_picker import TrajectoryPicker, ReversedTrajectoryPicker
+
+        # trajectory picker will only run when these subsystems are not busy with other commands
+        requirements = [self.robotDrive, self.intake, self.arm, self.elevator]
+
+        # POV up: run the trajectory while pushed
+        self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
+        self.driverController.povUp().whileTrue(self.trajectoryPicker)
+
+        # POV left+right: pick trajectory
+        self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
+        self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
+
+        # POV down: run the reverse trajectory while pushed
+        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
+        self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
+
+        # now add the trajectories:
+
+        #  - go to left branch of reef side B
+        goSideBLeftBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(5.54, 3.99, -180),
+            waypoints=[
+                (1.07, 0.77, 60.0),
+                (2.41, 1.31, 0.9),
+                (3.66, 1.16, -20.0),
+                (5.91, 1.034, 0.9),
+                (7.00, 1.70, 70.0),
+                (7.00, 3.39, 122.97),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "b-left",
+            goSideBLeftBranch,
+            self.makeAlignWithAprilTagCommand(desiredHeading=+60)
+        )
+
+        #  - go to right branch of reef side B
+        goSideDLeftBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(3.92, 2.97, 60.0),
+            waypoints=[
+                (1.07, 0.77, 60.0),
+                (2.937, 1.897, 39.66),
+                (3.680, 2.580, 60.0),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "d-left",
+            goSideDLeftBranch,
+            self.makeAlignWithAprilTagCommand(desiredHeading=+180)
+        )
 
 
     def disablePIDSubsystems(self) -> None:
