@@ -40,7 +40,7 @@ class RobotContainer:
 
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
-        self.camera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
+        self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
 
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
@@ -256,10 +256,10 @@ class RobotContainer:
         )
 
         from commands.followobject import FollowObject, StopWhen
-        fallowtag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
+        fallowtag = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
 
         from commands.alignwithtag import AlignWithTag
-        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
+        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
 
         from commands.swervetopoint import SwerveToSide
         swervleft = SwerveToSide(metersToTheLeft=0.2, metersBackwards=0.01, speed=0.2, drivetrain=self.robotDrive)
@@ -274,10 +274,10 @@ class RobotContainer:
         setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
 
         from commands.followobject import FollowObject, StopWhen
-        FollowCoral = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
+        FollowCoral = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
 
         from commands.alignwithtag import AlignWithTag
-        alignAndPush = AlignWithTag(self.camera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
+        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
         from commands.aimtodirection import AimToDirection
 
         aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
@@ -333,9 +333,9 @@ class RobotContainer:
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(self.camera, 1)
-        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = AlignWithTag(self.camera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07)
+        lookForTheseTags = SetCameraPipeline(self.frontRightCamera, 1)
+        approachTheTag = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
+        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07)
 
         # connect them together
         alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
