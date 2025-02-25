@@ -52,6 +52,7 @@ class Intake(Subsystem):
                              SparkBase.PersistMode.kPersistParameters)
 
         # when the gamepiece is fully in, it will touch the limit switch -- physical or optical
+        # (we want the intake to keep ~working if switch is broken or missing, so using "normally open")
         self.limitSwitch = self.motor.getForwardLimitSwitch()
 
         # 2. setup the follower motor, if followerCanID is not None
@@ -63,7 +64,6 @@ class Intake(Subsystem):
                                          SparkBase.ResetMode.kResetSafeParameters,
                                          SparkBase.PersistMode.kPersistParameters)
 
-        # (we want the intake to keep ~working if switch is broken during the game, so using "normally open")
         self._setSpeed(0)
 
         # 3. if we have a rangefinder, set it up
