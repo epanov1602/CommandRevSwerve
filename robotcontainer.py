@@ -43,8 +43,9 @@ class RobotContainer:
 
         # The robot's subsystems
         from subsystems.limelight_camera import LimelightCamera
+        from subsystems.photon_tag_camera import PhotonTagCamera
         self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
-
+        self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
