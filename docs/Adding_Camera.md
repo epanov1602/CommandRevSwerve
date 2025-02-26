@@ -216,7 +216,7 @@ photonlibpy==2024.3.1  # or you must use "photonlibpy==2025.0.0b" if you install
 from wpilib import Timer
 from commands2 import Subsystem
 
-from photonlibpy.photonCamera import PhotonCamera, PHOTONVISION_VERSION
+from photonlibpy.photonCamera import PhotonCamera
 
 class PhotonTagCamera(Subsystem):
     def __init__(self, cameraName: str) -> None:
