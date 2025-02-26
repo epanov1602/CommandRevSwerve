@@ -261,6 +261,23 @@ class RobotContainer:
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
 
+        goSideALeftBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(2.972, 4.200, 0),
+            waypoints=[
+                (1.5, 7.0, -54.0),
+                (2.012, 6.013, -89.470),
+                (2.081, 5.296, -90.423),
+                (2.150, 4.580, -74.962),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "A-left",
+            goSideALeftBranch,
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+        )
+
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
         This should be called on robot disable to prevent integral windup."""
