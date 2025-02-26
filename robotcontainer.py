@@ -244,17 +244,16 @@ class RobotContainer:
 
         # now add the trajectories (please replace these with the real ones):
 
+
         #  - go to left branch of reef side B
         goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(5.54, 3.99, -180),
+            endpoint=(5.464, 5.247, -120),
             waypoints=[
-                (1.07, 0.77, 60.0),
-                (2.41, 1.31, 0.9),
-                (3.66, 1.16, -20.0),
-                (5.91, 1.034, 0.9),
-                (7.00, 1.70, 70.0),
-                (7.00, 3.39, 122.97),
+                (1.50, 7, -54.0),
+                (2.497, 6.142, -29.882),
+                (3.847, 6.078, 2.188),
+                (5.196, 6.013, -20.278),
             ],
             speed=0.2
         )
@@ -269,11 +268,12 @@ class RobotContainer:
         #  - go to right branch of reef side B
         goSideBLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(3.92, 2.97, 60.0),
+            endpoint=(5.584, 2.803, 120.0),
             waypoints=[
-                (1.07, 0.77, 60.0),
-                (2.937, 1.897, 39.66),
-                (3.680, 2.580, 60.0),
+                (1.2, 1.2, 54.0),
+                (2.336, 1.911, -10.119),
+                (3.777, 2.020, 0.302),
+                (5.219, 2.128, 13.001),
             ],
             speed=0.2
         )

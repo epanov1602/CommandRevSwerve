@@ -12,7 +12,9 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/SmartDashboard/Chosen Auto": "String Chooser",
-      "/SmartDashboard/Field": "Field2d"
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/Localizer": "String Chooser",
+      "/SmartDashboard/LoclzrLearnRate": "String Chooser"
     }
   },
   "NetworkTables": {
