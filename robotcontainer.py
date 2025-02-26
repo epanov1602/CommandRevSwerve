@@ -263,7 +263,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "E-left",
             goSideELeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+240)
         )
 
         #  - go to right branch of reef side B
@@ -281,7 +281,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "C-left",
             goSideCLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+120)
         )
 
         goSideALeftBranch = JerkyTrajectory(
@@ -298,7 +298,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "A-left",
             goSideALeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
         )
 
         goSideBLeftBranch = JerkyTrajectory(
@@ -315,7 +315,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "B-left",
             goSideBLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
 
         goSideDLeftBranch = JerkyTrajectory(
@@ -348,7 +348,7 @@ class RobotContainer:
         self.trajectoryPicker.addCommands(
             "F-left",
             goSideFLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
         )
 
     def disablePIDSubsystems(self) -> None:
