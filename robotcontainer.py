@@ -146,8 +146,8 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        #startButton.onTrue(ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive))
-        startButton.onTrue(ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive))
+        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
+        startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
         # ^^ this (x,Y) is the right feeding station for today's practice
 
         from commands.holonomicdrive import HolonomicDrive
@@ -221,13 +221,16 @@ class RobotContainer:
 
         # now add the trajectories (please replace these with the real ones):
 
+        # feeder locations:
+        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
+        #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
 
         #  - go to left branch of reef side B
         goSideELeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             endpoint=(5.464, 5.247, -120),
             waypoints=[
-                (1.50, 7, -54.0),
+                (1.285, 6.915, -54.0),
                 (2.497, 6.142, -29.882),
                 (3.847, 6.078, 2.188),
                 (5.196, 6.013, -20.278),
@@ -245,7 +248,7 @@ class RobotContainer:
             drivetrain=self.robotDrive,
             endpoint=(5.045, 2.611, 120.0),
             waypoints=[
-                (1.2, 1.2, 54.0),
+                (1.285, 1.135, 54.0),
                 (2.336, 1.911, -10.119),
                 (3.777, 2.020, 0.302),
                 (5.045, 1.741, 50.001),
