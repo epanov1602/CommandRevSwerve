@@ -220,7 +220,7 @@ class RobotContainer:
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
         self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
 
-        # a function to choose trajectory by combining the letter and side
+        # a function to choose trajectory by combining the letter and side (for example, "C-left")
         def chooseTrajectory(letter=None, side=None):
             if letter:
                 print(f"choosing trajectory letter {letter}")
