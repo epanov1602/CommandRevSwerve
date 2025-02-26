@@ -5,7 +5,7 @@ from subsystems.intake import Intake
 
 
 class IntakeGamepiece(commands2.Command):
-    def __init__(self, intake: Intake, speed=0.25):
+    def __init__(self, intake: Intake, speed=0.115):
         super().__init__()
         self.intake = intake
         self.speed = speed

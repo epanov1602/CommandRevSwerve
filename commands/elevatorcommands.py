@@ -5,7 +5,7 @@ from wpilib import Timer
 
 import constants
 from subsystems.elevator import Elevator
-from subsystems.arm import Arm
+from subsystems.arm import Arm, ArmConstants
 
 
 class MoveElevator(commands2.Command):
@@ -56,11 +56,13 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  elevator: Elevator,
                  position: float,
                  arm: Arm,
-                 angle: float | None,
+                 angle: float | None=None,
                  safeTravelAngle=71.4,
                  additionalTimeoutSeconds=0.0):
         self.arm = arm
         self.angle = angle
+        if self.angle is None:
+            self.angle = safeTravelAngle
         self.elevator = elevator
         self.position = position
         self.finishedImmediately = False

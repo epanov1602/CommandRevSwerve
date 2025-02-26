@@ -12,6 +12,7 @@ from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
+from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory
 from constants import DriveConstants, OIConstants
@@ -190,15 +191,15 @@ class RobotContainer:
         level0PosButton.onTrue(level0PositionCmd)
         #  - 1
         level1PosButton = self.scoringController.button(XboxController.Button.kB)
-        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level1PosButton.onTrue(level1PositionCmd)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kY)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level2PosButton.onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kX)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=30.0, arm=self.arm, angle=135)
         level3PosButton.onTrue(level3PositionCmd)
 
 
@@ -394,7 +395,27 @@ class RobotContainer:
         """
         :returns: the command to run in test mode (to exercise all systems)
         """
-        return None
+        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward
+
+        # 1. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
+        intake = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm).andThen(
+            IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
+        )
+        score = MoveElevatorAndArm(position=13.0, elevator=self.elevator, arm=self.arm).andThen(
+            IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(0.3)
+        )
+        drop = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
+
+        # 2. square dance to test the drivetrain
+        from commands.swervetopoint import SwerveToSide
+        forward = SwerveToSide(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
+        left = SwerveToSide(metersToTheLeft=0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
+        back = SwerveToSide(metersToTheLeft=0, metersBackwards=0.5, speed=0.2, drivetrain=self.robotDrive)
+        right = SwerveToSide(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
+        squareDance = forward.andThen(left).andThen(back).andThen(right)
+
+        return intake.andThen(score).andThen(drop).andThen(squareDance)
+
 
     def alignToTagCmd(self, camera, desiredHeading):
         from commands.setcamerapipeline import SetCameraPipeline
