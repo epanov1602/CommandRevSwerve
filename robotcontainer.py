@@ -219,6 +219,26 @@ class RobotContainer:
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
         self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
 
+        # a function to choose trajectory by combining the letter and side (for example, "C-left")
+        def chooseTrajectory(letter=None, side=None):
+            if letter:
+                print(f"choosing trajectory letter {letter}")
+                self.trajectoryLetter = letter
+            if side:
+                print(f"choosing trajectory side {side}")
+                self.trajectorySide = side
+            self.trajectoryPicker.pickTrajectory(self.trajectoryLetter + "-" + self.trajectorySide)
+
+        # trajectory board using this function (are the button numbers correct?)
+        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda: chooseTrajectory(letter="A")))
+        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda: chooseTrajectory(letter="B")))
+        self.trajectoryBoard.button(3).onTrue(InstantCommand(lambda: chooseTrajectory(letter="C")))
+        self.trajectoryBoard.button(4).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
+        self.trajectoryBoard.button(5).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
+        self.trajectoryBoard.button(6).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
+        self.trajectoryBoard.button(7).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
+        self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
+
         # now add the trajectories (please replace these with the real ones):
 
         # feeder locations:
