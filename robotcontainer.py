@@ -150,8 +150,8 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        startButton.onTrue(ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive))
-        # another feeder is located at: ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive)
+        startButton.onTrue(ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive))
+        # another feeder is located at: ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive)
 
         from commands.holonomicdrive import HolonomicDrive
 
