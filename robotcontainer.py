@@ -12,6 +12,7 @@ from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
+from commands.aimtodirection import AimToDirection
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory
@@ -406,7 +407,12 @@ class RobotContainer:
         )
         drop = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
 
-        # 2. square dance to test the drivetrain
+        # 2. some rotations to test the gyro
+        rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)
+        rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
+        rotations = rotation1.andThen(rotation2)
+
+        # 3. square dance to test the drivetrain
         from commands.swervetopoint import SwerveToSide
         forward = SwerveToSide(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
         left = SwerveToSide(metersToTheLeft=0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
@@ -414,9 +420,10 @@ class RobotContainer:
         right = SwerveToSide(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
         squareDance = forward.andThen(left).andThen(back).andThen(right)
 
-        # 3. not yet done: add commands for tag alignment with both cameras?
+        # 4. not yet done: add commands for tag alignment with both cameras?
 
-        return intake.andThen(score).andThen(drop).andThen(squareDance)
+        # 5. the combination
+        return intake.andThen(score).andThen(drop).andThen(rotations).andThen(squareDance)
 
 
     def alignToTagCmd(self, camera, desiredHeading):
