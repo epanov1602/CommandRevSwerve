@@ -668,6 +668,7 @@ class Intake(Subsystem):
             self.desiredSpeedF = speedL
 
 ```
+</details>
 
 ### Part 2: these few commands you can put into `commands/intakecommands.py`, so you can later import them for buttons and autos
 <details>
