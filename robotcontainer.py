@@ -12,8 +12,6 @@ from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
-from commands.aimtodirection import AimToDirection
-from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory
 from constants import DriveConstants, OIConstants
@@ -34,12 +32,10 @@ class RobotContainer:
     """
 
     def __init__(self) -> None:
-        # The controllers
+        # The driver's controller
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
-        self.trajectoryLetter = "A"
-        self.trajectorySide = "left"
 
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
@@ -150,8 +146,8 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        startButton.onTrue(ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive))
-        # another feeder is located at: ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive)
+        startButton.onTrue(ResetXY(x=1.30, y=1.15, headingDegrees=+54, drivetrain=self.robotDrive))
+        # another feeder is located at: ResetXY(x=1.30, y=6.90, headingDegrees=-54, drivetrain=self.robotDrive)
 
         from commands.holonomicdrive import HolonomicDrive
 
@@ -192,15 +188,15 @@ class RobotContainer:
         level0PosButton.onTrue(level0PositionCmd)
         #  - 1
         level1PosButton = self.scoringController.button(XboxController.Button.kB)
-        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level1PosButton.onTrue(level1PositionCmd)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kY)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level2PosButton.onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kX)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=30.0, arm=self.arm, angle=135)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
         level3PosButton.onTrue(level3PositionCmd)
 
 
@@ -222,31 +218,11 @@ class RobotContainer:
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
         self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
 
-        # a function to choose trajectory by combining the letter and side (for example, "C-left")
-        def chooseTrajectory(letter=None, side=None):
-            if letter:
-                print(f"choosing trajectory letter {letter}")
-                self.trajectoryLetter = letter
-            if side:
-                print(f"choosing trajectory side {side}")
-                self.trajectorySide = side
-            self.trajectoryPicker.pickTrajectory(self.trajectoryLetter + "-" + self.trajectorySide)
-
-        # trajectory board using this function (are the button numbers correct?)
-        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda: chooseTrajectory(letter="A")))
-        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda: chooseTrajectory(letter="B")))
-        self.trajectoryBoard.button(3).onTrue(InstantCommand(lambda: chooseTrajectory(letter="C")))
-        self.trajectoryBoard.button(4).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
-        self.trajectoryBoard.button(5).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
-        self.trajectoryBoard.button(6).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
-        self.trajectoryBoard.button(7).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
-        self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
-
         # now add the trajectories (please replace these with the real ones):
 
 
         #  - go to left branch of reef side B
-        goSideDLeftBranch = JerkyTrajectory(
+        goSideELeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             endpoint=(5.464, 5.247, -120),
             waypoints=[
@@ -258,33 +234,28 @@ class RobotContainer:
             speed=0.2
         )
         self.trajectoryPicker.addCommands(
-            "d-left",
-            goSideDLeftBranch,
+            "E-left",
+            goSideELeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
-        # button 1 of trajectory board is "d-left" trajectory
-        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("d-left")))
 
         #  - go to right branch of reef side B
-        goSideBLeftBranch = JerkyTrajectory(
+        goSideCLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(5.584, 2.803, 120.0),
+            endpoint=(5.045, 2.611, 120.0),
             waypoints=[
                 (1.2, 1.2, 54.0),
                 (2.336, 1.911, -10.119),
                 (3.777, 2.020, 0.302),
-                (5.219, 2.128, 13.001),
+                (5.045, 1.741, 50.001),
             ],
             speed=0.2
         )
         self.trajectoryPicker.addCommands(
-            "b-left",
-            goSideBLeftBranch,
+            "C-left",
+            goSideCLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
-        # button 2 of trajectory board is "b-left" trajectory
-        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("b-left")))
-
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
@@ -397,6 +368,8 @@ class RobotContainer:
         :returns: the command to run in test mode (to exercise all systems)
         """
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward
+        from commands.elevatorcommands import MoveElevatorAndArm
+        from commands.aimtodirection import AimToDirection
 
         # 1. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
         intake = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm).andThen(
@@ -424,7 +397,6 @@ class RobotContainer:
 
         # 5. the combination
         return intake.andThen(score).andThen(drop).andThen(rotations).andThen(squareDance)
-
 
     def alignToTagCmd(self, camera, desiredHeading):
         from commands.setcamerapipeline import SetCameraPipeline
