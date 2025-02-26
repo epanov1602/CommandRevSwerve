@@ -36,6 +36,8 @@ class RobotContainer:
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
+        self.trajectorySide = "left"  # some kind of initial value
+        self.trajectoryLetter = "A"  # we need some kind of initial value
 
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
@@ -230,14 +232,15 @@ class RobotContainer:
             self.trajectoryPicker.pickTrajectory(self.trajectoryLetter + "-" + self.trajectorySide)
 
         # trajectory board using this function (are the button numbers correct?)
-        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda: chooseTrajectory(letter="A")))
-        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda: chooseTrajectory(letter="B")))
-        self.trajectoryBoard.button(3).onTrue(InstantCommand(lambda: chooseTrajectory(letter="C")))
-        self.trajectoryBoard.button(4).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
-        self.trajectoryBoard.button(5).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
-        self.trajectoryBoard.button(6).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
-        self.trajectoryBoard.button(7).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
-        self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
+        self.trajectoryBoard.button(5).onTrue(InstantCommand(lambda: chooseTrajectory(letter="A")))
+        self.trajectoryBoard.button(6).onTrue(InstantCommand(lambda: chooseTrajectory(letter="B")))
+        self.trajectoryBoard.button(7).onTrue(InstantCommand(lambda: chooseTrajectory(letter="C")))
+        self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
+        self.trajectoryBoard.button(9).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
+        self.trajectoryBoard.button(10).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
+        self.trajectoryBoard.button(11).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
+        self.trajectoryBoard.button(12).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
+
 
         # now add the trajectories (please replace these with the real ones):
 
