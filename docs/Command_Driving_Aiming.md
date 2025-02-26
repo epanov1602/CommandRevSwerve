@@ -566,6 +566,12 @@ class JerkyTrajectory(commands2.Command):
 
         self.addRequirements(self.drivetrain)
 
+    def reversed(self) -> JerkyTrajectory:
+        waypoints = self.waypoints[1:]
+        waypoints.reverse()
+        endpoint = self.waypoints[0]
+        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, self.speed)
+
     def trajectoryToDisplay(self):
         result = []
         for translation, rotation in self.waypoints:
@@ -669,6 +675,12 @@ class JerkyTrajectory(commands2.Command):
 
 
 class SwerveTrajectory(JerkyTrajectory):
+
+    def reversed(self) -> SwerveTrajectory:
+        waypoints = self.waypoints[1:]
+        waypoints.reverse()
+        endpoint = self.waypoints[0]
+        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, self.speed)
 
     def initialize(self):
         # skip the waypoints that are already behind
