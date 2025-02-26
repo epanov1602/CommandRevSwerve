@@ -28,6 +28,9 @@ class MoveElevator(commands2.Command):
         if interrupted:
             self.elevator.stopAndReset()
 
+    def succeeded(self) -> bool:
+        return self.elevator.reachedThisPositionGoal(self.position, 2)
+
 
 class MoveArm(commands2.Command):
     def __init__(self, arm: Arm, angle: float):
@@ -49,6 +52,9 @@ class MoveArm(commands2.Command):
     def end(self, interrupted: bool):
         if interrupted:
             self.arm.stopAndReset()
+
+    def succeeded(self) -> bool:
+        return self.arm.reachedThisAngleGoal(self.angle, 2)
 
 
 class MoveElevatorAndArm(commands2.SequentialCommandGroup):
@@ -84,8 +90,8 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
         assert set(self.requirements) == {elevator, arm}, "supposed to have {elevator, arm} requirements"
 
     def succeeded(self) -> bool:
-        return self.arm.reachedThisAngleGoal(self.angle) and \
-            self.elevator.reachedThisPositionGoal(self.position)
+        return self.arm.reachedThisAngleGoal(self.angle, 2) and \
+            self.elevator.reachedThisPositionGoal(self.position, 2)
 
     def initialize(self):
         # are we already at the goal?
