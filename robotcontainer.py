@@ -414,6 +414,8 @@ class RobotContainer:
         right = SwerveToSide(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
         squareDance = forward.andThen(left).andThen(back).andThen(right)
 
+        # 3. not yet done: add commands for tag alignment with both cameras?
+
         return intake.andThen(score).andThen(drop).andThen(squareDance)
 
 
