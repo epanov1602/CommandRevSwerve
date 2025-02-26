@@ -70,7 +70,7 @@ class PhotonTagCamera(Subsystem):
         # 1. if camera is connected, process the camera results
         if self.camera.isConnected():
             result = self.camera.getLatestResult()
-            resultTime = result.getTimestamp()
+            resultTime = result.getTimestampSeconds()
             if resultTime != self.lastHeartbeatTime:
                 self.lastHeartbeatTime = resultTime
                 self.ta, self.tx, self.ty = 0, 0, 0
