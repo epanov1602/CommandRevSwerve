@@ -32,10 +32,12 @@ class RobotContainer:
     """
 
     def __init__(self) -> None:
-        # The driver's controller
+        # The controllers
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
+        self.trajectoryLetter = "a"
+        self.trajectorySide = "left"
 
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
@@ -218,6 +220,26 @@ class RobotContainer:
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
         self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
 
+        # a function to choose trajectory by combining the letter and side
+        def chooseTrajectory(letter=None, side=None):
+            if letter:
+                print(f"choosing trajectory letter {letter}")
+                self.trajectoryLetter = letter
+            if side:
+                print(f"choosing trajectory side {side}")
+                self.trajectorySide = side
+            self.trajectoryPicker.pickTrajectory(self.trajectoryLetter + "-" + self.trajectorySide)
+
+        # trajectory board using this function (are the button numbers correct?)
+        self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda: chooseTrajectory(letter="A")))
+        self.trajectoryBoard.button(2).onTrue(InstantCommand(lambda: chooseTrajectory(letter="B")))
+        self.trajectoryBoard.button(3).onTrue(InstantCommand(lambda: chooseTrajectory(letter="C")))
+        self.trajectoryBoard.button(4).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
+        self.trajectoryBoard.button(5).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
+        self.trajectoryBoard.button(6).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
+        self.trajectoryBoard.button(7).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
+        self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
+
         # now add the trajectories (please replace these with the real ones):
 
         #  - go to left branch of reef side B
@@ -239,7 +261,7 @@ class RobotContainer:
             goSideDLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
-        # button 1 of trajectory byard is "d-left" trajectory
+        # button 1 of trajectory board is "d-left" trajectory
         self.trajectoryBoard.button(1).onTrue(InstantCommand(lambda : self.trajectoryPicker.pickTrajectory("d-left")))
 
         #  - go to right branch of reef side B

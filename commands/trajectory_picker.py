@@ -52,6 +52,7 @@ class TrajectoryPicker(commands2.Command):
         if name not in self.nameToIndex:
             example = f"example: trajectoryPicker.addCommands('{name}', command1, command2, ...)"
             print(f"WARNING: trajectory {name} was never added to this TrajectoryPicker ({example})")
+            SmartDashboard.putString(self.dashboardName, name + "?")  # display anyway
             return  # no such trajectory
         self.chosenIndex = self.nameToIndex[name]
         self.updateDashboard()
