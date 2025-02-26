@@ -36,7 +36,7 @@ class RobotContainer:
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
-        self.trajectoryLetter = "a"
+        self.trajectoryLetter = "A"
         self.trajectorySide = "left"
 
         self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
