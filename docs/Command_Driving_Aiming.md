@@ -514,7 +514,6 @@ class SwerveToSide(commands2.Command):
 Please try to put this code in file `commands/jerky_trajectory.py` :
 
 ```python
-
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -542,13 +541,13 @@ class JerkyTrajectory(commands2.Command):
         drivetrain: DriveSubsystem,
         endpoint: Pose2d | Translation2d | tuple | list,
         waypoints: typing.List[Pose2d | Translation2d | tuple | list] = (),
-        swerve: bool = False,
+        swerve: bool | str = False,
         speed=1.0,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
         (this is why it is better to have start point should be listed in waypoints)
-        :param swerve: do we want to use the swerve functionality (otherwise it will use tank/arcade drive)
+        :param swerve: do we want to use the swerve functionality (you can also say swerve="last-point")
         :param drivetrain: drive train, swerve or tank/arcade
         :param endpoint: end point of the trajectory, can be (X,Y) tuple, (X,Y,heading) tuple, Translation2d or Pose2d
         :param waypoints: a list of waypoints (if any), can be (X,Y) tuples, (X,Y,heading), Translation2d or Pose2d
@@ -556,6 +555,9 @@ class JerkyTrajectory(commands2.Command):
         """
         super().__init__()
         assert endpoint is not None
+        assert swerve in (
+            False, True, "last-point"
+        ), f"swerve={swerve} is not allowed (allowed: False, True, 'last-point')"
 
         self.drivetrain = drivetrain
         self.speed = speed
@@ -664,23 +666,18 @@ class JerkyTrajectory(commands2.Command):
         return point, heading
 
     def _makeWaypointCommand(self, point, heading, last):
-        if self.swerve:
-            return SwerveToPoint(
-                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
-            )
-        else:
+        if not self.swerve or (not last and self.swerve == "last-point"):
+            # use arcade drive, if we aren't allowed to use swerve (or not allowed to use swerve for non-end points)
             return GoToPoint(
                 point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
+            )
+        else:
+            return SwerveToPoint(
+                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
             )
 
 
 class SwerveTrajectory(JerkyTrajectory):
-
-    def reversed(self) -> SwerveTrajectory:
-        waypoints = self.waypoints[1:]
-        waypoints.reverse()
-        endpoint = self.waypoints[0]
-        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, self.speed)
 
     def initialize(self):
         # skip the waypoints that are already behind
