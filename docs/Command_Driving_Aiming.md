@@ -570,7 +570,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, self.speed)
+        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
 
     def trajectoryToDisplay(self):
         result = []
