@@ -146,7 +146,7 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        resetOdometryButton = self.driverController.button(XboxController.Button.kBack)
+        resetOdometryButton = self.driverController.button(XboxController.Button.kBack )
         resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
         # resetSwerveFrontButton = self.driverController.povDown()
         # resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
@@ -279,6 +279,23 @@ class RobotContainer:
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+240)
         )
 
+        goSideERightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(5.196, 5.506, -120),
+            waypoints=[
+                (1.285, 6.915, -54.0),
+                (2.497, 6.142, -29.882),
+                (3.847, 6.078, 2.188),
+                (5.196, 6.013, -20.278),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "E-right",
+            goSideERightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+240)
+        )
+
         #  - go to right branch of reef side B
         goSideCLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
@@ -298,10 +315,27 @@ class RobotContainer:
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+120)
         )
 
+        goSideCRightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(5.454, 2.724, 120.0),
+            waypoints=[
+                (1.285, 1.135, 54.0),
+                (2.336, 1.911, -10.119),
+                (3.777, 1.520, 0.302),
+                (5.045, 1.741, 50.001),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "C-right",
+            goSideCRightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+120)
+        )
+
         goSideALeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(2.972, 4.200, 0),
+            endpoint=(2.824, 4.200, 0),
             waypoints=[
                 (1.5, 7.0, -54.0),
                 (2.012, 6.013, -89.470),
@@ -314,6 +348,23 @@ class RobotContainer:
             "A-left",
             goSideALeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
+        )
+
+        goSideARightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(2.828, 3.823, 0),
+            waypoints=[
+                (1.5, 7.0, -54.0),
+                (2.012, 6.013, -89.470),
+                (2.081, 5.296, -90.423),
+                (2.150, 4.580, -74.962),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "A-right",
+            goSideARightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=0)
         )
 
         goSideBLeftBranch = JerkyTrajectory(
@@ -334,10 +385,29 @@ class RobotContainer:
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
 
+
+
+        goSideBRightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(3.819, 2.410, 60.0),
+            waypoints=[
+                (1.2, 1.2, 54.0),
+                (1.660, 1.583, 26.787),
+                (2.443, 1.583, 29.510),
+                (3.131, 1.896, 33.059),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "B-right",
+            goSideBRightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+60)
+        )
+
         goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(5.993, 3.781, 180),
+            endpoint=(6.162, 4.150, 180),
             waypoints=[
                 (1.2, 1.2, 54.0),
                 (2.519, 1.824, -14.213),
@@ -352,6 +422,24 @@ class RobotContainer:
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
 
+        goSideDRightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(6.162, 3.890, 180),
+            waypoints=[
+                (1.2, 1.2, 54.0),
+                (2.519, 1.824, -14.213),
+                (4.387, 1.824, 18.077),
+                (6.162, 2.863, 50.778),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "D-right",
+            goSideDRightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+180)
+        )
+
+
         goSideFLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
@@ -363,10 +451,26 @@ class RobotContainer:
             ],
             speed=0.2
         )
+
         self.trajectoryPicker.addCommands(
             "F-left",
             goSideFLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
+        )
+        goSideFRightBranch = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            endpoint=(3.50, 5.426, -60.0),
+            waypoints=[
+                (1.376, 6.892, -54.0),
+                (2.752, 6.523, -13.496),
+                (3.620, 6.064, -55.775),
+            ],
+            speed=0.2
+        )
+        self.trajectoryPicker.addCommands(
+            "F-right",
+            goSideFRightBranch,
+            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+300)
         )
 
     def disablePIDSubsystems(self) -> None:
