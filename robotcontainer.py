@@ -12,10 +12,12 @@ from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
+from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory
+from commands.swervetopoint import SwerveToSide
 from constants import DriveConstants, OIConstants
-from subsystems.drivesubsystem import DriveSubsystem
+from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.arm import Arm, ArmConstants
 
 from commands.gotopoint import GoToPoint
@@ -31,7 +33,7 @@ class RobotContainer:
     subsystems, commands, and button mappings) should be declared here.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, robot) -> None:
         # The driver's controller
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
@@ -89,7 +91,7 @@ class RobotContainer:
 
 
         def maxSpeedScaledownFactor():
-            if not self.elevator.zeroFound:
+            if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
                 return 0.25  # if elevator does not know its zero, max speed = 25%
             elevatorPosition = self.elevator.getPosition()
             if elevatorPosition > 7.0:
@@ -98,6 +100,8 @@ class RobotContainer:
             return 1.0
 
         self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
+        if commands2.TimedCommandRobot.isSimulation():
+            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
 
         from subsystems.localizer import Localizer
 
@@ -210,7 +214,7 @@ class RobotContainer:
         # trajectory picker will only run when these subsystems are not busy with other commands
         requirements = [self.robotDrive, self.intake, self.arm, self.elevator]
 
-        # POV up: run the trajectory while pushed
+        # POV up: run the trajectory while button pushed
         self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
         self.driverController.povUp().whileTrue(self.trajectoryPicker)
 
@@ -218,9 +222,15 @@ class RobotContainer:
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
+        backUp = SwerveToSide(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.2)
+        armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=42)
+
         # POV down: run the reverse trajectory while pushed
-        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker)
-        self.driverController.povDown().whileTrue(self.reversedTrajectoryPicker)
+        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
+        # (may as well bring that arm down along with driving in reverse)
+        reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
+        # (when button is pushed, first back up safely and then drive the reverse trajectory)
+        self.driverController.povDown().whileTrue(backUp.andThen(reverseTrajectoryWithArmGoingDown))
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
         def chooseTrajectory(letter=None, side=None):
@@ -252,14 +262,16 @@ class RobotContainer:
         #  - go to left branch of reef side B
         goSideELeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(5.464, 5.247, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
-                (2.497, 6.142, -29.882),
-                (3.847, 6.078, 2.188),
-                (5.196, 6.013, -20.278),
+                (1.785, 6.415, 0.0),
+                (2.497, 6.542, 0.0),
+                (4.847, 6.978, 2.188),
+                (5.696, 6.213, -90.278),
             ],
-            speed=0.2
+            speed=0.2,
         )
         self.trajectoryPicker.addCommands(
             "E-left",
@@ -270,6 +282,7 @@ class RobotContainer:
         #  - go to right branch of reef side B
         goSideCLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(5.045, 2.611, 120.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
@@ -287,6 +300,7 @@ class RobotContainer:
 
         goSideALeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(2.972, 4.200, 0),
             waypoints=[
                 (1.5, 7.0, -54.0),
@@ -304,6 +318,7 @@ class RobotContainer:
 
         goSideBLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(3.580, 2.803, 60.0),
             waypoints=[
                 (1.2, 1.2, 54.0),
@@ -321,6 +336,7 @@ class RobotContainer:
 
         goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(5.993, 3.781, 180),
             waypoints=[
                 (1.2, 1.2, 54.0),
@@ -338,6 +354,7 @@ class RobotContainer:
 
         goSideFLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
+            swerve="last-point",
             endpoint=(3.929, 5.496, -60.0),
             waypoints=[
                 (1.376, 6.892, -54.0),
@@ -366,10 +383,10 @@ class RobotContainer:
     def configureAutos(self):
         self.chosenAuto = wpilib.SendableChooser()
         # you can also set the default option, if needed
-        self.chosenAuto.addOption("Fallow coral", self.fallowcoralcommand)
-        self.chosenAuto.addOption("curved blue right", self.getcurvedbluerightcommand)
-        self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
-        self.chosenAuto.addOption("go to midepoint", self.getToStage)
+        self.chosenAuto.setDefaultOption("curved blue right", self.getcurvedbluerightcommand)
+        #self.chosenAuto.addOption("Fallow coral", self.fallowcoralcommand)
+        #self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
+        #self.chosenAuto.addOption("go to midepoint", self.getToStage)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
 
     def getToStage(self):

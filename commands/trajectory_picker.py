@@ -104,9 +104,11 @@ class TrajectoryPicker(commands2.Command):
 
 
 class ReversedTrajectoryPicker(commands2.Command):
-    def __init__(self, trajectoryPicker: TrajectoryPicker):
+    def __init__(self, trajectoryPicker: TrajectoryPicker, subsystems=None):
         self.trajectoryPicker = trajectoryPicker
-        for subsystem in self.trajectoryPicker.getRequirements():
+        if subsystems is None:
+            subsystems = trajectoryPicker.getRequirements()
+        for subsystem in subsystems:
             self.addRequirements(subsystem)
 
     def end(self, interrupted: bool):

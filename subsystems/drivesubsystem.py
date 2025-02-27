@@ -13,7 +13,7 @@ from wpimath.kinematics import (
     SwerveDrive4Odometry,
 )
 from wpilib import SmartDashboard, Field2d
-
+from wpimath.units import dynes
 
 from constants import DriveConstants, ModuleConstants
 import swerveutils
@@ -69,9 +69,11 @@ class DriveSubsystem(Subsystem):
         self.gyro = navx.AHRS.create_spi()
 
         # Slew rate filter variables for controlling lateral acceleration
-        self.currentRotation = 0.0
         self.currentTranslationDir = 0.0
         self.currentTranslationMag = 0.0
+        self.xSpeedDelivered = 0.0
+        self.ySpeedDelivered = 0.0
+        self.rotDelivered = 0.0
 
         self.magLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
         self.rotLimiter = SlewRateLimiter(DriveConstants.kRotationalSlewRate)
@@ -94,8 +96,13 @@ class DriveSubsystem(Subsystem):
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
 
+        self.simPhysics = None
+
 
     def periodic(self) -> None:
+        if self.simPhysics is not None:
+            self.simPhysics.periodic()
+
         # Update the odometry in the periodic block
         pose = self.odometry.update(
             self.getGyroHeading(),
@@ -128,6 +135,7 @@ class DriveSubsystem(Subsystem):
 
         """
         self.gyro.reset()
+        self.gyro.setAngleAdjustment(0)
         self.odometry.resetPosition(
             self.getGyroHeading(),
             (
@@ -277,19 +285,19 @@ class DriveSubsystem(Subsystem):
             self.currentRotation = rot
 
         # Convert the commanded speeds into the correct units for the drivetrain
-        xSpeedDelivered = xSpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
-        ySpeedDelivered = ySpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
-        rotDelivered = self.currentRotation * DriveConstants.kMaxAngularSpeed
+        self.xSpeedDelivered = xSpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
+        self.ySpeedDelivered = ySpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
+        self.rotDelivered = self.currentRotation * DriveConstants.kMaxAngularSpeed
 
         swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
             ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeedDelivered,
-                ySpeedDelivered,
-                rotDelivered,
+                self.xSpeedDelivered,
+                self.ySpeedDelivered,
+                self.rotDelivered,
                 self.getGyroHeading(),
             )
             if fieldRelative
-            else ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered)
+            else ChassisSpeeds(self.xSpeedDelivered, self.ySpeedDelivered, self.rotDelivered)
         )
         fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(
             swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond
@@ -336,6 +344,7 @@ class DriveSubsystem(Subsystem):
     def zeroHeading(self) -> None:
         """Zeroes the heading of the robot."""
         self.gyro.reset()
+        self.gyro.setAngleAdjustment(0)
 
     def getGyroHeading(self) -> Rotation2d:
         """Returns the heading of the robot.
@@ -359,3 +368,37 @@ class DriveSubsystem(Subsystem):
         :returns: The turn rate of the robot, in degrees per second
         """
         return self.getTurnRate() * 180 / math.pi
+
+
+class BadSimPhysics(object):
+    """
+    this is the wrong way to do it, it does not scale!!!
+    the right way is shown here: https://github.com/robotpy/examples/blob/main/Physics/src/physics.py
+    and documented here: https://robotpy.readthedocs.io/projects/pyfrc/en/stable/physics.html
+    (but for a swerve drive it will take some work to add correctly)
+    """
+    def __init__(self, drivetrain: DriveSubsystem, robot: wpilib.RobotBase):
+        self.drivetrain = drivetrain
+        self.robot = robot
+        self.t = 0
+
+    def periodic(self):
+        past = self.t
+        self.t = wpilib.Timer.getFPGATimestamp()
+        if past == 0:
+            return  # it was first time
+
+        dt = self.t - past
+        if self.robot.isEnabled():
+            drivetrain = self.drivetrain
+
+            dx = drivetrain.xSpeedDelivered * dt
+            dy = drivetrain.ySpeedDelivered * dt
+
+            heading = drivetrain.getHeading()
+            trans = Translation2d(dx, dy).rotateBy(heading)
+            rot = (drivetrain.rotDelivered * 180 / math.pi) * dt
+
+            g = drivetrain.gyro
+            g.setAngleAdjustment(g.getAngleAdjustment() + rot * DriveConstants.kGyroReversed)
+            drivetrain.adjustOdometry(trans, Rotation2d())

@@ -15,7 +15,7 @@ from constants import AutoConstants
 
 
 class AimToDirectionConstants:
-    kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
+    kP = 0.002  # 0.002 is the default, but you must calibrate this to your robot
     kUseSqrtControl = AutoConstants.kUseSqrtControl
 
     kMinTurnSpeed = 0.03  # turning slower than this is unproductive for the motor (might not even spin)

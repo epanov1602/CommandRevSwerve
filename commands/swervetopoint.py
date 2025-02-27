@@ -67,7 +67,7 @@ class SwerveToPoint(commands2.Command):
             ySpeed = totalSpeed * yDistance / totalDistance
 
         degreesLeftToTurn = self.getDegreesLeftToTurn()
-        turningSpeed = 0.5 * abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
         if AimToDirectionConstants.kUseSqrtControl:
             turningSpeed = math.sqrt(0.5 * turningSpeed)  # will match the non-sqrt value when 50% max speed
         if turningSpeed > abs(self.speed):
@@ -89,7 +89,7 @@ class SwerveToPoint(commands2.Command):
 
         # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
-        if not self.stop and distanceFromInitialPosition > self.initialDistance - 3 * GoToPointConstants.kApproachRadius:
+        if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
             return True  # close enough
 
         if distanceFromInitialPosition > self.initialDistance:
