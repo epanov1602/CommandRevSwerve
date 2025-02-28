@@ -176,6 +176,11 @@ class RobotContainer:
         ejectForwardCmd = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
         ejectButton.whileTrue(ejectForwardCmd)
 
+        # pull the left trigger = spin the intake in reverse direction
+        ejectBackwardsButton = self.scoringController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.5)
+        ejectBackwards = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
+        ejectBackwardsButton.whileTrue(ejectBackwards)
+
         # elevator buttons for different levels
         #  - 0
         level0PosButton = self.scoringController.button(XboxController.Button.kA)
@@ -201,11 +206,11 @@ class RobotContainer:
         """
         from commands.holonomicdrive import HolonomicDrive
 
-        # if someone pushes this left trigger by >50%
-        leftTriggerAsButton = joystick.axisGreaterThan(XboxController.Axis.kLeftTrigger, threshold=0.50)
+        # if someone pushes this left bumper
+        leftBumper = joystick.button(XboxController.Button.kLeftBumper)
 
         # ... then the sticks of this joystick start driving the robot FPV-style (not field-relative)
-        leftTriggerAsButton.whileTrue(
+        leftBumper.whileTrue(
             HolonomicDrive(
                 self.robotDrive,
                 forwardSpeed=lambda: -speed * joystick.getRawAxis(XboxController.Axis.kLeftY),
