@@ -335,31 +335,30 @@ class RobotContainer:
         goSideALeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(2.824, 4.200, 0),
+            endpoint=(2.324, 4.200, 0),
             waypoints=[
-                (1.5, 7.0, -54.0),
+                (1.285, 6.915, -54),
                 (2.012, 6.013, -89.470),
                 (2.081, 5.296, -90.423),
                 (2.150, 4.580, -74.962),
             ],
-            speed=0.2
+            speed=0.1
         )
         self.trajectoryPicker.addCommands(
             "A-left",
             goSideALeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
+           self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
         )
-
         goSideARightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            endpoint=(2.828, 3.823, 0),
+            endpoint=(2.224, 3.523, 0),
             waypoints=[
-                (1.5, 7.0, -54.0),
+                (1.285, 6.915, -54),
                 (2.012, 6.013, -89.470),
                 (2.081, 5.296, -90.423),
                 (2.150, 4.580, -74.962),
             ],
-            speed=0.2
+            speed=0.1
         )
         self.trajectoryPicker.addCommands(
             "A-right",
