@@ -14,7 +14,8 @@ class Intake(Subsystem):
                  followerInverted=False,
                  rangeFinder=None,
                  rangeToGamepiece=None,
-                 recoilSpeed=0.0
+                 recoilSpeed=0.0,
+                 limitSwitchEnabled=False,
     ) -> None:
         """
         :param leaderCanID: CAN ID of the leader motor (or of your only motor)
@@ -43,7 +44,7 @@ class Intake(Subsystem):
         motorConfig.inverted(leaderInverted)
         motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
         motorConfig.limitSwitch.forwardLimitSwitchType(LimitSwitchConfig.Type.kNormallyOpen)
-        motorConfig.limitSwitch.forwardLimitSwitchEnabled(False)
+        motorConfig.limitSwitch.forwardLimitSwitchEnabled(limitSwitchEnabled)
 
         # 1. setup the leader motor
         self.motor = SparkMax(leaderCanID, SparkLowLevel.MotorType.kBrushless)
@@ -53,7 +54,8 @@ class Intake(Subsystem):
 
         # when the gamepiece is fully in, it will touch the limit switch -- physical or optical
         # (we want the intake to keep ~working if switch is broken or missing, so using "normally open")
-        self.limitSwitch = self.motor.getForwardLimitSwitch()
+        if limitSwitchEnabled:
+            self.limitSwitch = self.motor.getForwardLimitSwitch()
 
         # 2. setup the follower motor, if followerCanID is not None
         self.followerMotor = None
