@@ -409,12 +409,20 @@ class BadSimPhysics(object):
         if self.robot.isEnabled():
             drivetrain = self.drivetrain
 
-            dx = drivetrain.xSpeedDelivered * dt
-            dy = drivetrain.ySpeedDelivered * dt
+            states = (
+                drivetrain.frontLeft.desiredState,
+                drivetrain.frontRight.desiredState,
+                drivetrain.rearLeft.desiredState,
+                drivetrain.rearRight.desiredState,
+            )
+            speeds = DriveConstants.kDriveKinematics.toChassisSpeeds(states)
+
+            dx = speeds.vx * dt
+            dy = speeds.vy * dt
 
             heading = drivetrain.getHeading()
             trans = Translation2d(dx, dy).rotateBy(heading)
-            rot = (drivetrain.rotDelivered * 180 / math.pi) * dt
+            rot = (speeds.omega * 180 / math.pi) * dt
 
             g = drivetrain.gyro
             g.setAngleAdjustment(g.getAngleAdjustment() + rot * DriveConstants.kGyroReversed)
