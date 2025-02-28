@@ -61,7 +61,7 @@ class JerkyTrajectory(commands2.Command):
     def trajectoryToDisplay(self):
         result = []
         for translation, rotation in self.waypoints:
-            result.append(Pose2d(translation, rotation))
+            result.append(Pose2d(translation, rotation if rotation is not None else Rotation2d()))
         return result
 
     def initialize(self):
@@ -157,11 +157,17 @@ class JerkyTrajectory(commands2.Command):
             )
         else:
             return SwerveToPoint(
-                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
+                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last, rateLimit=not last
             )
 
 
 class SwerveTrajectory(JerkyTrajectory):
+
+    def reversed(self) -> SwerveTrajectory:
+        waypoints = self.waypoints[1:]
+        waypoints.reverse()
+        endpoint = self.waypoints[0]
+        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
 
     def initialize(self):
         # skip the waypoints that are already behind
