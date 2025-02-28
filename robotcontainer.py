@@ -14,7 +14,7 @@ from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
 from commands.elevatorcommands import MoveElevatorAndArm
 
-from commands.jerky_trajectory import JerkyTrajectory
+from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
 from commands.swervetopoint import SwerveToSide
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
