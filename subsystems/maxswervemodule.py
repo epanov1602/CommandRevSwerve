@@ -85,8 +85,8 @@ class MAXSwerveModule:
         if abs(desiredState.speed) < ModuleConstants.kDrivingMinSpeedMetersPerSecond:
             # if WPILib doesn't want us to move at all, don't bother to bring the wheels back to zero angle yet
             # (causes brownout protection when battery is lower: https://youtu.be/0Xi9yb1IMyA)
-            is_x_brake = abs(abs(desiredState.angle.degrees()) - 45) < 0.01
-            if not is_x_brake:
+            inXBrake = abs(abs(desiredState.angle.degrees()) - 45) < 0.01
+            if not inXBrake:
                 self.stop()
                 return
 
@@ -119,6 +119,8 @@ class MAXSwerveModule:
         """
         self.drivingPIDController.setReference(0, SparkLowLevel.ControlType.kVelocity)
         self.turningPIDController.setReference(self.turningEncoder.getPosition(), SparkLowLevel.ControlType.kPosition)
+        if self.desiredState.speed != 0:
+            self.desiredState = SwerveModuleState(speed=0, angle=self.desiredState.angle)
 
     def resetEncoders(self) -> None:
         """
