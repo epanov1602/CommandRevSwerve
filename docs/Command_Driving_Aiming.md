@@ -356,6 +356,7 @@ def _optimize(degrees):
 Please try to put this code in file `commands/swervetopoint.py`:
 
 ```python
+
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -374,7 +375,7 @@ from wpimath.geometry import Rotation2d, Translation2d, Pose2d
 
 
 class SwerveToPoint(commands2.Command):
-    def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True) -> None:
+    def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True, rateLimit=False) -> None:
         super().__init__()
         self.targetPose = None
         self.targetPoint = Translation2d(x, y)
@@ -387,6 +388,7 @@ class SwerveToPoint(commands2.Command):
 
         self.speed = speed
         self.stop = slowDownAtFinish
+        self.rateLimit = rateLimit
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
 
@@ -409,9 +411,11 @@ class SwerveToPoint(commands2.Command):
         xDistance, yDistance = self.targetPose.x - currentXY.x, self.targetPose.y - currentXY.y
         totalDistance = self.targetPose.translation().distance(currentXY.translation())
 
-        totalSpeed = GoToPointConstants.kPTranslate * totalDistance
-        if GoToPointConstants.kUseSqrtControl:
-            totalSpeed = math.sqrt(0.5 * totalSpeed)
+        totalSpeed = abs(self.speed)
+        if self.stop:  # proportional control: start slowing down if close to finish
+            totalSpeed = GoToPointConstants.kPTranslate * totalDistance
+            if GoToPointConstants.kUseSqrtControl:
+                totalSpeed = math.sqrt(0.5 * totalSpeed)
 
         if totalSpeed > abs(self.speed):
             totalSpeed = abs(self.speed)
@@ -436,7 +440,7 @@ class SwerveToPoint(commands2.Command):
         # now rotate xSpeed and ySpeed into robot coordinates
         speed = Translation2d(x=xSpeed, y=ySpeed).rotateBy(-self.drivetrain.getHeading())
 
-        self.drivetrain.drive(speed.x, speed.y, turningSpeed, fieldRelative=False, rateLimit=False)
+        self.drivetrain.drive(speed.x, speed.y, turningSpeed, fieldRelative=False, rateLimit=self.rateLimit)
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
@@ -524,6 +528,7 @@ class SwerveToSide(commands2.Command):
 Please try to put this code in file `commands/jerky_trajectory.py` :
 
 ```python
+
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -587,7 +592,7 @@ class JerkyTrajectory(commands2.Command):
     def trajectoryToDisplay(self):
         result = []
         for translation, rotation in self.waypoints:
-            result.append(Pose2d(translation, rotation))
+            result.append(Pose2d(translation, rotation if rotation is not None else Rotation2d()))
         return result
 
     def initialize(self):
@@ -683,11 +688,17 @@ class JerkyTrajectory(commands2.Command):
             )
         else:
             return SwerveToPoint(
-                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
+                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last, rateLimit=not last
             )
 
 
 class SwerveTrajectory(JerkyTrajectory):
+
+    def reversed(self) -> SwerveTrajectory:
+        waypoints = self.waypoints[1:]
+        waypoints.reverse()
+        endpoint = self.waypoints[0]
+        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
 
     def initialize(self):
         # skip the waypoints that are already behind
