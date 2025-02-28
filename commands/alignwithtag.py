@@ -20,7 +20,7 @@ from constants import DriveConstants
 
 
 class AlignWithTag(commands2.Command):
-    USE_PRECISE_FORWARD_PUSH = False
+    USE_PRECISE_FORWARD_PUSH = True
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
     KP_MULT = 0.33
 
