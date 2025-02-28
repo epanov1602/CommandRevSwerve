@@ -16,9 +16,11 @@ from wpimath.geometry import Rotation2d
 from wpilib import Timer, SmartDashboard
 
 from commands.swervetopoint import SwerveToSide
+from constants import DriveConstants
 
 
 class AlignWithTag(commands2.Command):
+    USE_PRECISE_FORWARD_PUSH = False
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
     KP_MULT = 0.33
 
@@ -104,15 +106,24 @@ class AlignWithTag(commands2.Command):
     def isFinished(self) -> bool:
         if self.finished:
             return True
+
         now = Timer.getFPGATimestamp()
+
+        # all the bad ways to finish
         if self.lostTag:
             self.finished = self.lostTag
         elif now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
-            self.finished = f"not seen > {self.detectionTimeoutSeconds}s"
-        elif self.tAlignedToTag != 0 and self.pushForwardCommand is None:
-            self.finished = "aligned"
-        elif self.tAlignedToTag != 0 and self.pushForwardCommand is not None and self.pushForwardCommand.isFinished():
-            self.finished = "algn+push"
+            self.finished = f"not seen > {1000 * self.detectionTimeoutSeconds}ms"
+
+        # all the good ways to finish
+        elif self.tAlignedToTag != 0:
+            if self.pushForwardCommand is not None and self.pushForwardCommand.isFinished():
+                self.finished = "algnd+fpushd"
+            elif self.pushForwardCommand is None and not AlignWithTag.USE_PRECISE_FORWARD_PUSH:
+                self.finished = "algnd+nopush"
+            elif now > self.tAlignedToTag + self.pushForwardSeconds and AlignWithTag.USE_PRECISE_FORWARD_PUSH:
+                self.finished = "algnd+ppushed"
+
         if not self.finished:
             return False
         print(f"AlignWithTag finished: {self.finished}")
@@ -127,11 +138,12 @@ class AlignWithTag(commands2.Command):
 
 
     def execute(self):
+        now = Timer.getFPGATimestamp()
         if self.camera.hasDetection():
             x = self.camera.getX()
             a = self.camera.getA()
             if x != 0 and a > 0:
-                self.lastSeenObjectTime = Timer.getFPGATimestamp()
+                self.lastSeenObjectTime = now
                 self.lastSeenObjectSize = a
                 self.lastSeenObjectX = x
                 self.everSawObject = True
@@ -165,7 +177,16 @@ class AlignWithTag(commands2.Command):
             self.pushForwardCommand.initialize()
             return
 
-        self.drivetrain.drive(0.0, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
+        # 5. if precise forward push is enabled, use it
+        fwdSpeed = 0.0
+        if self.tAlignedToTag != 0 and AlignWithTag.USE_PRECISE_FORWARD_PUSH:
+            fwdSpeed = (now - self.tAlignedToTag) * DriveConstants.kMagnitudeSlewRate
+            if abs(fwdSpeed) > self.pushForwardSpeed:
+                fwdSpeed = self.pushForwardSpeed
+            if self.reverse:
+                fwdSpeed = -fwdSpeed
+
+        self.drivetrain.drive(fwdSpeed, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
 
 
     def getTurnSpeed(self, degreesRemaining):
@@ -202,12 +223,12 @@ class AlignWithTag(commands2.Command):
 
         secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
         if secondsSinceHeartbeat > self.frameTimeoutSeconds:
-            self.lostTag = f"late heartbeat > {int(1000*secondsSinceHeartbeat)}ms"
+            self.lostTag = f"late heartbeat > {int(1000 * secondsSinceHeartbeat)}ms"
             return 0.0
 
         timeSinceLastDetection = now - self.lastSeenObjectTime
         if timeSinceLastDetection > self.detectionTimeoutSeconds:
-            self.lostTag = f"no detection for {int(1000*timeSinceLastDetection)}ms"
+            self.lostTag = f"no detection for {int(1000 * timeSinceLastDetection)}ms"
             return 0.0
         if self.tAlignedToTag != 0 and timeSinceLastDetection > 0.5 * self.frameTimeoutSeconds:
             return 0.0  # the last detection we know is not fresh, no need to use it
