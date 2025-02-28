@@ -288,7 +288,7 @@ class RobotContainer:
                 (3.847, 6.078, 2.188),
                 (5.196, 6.013, -20.278),
             ],
-            speed=0.2
+            speed=0.4
         )
         self.trajectoryPicker.addCommands(
             "E-right",
