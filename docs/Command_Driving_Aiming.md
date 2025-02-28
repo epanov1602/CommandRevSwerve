@@ -425,7 +425,7 @@ class SwerveToPoint(commands2.Command):
             ySpeed = totalSpeed * yDistance / totalDistance
 
         degreesLeftToTurn = self.getDegreesLeftToTurn()
-        turningSpeed = 0.67 * abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
         if AimToDirectionConstants.kUseSqrtControl:
             turningSpeed = math.sqrt(0.5 * turningSpeed)  # will match the non-sqrt value when 50% max speed
         if turningSpeed > abs(self.speed):
@@ -447,7 +447,7 @@ class SwerveToPoint(commands2.Command):
 
         # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
-        if not self.stop and distanceFromInitialPosition > self.initialDistance - 1.5 * GoToPointConstants.kApproachRadius:
+        if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
             return True  # close enough
 
         if distanceFromInitialPosition > self.initialDistance:
@@ -476,18 +476,28 @@ class SwerveToPoint(commands2.Command):
 
 
 class SwerveToSide(commands2.Command):
-    def __init__(self, metersToTheLeft: float, metersBackwards: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
+    def __init__(
+        self,
+        metersToTheLeft: float,
+        metersBackwards: float,
+        drivetrain: DriveSubsystem,
+        speed=1.0,
+        heading=None
+    ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
         self.metersBackwards = metersBackwards
+        self.desiredHeading = heading
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
-        heading = position.rotation()
+        heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
+        # position.rotation() becomes unstable when NavX resets
+        # (try Pidgeon or avoid taking gyro angle when it is rebooting)
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
             x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
