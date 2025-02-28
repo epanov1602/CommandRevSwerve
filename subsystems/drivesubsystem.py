@@ -67,6 +67,9 @@ class DriveSubsystem(Subsystem):
 
         # The gyro sensor
         self.gyro = navx.AHRS.create_spi()
+        self._lastGyroAngleTime = 0
+        self._lastGyroAngle = 0
+        self._lastGyroState = "ok"
 
         # Slew rate filter variables for controlling lateral acceleration
         self.currentTranslationDir = 0.0
@@ -82,7 +85,7 @@ class DriveSubsystem(Subsystem):
         # Odometry class for tracking robot pose
         self.odometry = SwerveDrive4Odometry(
             DriveConstants.kDriveKinematics,
-            Rotation2d.fromDegrees(self.gyro.getAngle()),
+            Rotation2d(),
             (
                 self.frontLeft.getPosition(),
                 self.frontRight.getPosition(),
@@ -136,6 +139,9 @@ class DriveSubsystem(Subsystem):
         """
         self.gyro.reset()
         self.gyro.setAngleAdjustment(0)
+        self._lastGyroAngleTime = 0
+        self._lastGyroAngle = 0
+
         self.odometry.resetPosition(
             self.getGyroHeading(),
             (
@@ -341,17 +347,28 @@ class DriveSubsystem(Subsystem):
         self.frontRight.resetEncoders()
         self.rearRight.resetEncoders()
 
-    def zeroHeading(self) -> None:
-        """Zeroes the heading of the robot."""
-        self.gyro.reset()
-        self.gyro.setAngleAdjustment(0)
-
     def getGyroHeading(self) -> Rotation2d:
-        """Returns the heading of the robot.
+        """Returns the heading of the robot, tries to be smart when gyro is disconnected
 
         :returns: the robot's heading as Rotation2d
         """
-        return Rotation2d.fromDegrees(self.gyro.getAngle() * DriveConstants.kGyroReversed)
+        now = wpilib.Timer.getFPGATimestamp()
+        past = self._lastGyroAngleTime
+        state = "ok"
+
+        if not self.gyro.isConnected():
+            state = "disconnected"
+        else:
+            if self.gyro.isCalibrating():
+                state = "calibrating"
+            self._lastGyroAngle = self.gyro.getAngle()
+            self._lastGyroAngleTime = now
+
+        if state != self._lastGyroState:
+            SmartDashboard.putString("gyro", f"{state} after {int(now - past)}s")
+            self._lastGyroState = state
+
+        return Rotation2d.fromDegrees(self._lastGyroAngle * DriveConstants.kGyroReversed)
 
 
     def getTurnRate(self) -> float:
