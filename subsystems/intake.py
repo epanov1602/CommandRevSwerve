@@ -54,8 +54,7 @@ class Intake(Subsystem):
 
         # when the gamepiece is fully in, it will touch the limit switch -- physical or optical
         # (we want the intake to keep ~working if switch is broken or missing, so using "normally open")
-        if limitSwitchEnabled:
-            self.limitSwitch = self.motor.getForwardLimitSwitch()
+        self.limitSwitch = self.motor.getForwardLimitSwitch() if limitSwitchEnabled else None
 
         # 2. setup the follower motor, if followerCanID is not None
         self.followerMotor = None

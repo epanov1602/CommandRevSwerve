@@ -20,6 +20,7 @@ from commands.swervetopoint import SwerveToSide
 
 class AlignWithTag(commands2.Command):
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
+    KP_MULT = 0.33
 
     def __init__(self,
                  camera,
@@ -144,7 +145,7 @@ class AlignWithTag(commands2.Command):
         # 3. if the robot heading is almost aligned, start swerving right or left (for centering on that tag precisely)
         #swerveSpeed = 0
         #if abs(degreesRemaining) < 4 * AimToDirectionConstants.kAngleToleranceDegrees or abs(turnSpeed) < AimToDirectionConstants.kMinTurnSpeed:
-        swerveSpeed = self.getSwerveLeftSpeed(degreesRemaining)
+        swerveSpeed, objectX = self.getSwerveLeftSpeed(degreesRemaining)
 
         # 4. if we just aligned the heading and the swerve axis and should be pushing forward, make that push
         if not self.alignedToTag:
@@ -158,7 +159,7 @@ class AlignWithTag(commands2.Command):
     def getTurnSpeed(self, degreesRemaining):
         # 2. proportional control: if we are almost finished turning, use slower turn speed (to avoid overshooting)
         turnSpeed = self.speed
-        proportionalSpeed = AimToDirectionConstants.kP * abs(degreesRemaining)
+        proportionalSpeed = AlignWithTag.KP_MULT * AimToDirectionConstants.kP * abs(degreesRemaining)
         if AimToDirectionConstants.kUseSqrtControl:
             proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
         if turnSpeed > proportionalSpeed:
@@ -170,32 +171,36 @@ class AlignWithTag(commands2.Command):
 
 
     def getPushForwardCommand(self):
-        speed = self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed
         from commands.swervetopoint import SwerveToSide
-        command = SwerveToSide(metersToTheLeft=0, metersBackwards=-1.0, speed=speed, drivetrain=self.drivetrain)
-        # AimToDirection(degrees=None, drivetrain=self.drivetrain, fwd_speed=speed)
+
+        command = SwerveToSide(
+            metersToTheLeft=0,
+            metersBackwards=-1.0,
+            heading=self.targetDirection,
+            speed=self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed,
+            drivetrain=self.drivetrain
+        )
         return command.withTimeout(self.pushForwardSeconds)
 
 
     def getSwerveLeftSpeed(self, degreesRemaining):
-        swerveSpeed = 0.0
-
         now = Timer.getFPGATimestamp()
         objectXDegrees = self.lastSeenObjectX
         objectSizePercent = self.lastSeenObjectSize
         if now > self.lastSeenObjectTime + self.detectionTimeoutSeconds:
             print(f"AlignSwerveWithTag: have not seen the object for at least {now - self.lastSeenObjectTime} seconds")
             self.lostTag = True
-            return 0.0  # no swerve speed possible, since last detected object was too far in the past
+            return 0.0, None  # no swerve speed possible, since last detected object was too far in the past
 
         secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
         if secondsSinceHeartbeat > 0.25:
             print(f"AlignSwerveWithTag: camera not usable (dead or too few frames per second), we see {secondsSinceHeartbeat} seconds since last hearbeat")
             self.lostTag = True
-            return 0.0
+            return 0.0, None
 
         elif objectXDegrees == 0 or objectSizePercent <= 0:
             print(f"AlignSwerveWithTag: invalid camera detection (objectX, objectSize) = ({objectXDegrees}, {objectSizePercent})")
+            return 0.0, None
 
         else:
             swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
@@ -206,7 +211,7 @@ class AlignWithTag(commands2.Command):
                     if abs(degreesRemaining) <= AimToDirectionConstants.kAngleToleranceDegrees:
                         print(f"AlignSwerveWithTag: degreesRemaining={degreesRemaining} is small, we are done aligning")
                         self.alignedToTag = True
-        return swerveSpeed
+            return swerveSpeed, objectXMeters
 
 
     def calculateSwerveLeftSpeed(self, objectSizePercent, objectXDegrees):
@@ -227,7 +232,7 @@ class AlignWithTag(commands2.Command):
 
         # how fast should we swerve to the right or left? use proportional control!
         swerveSpeed = self.speed
-        proportionalSpeed = 0.33 * GoToPointConstants.kPTranslate * abs(objectXMeters)
+        proportionalSpeed = AlignWithTag.KP_MULT * GoToPointConstants.kPTranslate * abs(objectXMeters)
         if GoToPointConstants.kUseSqrtControl:
             proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)
         if proportionalSpeed < swerveSpeed:

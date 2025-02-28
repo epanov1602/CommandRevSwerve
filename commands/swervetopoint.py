@@ -118,18 +118,28 @@ class SwerveToPoint(commands2.Command):
 
 
 class SwerveToSide(commands2.Command):
-    def __init__(self, metersToTheLeft: float, metersBackwards: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
+    def __init__(
+        self,
+        metersToTheLeft: float,
+        metersBackwards: float,
+        drivetrain: DriveSubsystem,
+        speed=1.0,
+        heading=None
+    ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
         self.metersBackwards = metersBackwards
+        self.desiredHeading = heading
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
-        heading = position.rotation()
+        heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
+        # position.rotation() becomes unstable when NavX resets
+        # (try Pigeon or avoid taking gyro angle when it is rebooting)
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
             x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
