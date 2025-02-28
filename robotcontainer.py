@@ -157,23 +157,10 @@ class RobotContainer:
         startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
         # ^^ this (x,Y) is the right feeding station for today's practice
 
-        from commands.holonomicdrive import HolonomicDrive
-
-        # if someone pushes left trigger of scoring controller more than 50%
-        leftTriggerAsButton = self.scoringController.axisGreaterThan(XboxController.Axis.kLeftTrigger, threshold=0.50)
-        # ... then the sticks of the scoring controller start driving the robot FPV-style (not field-relative)
-        leftTriggerAsButton.whileTrue(
-            HolonomicDrive(
-                self.robotDrive,
-                forwardSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kLeftY),
-                leftSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kLeftX),
-                rotationSpeed=lambda: -0.3 * self.scoringController.getRawAxis(XboxController.Axis.kRightX),
-                deadband=0,
-                fieldRelative=False,  # driving FPV (first person view), not field-relative (install an FPV camera on robot?)
-                rateLimit=False,
-                square=True,
-            )
-        )
+        # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
+        self.configureFpvDriving(self.driverController, speed=0.3)
+        if self.scoringController != self.driverController:
+            self.configureFpvDriving(self.scoringController, speed=0.3)
 
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands.elevatorcommands import MoveElevatorAndArm
@@ -206,6 +193,30 @@ class RobotContainer:
         level3PosButton = self.scoringController.button(XboxController.Button.kX)
         level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
         level3PosButton.onTrue(level3PositionCmd)
+
+
+    def configureFpvDriving(self, joystick, speed):
+        """
+        FPV = not field-relative
+        """
+        from commands.holonomicdrive import HolonomicDrive
+
+        # if someone pushes this left trigger by >50%
+        leftTriggerAsButton = joystick.axisGreaterThan(XboxController.Axis.kLeftTrigger, threshold=0.50)
+
+        # ... then the sticks of this joystick start driving the robot FPV-style (not field-relative)
+        leftTriggerAsButton.whileTrue(
+            HolonomicDrive(
+                self.robotDrive,
+                forwardSpeed=lambda: -speed * joystick.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -speed * joystick.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -speed * joystick.getRawAxis(XboxController.Axis.kRightX),
+                deadband=0,
+                fieldRelative=False,  # driving FPV (first person view), not field-relative (install an FPV camera on robot?)
+                rateLimit=False,
+                square=True,
+            )
+        )
 
 
     def configureTrajectoryPicker(self):
