@@ -10,6 +10,8 @@ class TrajectoryPicker(commands2.Command):
 
     def __init__(self, fieldDashboard: Field2d | None, subsystems: [], dashboardName="trajectory"):
         self.fieldDashboard = fieldDashboard
+        if fieldDashboard is not None:
+            fieldDashboard.getObject("traj").setPoses([])
         self.commands = []
         self.nameToIndex = {}
         self.chosenIndex = 0
@@ -36,8 +38,12 @@ class TrajectoryPicker(commands2.Command):
                 break
         self.commands.append((name, SequentialCommandGroup(*commands), reversed, trajectory))
         self.nameToIndex[name] = index
-        if index == 0:
-            self.updateDashboard()
+
+
+    def clearDashboard(self):
+        if self.fieldDashboard is not None:
+            self.fieldDashboard.getObject("traj").setPoses([])
+
 
     def updateDashboard(self):
         name = "?"

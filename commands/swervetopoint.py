@@ -120,7 +120,7 @@ class SwerveToPoint(commands2.Command):
         return degreesLeftToTurn
 
 
-class SwerveToSide(commands2.Command):
+class SwerveMove(commands2.Command):
     def __init__(
         self,
         metersToTheLeft: float,
@@ -157,3 +157,6 @@ class SwerveToSide(commands2.Command):
 
     def end(self, interrupted: bool):
         self.subcommand.end(interrupted)
+
+
+SwerveToSide = SwerveMove
