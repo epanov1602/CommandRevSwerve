@@ -1,3 +1,9 @@
+#
+# Copyright (c) FIRST and other WPILib contributors.
+# Open Source Software; you can modify and/or share it under the terms of
+# the WPILib BSD license file in the root directory of this project.
+#
+
 from __future__ import annotations
 import math
 
@@ -23,6 +29,7 @@ from subsystems.arm import Arm, ArmConstants
 from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
 
+from autofactory import AutoFactory
 
 
 class RobotContainer:
@@ -48,6 +55,7 @@ class RobotContainer:
         from subsystems.photon_tag_camera import PhotonTagCamera
         self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
         self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
+
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
@@ -138,6 +146,11 @@ class RobotContainer:
                 square=True,
             )
         )
+
+
+    def configureAutos(self) -> None:
+        AutoFactory.init(self)
+
 
     def configureButtonBindings(self) -> None:
         """
@@ -482,103 +495,8 @@ class RobotContainer:
         """
         :returns: the command to run in autonomous
         """
-        command = self.chosenAuto.getSelected()
-        return command()
+        return AutoFactory.makeAutoCommand(self)
 
-    def configureAutos(self):
-        self.chosenAuto = wpilib.SendableChooser()
-        # you can also set the default option, if needed
-        self.chosenAuto.setDefaultOption("curved blue right", self.getcurvedbluerightcommand)
-        #self.chosenAuto.addOption("Fallow coral", self.fallowcoralcommand)
-        #self.chosenAuto.addOption("approach tag", self.getAproachTagCommand)
-        #self.chosenAuto.addOption("go to midepoint", self.getToStage)
-        wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
-
-    def getToStage(self):
-        x = 15
-        y = 2.75
-        return GoToPoint(x, y, self.robotDrive, speed=0.2)
-
-    def getAproachTagCommand(self):
-        setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
-
-
-        from commands.jerky_trajectory import JerkyTrajectory
-        trajectory = JerkyTrajectory(
-            drivetrain=self.robotDrive,
-            endpoint=(7.000, 6.608, 0.000),
-            waypoints= [
-                (0.779, 6.608, 7.496),
-                (2.469, 5.805, 14.470),
-                (4.627, 7.124, -37.776)
-            ],
-            speed=0.2
-        )
-
-        from commands.followobject import FollowObject, StopWhen
-        fallowtag = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
-
-        from commands.alignwithtag import AlignWithTag
-        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
-
-        from commands.swervetopoint import SwerveToSide
-        swervleft = SwerveToSide(metersToTheLeft=0.2, metersBackwards=0.01, speed=0.2, drivetrain=self.robotDrive)
-
-        from commands.aimtodirection import AimToDirection
-        aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
-
-        commands = setStartPose.andThen(fallowtag).andThen(alignAndPush).andThen(swervleft).andThen(aimnorth)
-        return commands
-
-    def fallowcoralcommand(self):
-        setStartPose = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
-
-        from commands.followobject import FollowObject, StopWhen
-        FollowCoral = FollowObject(self.frontRightCamera, self.robotDrive, stopWhen=StopWhen(maxSize=12.0), speed=0.2)
-
-        from commands.alignwithtag import AlignWithTag
-        alignAndPush = AlignWithTag(self.frontRightCamera, self.robotDrive, 0, speed=0.2, pushForwardSeconds=1.1)
-        from commands.aimtodirection import AimToDirection
-
-        aimnorth = AimToDirection(0, self.robotDrive, 0.2, 0)
-
-        commands = setStartPose.andThen(FollowCoral).andThen(alignAndPush).andThen(aimnorth)
-        print("I created a command to approach coral")
-        return commands
-
-
-    def getcurvedbluerightcommand(self):
-        setStartPose = ResetXY(x=0.911, y=6.632, headingDegrees=+60, drivetrain=self.robotDrive)
-
-        from commands.jerky_trajectory import JerkyTrajectory
-        gotoFinish = JerkyTrajectory(drivetrain=self.robotDrive,
-                                     endpoint=(7.336, 6.273, 86.009),
-                                     waypoints=[
-                                         (3.860, 7.100, -25.544), (6.066, 5.865, -26.565)
-                                     ], swerve=False,
-                                     speed=0.8)
-        from commands.aimtodirection import AimToDirection
-        aimDown = AimToDirection(degrees=-90.000, drivetrain=self.robotDrive)
-
-        command = setStartPose.andThen(gotoFinish).andThen(aimDown)
-        return command
-
-
-    def getAutonomousLeftBlue(self):
-        setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)
-        driveForward = commands2.RunCommand(lambda: self.robotDrive.arcadeDrive(xSpeed=1.0, rot=0.0), self.robotDrive)
-        stop = commands2.InstantCommand(lambda: self.robotDrive.arcadeDrive(0, 0))
-
-        command = setStartPose.andThen(driveForward.withTimeout(1.0)).andThen(stop)
-        return command
-
-    def getAutonomousLeftRed(self):
-        setStartPose = ResetXY(x=15.777, y=4.431, headingDegrees=-120, drivetrain=self.robotDrive)
-        driveForward = commands2.RunCommand(lambda: self.robotDrive.arcadeDrive(xSpeed=1.0, rot=0.0), self.robotDrive)
-        stop = commands2.InstantCommand(lambda: self.robotDrive.arcadeDrive(0, 0))
-
-        command = setStartPose.andThen(driveForward.withTimeout(2.0)).andThen(stop)
-        return command
 
     def getTestCommand(self) -> typing.Optional[commands2.Command]:
         """
