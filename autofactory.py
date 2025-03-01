@@ -9,7 +9,7 @@ from __future__ import annotations
 from wpilib import SendableChooser, SmartDashboard
 from wpimath.geometry import Translation2d, Rotation2d, Pose2d, Transform2d
 from wpimath.units import degreesToRadians
-from commands2 import TimedCommandRobot, WaitCommand
+from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
@@ -43,23 +43,27 @@ class AutoFactory(object):
 
         # not yet done: add goal 2
 
-        # connect them all!
+        # connect them all (and report status in "autoStatus" widget at dashboard)
         result = startPosCmd.andThen(
-            approachCmd
+            runCmd("approach...", approachCmd)
         ).andThen(
-            alignWithTagCmd.alongWith(raiseArmCmd)
+            runCmd("align+raise...", alignWithTagCmd.alongWith(raiseArmCmd))
         ).andThen(
-            shootCmd
+            runCmd("shoot...", shootCmd)
         ).andThen(
-            backupCmd
+            runCmd("back up...", backupCmd)
         ).andThen(
-            retreatCmd.alongWith(dropArmCmd)
+            runCmd("retreat...", retreatCmd.alongWith(dropArmCmd))
+        ).andThen(
+            autoStatus("done")
         )
 
         return result
 
     @staticmethod
     def init(self):
+        SmartDashboard.putString("autoStatus", "initialized")
+
         # 0. starting position for all autos
         self.startPos = SendableChooser()
         self.startPos.addOption("1: L+", (7.189, 7.75, 180))  # (x, y, headingDegrees)
@@ -231,7 +235,13 @@ class AutoFactory(object):
         alignAndPush = AlignWithTag(camera, self.robotDrive, headingDegrees, speed=speed, pushForwardSeconds=pushFwdSeconds, pushForwardSpeed=pushFwdSpeed)
 
         # connect them together
-        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+        alignToScore = (
+            runCmd("align: setpipe...", lookForTheseTags)
+        ).andThen(
+            runCmd("align: approach...", approachTheTag)
+        ).andThen(
+            runCmd("align: algn+push...", alignAndPush)
+        )
         return alignToScore
 
 
@@ -296,7 +306,7 @@ class AutoFactory(object):
 
             fieldDashboard.getObject("start").setPoses([Pose2d(Translation2d(sX, sY), Rotation2d.fromDegrees(sDeg))])
             fieldDashboard.getObject("approaching").setPoses(interpolate(approach))
-            fieldDashboard.getObject("score").setPoses(score_point(approach, heading))
+            fieldDashboard.getObject("score").setPoses(scorePoint(approach, heading))
             fieldDashboard.getObject("retreating").setPoses(interpolate(retreat))
             fieldDashboard.getObject("retreated").setPoses(retreat[-1:])
 
@@ -315,10 +325,17 @@ def interpolate(poses, chunks=10):
     return result
 
 
-def score_point(approachPoses, headingDegrees, distance=0.8):
+def scorePoint(approachPoses, headingDegrees, distance=0.8):
     if not approachPoses:
         return []
     startPose = approachPoses[-1]
     heading = Rotation2d.fromDegrees(headingDegrees)
     location = startPose.translation() + Translation2d(distance, 0).rotateBy(heading)
     return [Pose2d(location, heading)]
+
+
+def autoStatus(text) -> Command:
+    return InstantCommand(lambda: SmartDashboard.putString("autoStatus", text))
+
+def runCmd(text, command):
+    return autoStatus(text).andThen(command)
