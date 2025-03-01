@@ -13,7 +13,7 @@ from commands2 import TimedCommandRobot, WaitCommand
 
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
-from commands.swervetopoint import SwerveToSide
+from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
 
@@ -38,7 +38,7 @@ class AutoFactory(object):
         # commands for raising the arm and firing that gamepiece for goal 1
         raiseArmCmd = AutoFactory.moveArm(self, level=goal1level)
         shootCmd = AutoFactory.ejectGamepiece(self)
-        backupCmd = SwerveToSide(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
+        backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
         dropArmCmd = AutoFactory.moveArm(self, level="intake")
 
         # not yet done: add goal 2
@@ -62,9 +62,13 @@ class AutoFactory(object):
     def init(self):
         # 0. starting position for all autos
         self.startPos = SendableChooser()
-        self.startPos.setDefaultOption("L", (7.576, 7.256, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("M", (7.576, 6.165, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("R", (7.576, 5.074, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("1: L+", (7.189, 7.75, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("2: L", (7.189, 6.177, 180))  # (x, y, headingDegrees)
+        self.startPos.setDefaultOption("3: ML", (7.189, 4.40, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("4: MID", (7.189, 4.025, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("5: MR", (7.189, 3.65, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("6: R", (7.189, 1.897, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("7: R+", (7.189, 0.4, 180))  # (x, y, headingDegrees)
 
         # goal 1
         #  - which reef to choose for goal 1
@@ -87,7 +91,7 @@ class AutoFactory(object):
         self.goal1level.addOption("3", "3")
 
         SmartDashboard.putData("autoLevel1", self.goal1level)
-        SmartDashboard.putData("autoStartCage", self.startPos)
+        SmartDashboard.putData("autoStartPos", self.startPos)
         SmartDashboard.putData("autoTgtReef1", self.goal1traj)
         SmartDashboard.putData("autoBranch1", self.goal1branch)
 
@@ -121,7 +125,6 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[
                 start,
-                (6.70, 4.650, -140),
             ],
             endpoint=endpoint,
         )
@@ -153,7 +156,7 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[
                 start,
-                (7.441, 4.630, -140),
+                (6.152, 2.411, 120),
             ],
             endpoint=endpoint,
         )
@@ -261,9 +264,9 @@ class AutoFactory(object):
     @staticmethod
     def alignToTagSim(self, headingDegrees, branch, speed, pushFwdSpeed, pushFwdSeconds):
         # no camera use in simulation
-        fwd = SwerveToSide(metersToTheLeft=0, metersBackwards=-0.4, speed=speed, drivetrain=self.robotDrive)
+        fwd = SwerveMove(metersToTheLeft=0, metersBackwards=-0.4, speed=speed, drivetrain=self.robotDrive)
         align = AimToDirection(headingDegrees, drivetrain=self.robotDrive)
-        push = SwerveToSide(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=pushFwdSpeed)
+        push = SwerveMove(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=pushFwdSpeed)
         return fwd.andThen(align).andThen(push.withTimeout(pushFwdSeconds))
 
 
