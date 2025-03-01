@@ -279,13 +279,11 @@ class RobotContainer:
         goSideELeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(5.464, 5.247, -120),
+            endpoint=(5.594, 5.635, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
-                (1.785, 6.415, 0.0),
-                (2.497, 6.542, 0.0),
-                (4.847, 6.978, 2.188),
-                (5.696, 6.213, -90.278),
+                (3.141, 6.822, 6.340),
+                (4.806, 6.643, -21.448),
             ],
             speed=0.2,
         )
@@ -302,6 +300,7 @@ class RobotContainer:
             waypoints=[
                 (1.285, 6.915, -54.0),
                 (3.141, 6.822, 6.340),
+                (4.806, 6.643, -21.448),
             ],
             speed=0.4
         )
@@ -380,12 +379,9 @@ class RobotContainer:
         goSideBLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(3.580, 2.803, 60.0),
+            endpoint=(3.450, 2.574, 60.0),
             waypoints=[
                 (1.2, 1.2, 54.0),
-                (1.660, 1.583, 26.787),
-                (2.360, 1.997, 29.510),
-                (3.059, 2.410, 33.059),
             ],
             speed=0.2
         )
@@ -400,12 +396,9 @@ class RobotContainer:
         goSideBRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(3.819, 2.410, 60.0),
+            endpoint=(3.660, 2.265, 60.0),
             waypoints=[
                 (1.2, 1.2, 54.0),
-                (1.660, 1.583, 26.787),
-                (2.443, 1.583, 29.510),
-                (3.131, 1.896, 33.059),
             ],
             speed=0.2
         )
@@ -418,12 +411,12 @@ class RobotContainer:
         goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(6.162, 4.150, 180),
+            endpoint=(6.202, 3.791, 180),
             waypoints=[
                 (1.2, 1.2, 54.0),
-                (2.519, 1.824, -14.213),
-                (4.387, 1.824, 18.077),
-                (6.162, 2.863, 50.778),
+                (3.201, 1.786, 0),
+                (5.155, 2.016, 19.799),
+                (6.202, 2.694, 64.359),
             ],
             speed=0.2
         )
@@ -436,12 +429,11 @@ class RobotContainer:
         goSideDRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(6.162, 3.890, 180),
+            endpoint=(6.252, 4.180, 180),
             waypoints=[
                 (1.2, 1.2, 54.0),
-                (2.519, 1.824, -14.213),
-                (4.387, 1.824, 18.077),
-                (6.162, 2.863, 50.778),
+                (4.477, 1.906, 3.576),
+                (6.382, 1.824, 2.056),
             ],
             speed=0.2
         )
@@ -470,7 +462,7 @@ class RobotContainer:
         goSideFRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(3.400, 3.400, -60.0),
+            endpoint=(3.470, 5.446, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
             ],
