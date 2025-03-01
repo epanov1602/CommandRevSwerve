@@ -62,9 +62,9 @@ class AutoFactory(object):
     def init(self):
         # 0. starting position for all autos
         self.startPos = SendableChooser()
-        self.startPos.setDefaultOption("L", (8.763, 7.256, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("M", (8.763, 6.165, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("R", (8.763, 5.074, 180))  # (x, y, headingDegrees)
+        self.startPos.setDefaultOption("L", (7.576, 7.256, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("M", (7.576, 6.165, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("R", (7.576, 5.074, 180))  # (x, y, headingDegrees)
 
         # goal 1
         #  - which reef to choose for goal 1
@@ -113,7 +113,7 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         heading = 180
-        endpoint = (6.99, 4.20, heading) if branch == "right" else (6.99, 3.80, heading)
+        endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
@@ -121,7 +121,7 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[
                 start,
-                (7.313, 4.650, -140),
+                (6.70, 4.650, -140),
             ],
             endpoint=endpoint,
         )
