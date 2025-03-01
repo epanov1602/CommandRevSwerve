@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from wpilib import SendableChooser, SmartDashboard
-from wpimath.geometry import Translation2d, Rotation2d, Pose2d
+from wpimath.geometry import Translation2d, Rotation2d, Pose2d, Transform2d
 from wpimath.units import degreesToRadians
 from commands2 import TimedCommandRobot, WaitCommand
 
@@ -21,7 +21,8 @@ class AutoFactory(object):
 
     @staticmethod
     def makeAutoCommand(self):
-        startX, startY, startHeading = self.startPos.getSelected()
+        startPos = self.startPos.getSelected()
+        startX, startY, startHeading = startPos
         startPosCmd = ResetXY(startX, startY, startHeading, drivetrain=self.robotDrive)
 
         goal1traj = self.goal1traj.getSelected()
@@ -29,7 +30,7 @@ class AutoFactory(object):
         goal1level = self.goal1level.getSelected()
 
         # commands for approaching and retreating from goal 1 scoring location
-        headingDegrees, approachCmd, retreatCmd = goal1traj(self, branch=goal1branch)
+        headingDegrees, approachCmd, retreatCmd = goal1traj(self, startPos, branch=goal1branch)
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=headingDegrees, branch=goal1branch)
@@ -64,7 +65,6 @@ class AutoFactory(object):
         self.startPos.setDefaultOption("L", (8.763, 7.256, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("M", (8.763, 6.165, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("R", (8.763, 5.074, 180))  # (x, y, headingDegrees)
-        SmartDashboard.putData("autoStartCage", self.startPos)
 
         # goal 1
         #  - which reef to choose for goal 1
@@ -72,20 +72,28 @@ class AutoFactory(object):
         self.goal1traj.setDefaultOption("C", AutoFactory.trajectoriesToSideC)
         self.goal1traj.addOption("D", AutoFactory.trajectoriesToSideD)
         self.goal1traj.addOption("E", AutoFactory.trajectoriesToSideE)
-        self.goal1traj.addOption("F", AutoFactory.trajectoryToSideF)
-        SmartDashboard.putData("autoTgtReef1", self.goal1traj)
+        self.goal1traj.addOption("F", AutoFactory.trajectoriesToSideF)
+
         # - which branch to choose for goal 1
         self.goal1branch = SendableChooser()
         self.goal1branch.setDefaultOption("left", "left")
         self.goal1branch.addOption("right", "right")
-        SmartDashboard.putData("autoBranch1", self.goal1branch)
+
         # - which scoring level to choose for goal 1
         self.goal1level = SendableChooser()
         self.goal1level.setDefaultOption("base", "base")
         self.goal1level.addOption("1", "1")
         self.goal1level.addOption("2", "2")
         self.goal1level.addOption("3", "3")
+
         SmartDashboard.putData("autoLevel1", self.goal1level)
+        SmartDashboard.putData("autoStartCage", self.startPos)
+        SmartDashboard.putData("autoTgtReef1", self.goal1traj)
+        SmartDashboard.putData("autoBranch1", self.goal1branch)
+
+        self.startPos.onChange(lambda _: AutoFactory.updateDashboard(self))
+        self.goal1traj.onChange(lambda _: AutoFactory.updateDashboard(self))
+        self.goal1branch.onChange(lambda _: AutoFactory.updateDashboard(self))
 
         # goal 2
         # - which branch to choose for goal 2
@@ -101,18 +109,18 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def trajectoriesToSideD(self, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideD(self, start, branch="right", speed=0.2, swerve="last-point"):
         assert branch in ("right", "left")
 
         heading = 180
-        endpoint = (6.70, 4.20, heading) if branch == "right" else (6.70, 3.80, heading)
+        endpoint = (6.99, 4.20, heading) if branch == "right" else (6.99, 3.80, heading)
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[
-                (8.751, 5.086, 180),
+                start,
                 (7.313, 4.650, -140),
             ],
             endpoint=endpoint,
@@ -120,11 +128,11 @@ class AutoFactory(object):
 
         retreat = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve=swerve,
-            speed=speed,
+            swerve=True,
+            speed=-speed,
             waypoints=[
                 endpoint,
-                (6.653, 1.538, +54),
+                (6.253, 2.138, 150),
             ],
             endpoint=(1.285, 1.135, +54.0),
         )
@@ -133,7 +141,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def trajectoriesToSideC(self, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideC(self, start, branch="right", speed=0.2, swerve="last-point"):
         assert branch in ("right", "left")
 
         heading = 120
@@ -144,17 +152,16 @@ class AutoFactory(object):
             swerve=swerve,
             speed=speed,
             waypoints=[
-                (8.751, 5.086, 180),
-                (7.241, 4.630, -140),
-                (6.581, 2.628, -175),
+                start,
+                (7.441, 4.630, -140),
             ],
             endpoint=endpoint,
         )
 
         retreat = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve=swerve,
-            speed=speed,
+            swerve=True,
+            speed=-speed,
             waypoints=[
                 endpoint,
                 (4.843, 1.478, +54),
@@ -166,7 +173,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def trajectoriesToSideE(self, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideE(self, start, branch="right", speed=0.2, swerve="last-point"):
         assert branch in ("right", "left")
 
         heading = -120
@@ -177,18 +184,19 @@ class AutoFactory(object):
             swerve=swerve,
             speed=speed,
             waypoints=[
-                # no waypoints needed for side E
+                start,
+                # no waypoints are needed for side E
             ],
             endpoint=endpoint,
         )
 
         retreat = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve=swerve,
-            speed=speed,
+            swerve=True,
+            speed=-speed,
             waypoints=[
                 endpoint,
-                (4.891, 5.632, -54.0),
+                (4.691, 6.332, -54.0),
             ],
             endpoint=(1.285, 6.915, -54.0),
         )
@@ -197,8 +205,8 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def trajectoryToSideF(self, branch="right", speed=0.2, swerve="last-point"):
-        assert False, "not implemented yet"
+    def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point"):
+        assert False, "not implemented"
 
 
     @staticmethod
@@ -257,3 +265,57 @@ class AutoFactory(object):
         align = AimToDirection(headingDegrees, drivetrain=self.robotDrive)
         push = SwerveToSide(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=pushFwdSpeed)
         return fwd.andThen(align).andThen(push.withTimeout(pushFwdSeconds))
+
+
+    @staticmethod
+    def clearDashboard(self):
+        fieldDashboard = self.robotDrive.field
+        if fieldDashboard is not None:
+            fieldDashboard.getObject("start").setPoses([])
+            fieldDashboard.getObject("approaching").setPoses([])
+            fieldDashboard.getObject("score").setPoses([])
+            fieldDashboard.getObject("retreating").setPoses([])
+            fieldDashboard.getObject("retreated").setPoses([])
+
+
+    @staticmethod
+    def updateDashboard(self):
+        fieldDashboard = self.robotDrive.field
+        if fieldDashboard is not None:
+            start = self.startPos.getSelected()
+            sX, sY, sDeg = start
+            goal1traj = self.goal1traj.getSelected()
+            goal1branch = self.goal1branch.getSelected()
+
+            heading, approach, retreat = goal1traj(self, start=start, branch=goal1branch)
+            display = lambda t: t.trajectoryToDisplay() if hasattr(t, "trajectoryToDisplay") else []
+            approach, retreat = display(approach), display(retreat)
+
+            fieldDashboard.getObject("start").setPoses([Pose2d(Translation2d(sX, sY), Rotation2d.fromDegrees(sDeg))])
+            fieldDashboard.getObject("approaching").setPoses(interpolate(approach))
+            fieldDashboard.getObject("score").setPoses(score_point(approach, heading))
+            fieldDashboard.getObject("retreating").setPoses(interpolate(retreat))
+            fieldDashboard.getObject("retreated").setPoses(retreat[-1:])
+
+
+def interpolate(poses, chunks=10):
+    result = []
+    prev: Pose2d = None
+    for pose in poses:
+        if prev is None:
+            result.append(pose)
+        else:
+            vector = pose.translation() - prev.translation()
+            points = [prev.translation() + (vector * float((1 + chunk) / chunks)) for chunk in range(chunks)]
+            result.extend([Pose2d(i, Rotation2d()) for i in points])
+        prev = pose
+    return result
+
+
+def score_point(approachPoses, headingDegrees, distance=0.8):
+    if not approachPoses:
+        return []
+    startPose = approachPoses[-1]
+    heading = Rotation2d.fromDegrees(headingDegrees)
+    location = startPose.translation() + Translation2d(distance, 0).rotateBy(heading)
+    return [Pose2d(location, heading)]

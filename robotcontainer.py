@@ -148,6 +148,18 @@ class RobotContainer:
         )
 
 
+    def autonomousInit(self):
+        if self.trajectoryPicker is not None:
+            self.trajectoryPicker.clearDashboard()
+        AutoFactory.updateDashboard(self)
+
+
+    def teleopInit(self):
+        AutoFactory.clearDashboard(self)
+        if self.trajectoryPicker is not None:
+            self.trajectoryPicker.updateDashboard()
+
+
     def configureAutos(self) -> None:
         AutoFactory.init(self)
 
@@ -532,6 +544,7 @@ class RobotContainer:
 
         # 5. the combination
         return intake.andThen(score).andThen(drop).andThen(rotations).andThen(squareDance)
+
 
     def alignToTagCmd(self, camera, desiredHeading):
         from commands.setcamerapipeline import SetCameraPipeline

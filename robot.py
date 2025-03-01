@@ -55,6 +55,7 @@ class MyRobot(commands2.TimedCommandRobot):
         # this line or comment it out.
         if self.autonomousCommand:
             self.autonomousCommand.cancel()
+        self.robotContainer.teleopInit()
 
     def teleopPeriodic(self) -> None:
         """This function is called periodically during operator control"""
