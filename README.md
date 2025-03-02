@@ -22,8 +22,8 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - [Add "Shoot" Command](docs/Command_Shoot.md)
 
 ## What to install (Windows, Mac or Linux)
-- Python 3.13: https://www.python.org/downloads/release/python-3131/ (or get it using Anaconda or PyCharm)
 - Git: https://git-scm.com/downloads
-- PyCharm: https://www.jetbrains.com/pycharm/download/ (bottom of the page is free Community Edition)
+- Python 3.13: https://www.python.org/downloads/release/python-3131/ (also fine to get it automatically using Anaconda or PyCharm)
+- PyCharm: https://www.jetbrains.com/pycharm/download/ (bottom of the page is free Community Edition, it will suffice here)
 - Elastic Dashboard (likely replacement for FRC Shuffleboard): https://github.com/Gold872/elastic-dashboard/releases
 - PathPlanner (we still prefer it to Choreo, see video 13 on team's YouTube): https://github.com/mjansen4857/pathplanner/releases
