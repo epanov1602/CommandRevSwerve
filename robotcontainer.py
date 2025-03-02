@@ -14,7 +14,7 @@ from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
 from constants import AutoConstants, DriveConstants, OIConstants
-from subsystems.drivesubsystem import DriveSubsystem
+from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 
 from commands.reset_xy import ResetXY, ResetSwerveFront
 
@@ -26,9 +26,11 @@ class RobotContainer:
     subsystems, commands, and button mappings) should be declared here.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, robot) -> None:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
+        if commands2.TimedCommandRobot.isSimulation():
+            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
 
         # The driver's controller
         self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
