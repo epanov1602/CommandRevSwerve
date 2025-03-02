@@ -27,3 +27,11 @@ https://github.com/robotpy/robotpy-rev/tree/main/examples
 - PyCharm: https://www.jetbrains.com/pycharm/download/ (bottom of the page is free Community Edition, it will suffice here)
 - Elastic Dashboard (likely replacement for FRC Shuffleboard): https://github.com/Gold872/elastic-dashboard/releases
 - PathPlanner (we still prefer it to Choreo, see video 13 on team's YouTube): https://github.com/mjansen4857/pathplanner/releases
+
+## Additional things to install (Windows, Mac or Linux)
+If you want to troubleshoot a real (not simulated) robot, you will need Outline Viewer and/or AdvantageScope:
+ - they are now a part of official WPILib: https://github.com/wpilibsuite/allwpilib/releases/
+
+If you want to drive a real (not simulated) robot, it's Windows-only: 
+ - download Driver Station (part of NI Game Tools): https://www.ni.com/en/support/downloads/drivers/download.frc-game-tools.html
+
