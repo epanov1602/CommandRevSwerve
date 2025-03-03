@@ -407,7 +407,7 @@ class RobotContainer:
             swerve="last-point",
             endpoint=(3.450, 2.574, 60.0),
             waypoints=[
-                (1.2, 1.2, 54.0),
+                (1.285, 1.135, 54.0),
             ],
             speed=0.2
         )
@@ -424,7 +424,7 @@ class RobotContainer:
             swerve="last-point",
             endpoint=(3.660, 2.265, 60.0),
             waypoints=[
-                (1.2, 1.2, 54.0),
+                (1.285, 1.135, 54.0),
             ],
             speed=0.2
         )
@@ -439,7 +439,7 @@ class RobotContainer:
             swerve="last-point",
             endpoint=(6.202, 3.791, 180),
             waypoints=[
-                (1.2, 1.2, 54.0),
+                (1.285, 1.135, 54.0),
                 (3.201, 1.786, 0),
                 (5.155, 2.016, 19.799),
                 (6.202, 2.694, 64.359),
@@ -457,7 +457,7 @@ class RobotContainer:
             swerve="last-point",
             endpoint=(6.252, 4.180, 180),
             waypoints=[
-                (1.2, 1.2, 54.0),
+                (1.285, 1.135, 54.0),
                 (4.477, 1.906, 3.576),
                 (6.382, 1.824, 2.056),
             ],
@@ -468,7 +468,6 @@ class RobotContainer:
             goSideDRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+180)
         )
-
 
         goSideFLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
