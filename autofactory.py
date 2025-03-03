@@ -105,8 +105,9 @@ class AutoFactory(object):
         # goal 1
         #  - which reef to choose for goal 1
         self.goal1traj = SendableChooser()
-        self.goal1traj.setDefaultOption("C", AutoFactory.trajectoriesToSideC)
-        self.goal1traj.addOption("D", AutoFactory.trajectoriesToSideD)
+        self.goal1traj.addOption("C", AutoFactory.trajectoriesToSideC)
+        self.goal1traj.setDefaultOption("D<", AutoFactory.trajectoriesToSideDLeft)
+        self.goal1traj.addOption("D>", AutoFactory.trajectoriesToSideDRight)
         self.goal1traj.addOption("E", AutoFactory.trajectoriesToSideE)
 
         # - which branch to choose for goal 1
@@ -141,9 +142,42 @@ class AutoFactory(object):
         self.goal1branch.onChange(lambda _: AutoFactory.updateDashboard(self))
 
 
+    @staticmethod
+    def trajectoriesToSideDLeft(self, start, branch="right", speed=0.2, swerve="last-point"):
+        assert branch in ("right", "left")
+
+        heading = 180
+        endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
+
+        approach = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=swerve,
+            speed=speed,
+            waypoints=[
+                start,
+            ],
+            endpoint=endpoint,
+        )
+
+        retreat = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=True,
+            speed=-speed,
+            waypoints=[
+                endpoint,
+                (5.991, 5.632, -160.0),
+            ],
+            endpoint=(1.285, 6.915, -54.0),
+        )
+
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+
+        return heading, approach, retreat, take2, heading2
+
+
 
     @staticmethod
-    def trajectoriesToSideD(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideDRight(self, start, branch="right", speed=0.2, swerve="last-point"):
         assert branch in ("right", "left")
 
         heading = 180
@@ -188,7 +222,6 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[
                 start,
-                (6.152, 2.411, 120),
             ],
             endpoint=endpoint,
         )
@@ -378,8 +411,8 @@ class AutoFactory(object):
             start = self.startPos.getSelected()
             sX, sY, sDeg = start
 
-            goal1traj = self.goal1traj.getSelected()
             goal1branch = self.goal1branch.getSelected()
+            goal1traj = self.goal1traj.getSelected()
 
             heading, approach, retreat, take2, heading2 = goal1traj(self, start=start, branch=goal1branch)
 
