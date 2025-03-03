@@ -126,9 +126,9 @@ class AutoFactory(object):
         self.goal2height = SendableChooser()
         self.goal2height.setDefaultOption("same", "same")
         self.goal2height.addOption("base", "base")
-        self.goal1height.addOption("level 2", "level 2")
-        self.goal1height.addOption("level 3", "level 3")
-        self.goal1height.addOption("level 4", "level 4")
+        self.goal2height.addOption("level 2", "level 2")
+        self.goal2height.addOption("level 3", "level 3")
+        self.goal2height.addOption("level 4", "level 4")
 
         SmartDashboard.putData("auto1StartPos", self.startPos)
         SmartDashboard.putData("auto2Paths", self.goal1traj)
