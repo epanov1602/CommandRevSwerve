@@ -34,8 +34,8 @@ class PhotonTagCamera(Subsystem):
             self.heartbeating = False  # assume camera not ready after this change
         self.onlyTagIds = onlyTagIds
 
-    def setPipeline(self, index: int):
-        self.camera.setPipelineIndex(index)
+#    def setPipeline(self, index: int):
+#        self.camera.setPipelineIndex(index)
 
     def getPipeline(self) -> int:
         return self.camera.getPipelineIndex()

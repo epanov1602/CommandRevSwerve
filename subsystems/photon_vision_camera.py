@@ -37,8 +37,8 @@ class PhotonVisionCamera(Subsystem):
         self.lastHeartbeatTime = 0
         self.heartbeating = False
 
-    def setPipeline(self, index: int):
-        self.pipelineIndexRequest.set(index)
+#    def setPipeline(self, index: int):
+#        self.pipelineIndexRequest.set(index)
 
     def getPipeline(self) -> int:
         return self.pipelineIndex.get(-1)
