@@ -43,8 +43,8 @@ class RobotContainer:
     def __init__(self, robot) -> None:
         # The driver's controller
         self.driverController = CommandGenericHID(0)
-        self.scoringController = CommandGenericHID(1)
-        self.trajectoryBoard = CommandGenericHID(2)
+        self.scoringController = self.driverController # CommandGenericHID(1)
+        self.trajectoryBoard = self.driverController # CommandGenericHID(2)
         self.trajectorySide = "left"  # some kind of initial value
         self.trajectoryLetter = "A"  # we need some kind of initial value
 
@@ -124,7 +124,7 @@ class RobotContainer:
         )
         self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
         self.localizer.addPhotonCamera("ELP_Right", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
-        self.localizer.addPhotonCamera("Arducam_Back", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
+        self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
 
         # Configure the button bindings and autos
         self.configureTrajectoryPicker()

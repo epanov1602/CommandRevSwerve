@@ -307,7 +307,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def alignToTag(self, headingDegrees, branch="right", pipeline=1, tags=(), speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
+    def alignToTag(self, headingDegrees, branch="right", pipeline=1, tags=None, speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
         assert branch in ("right", "left")
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
@@ -320,7 +320,7 @@ class AutoFactory(object):
         from commands.alignwithtag import AlignWithTag
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForWhichTags = SetCameraPipeline(camera, pipelineIndex=pipeline, tags=tags)
+        lookForWhichTags = SetCameraPipeline(camera, pipelineIndex=pipeline, onlyTagIds=tags)
 
         # if tag is not seen, wiggle right and left until it is maybe seen
         wiggle = AimToDirection(headingDegrees + 30, self.robotDrive).andThen(
