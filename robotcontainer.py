@@ -122,8 +122,9 @@ class RobotContainer:
             fieldLayoutFile="2025-reefscape.json",
             flippedFromAllianceColor=fieldShouldBeFlipped
         )
-        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.4, y=0.16))
-        self.localizer.addPhotonCamera("ELP_Right", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-.40))
+        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
+        self.localizer.addPhotonCamera("ELP_Right", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
+        self.localizer.addPhotonCamera("Arducam_Back", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
 
         # Configure the button bindings and autos
         self.configureTrajectoryPicker()
