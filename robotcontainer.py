@@ -171,7 +171,7 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        resetOdometryButton = self.driverController.button(XboxController.Button.kBack )
+        resetOdometryButton = self.driverController.button(XboxController.Button.kBack)
         resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
@@ -296,14 +296,12 @@ class RobotContainer:
         self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
         self.trajectoryBoard.button(9).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
         self.trajectoryBoard.button(10).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
+        self.trajectoryBoard.button(11).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
+        self.trajectoryBoard.button(12).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
 
-        # while the right or left button is pressed, keep driving the chosen trajectory
-        self.trajectoryBoard.button(11).onTrue(
-            InstantCommand(lambda: chooseTrajectory(side="left"))
-        ).whileTrue(self.trajectoryPicker)
-        self.trajectoryBoard.button(12).onTrue(InstantCommand(
-            lambda: chooseTrajectory(side="right"))
-        ).whileTrue(self.trajectoryPicker)
+        # while the "left" and "right" buttons of trajectory board are pressed, keep driving the chosen trajectory
+        self.trajectoryBoard.button(11).whileTrue(self.trajectoryPicker)
+        self.trajectoryBoard.button(12).whileTrue(self.trajectoryPicker)
 
 
         # now add the trajectories (please replace these with the real ones):
