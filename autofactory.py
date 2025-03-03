@@ -108,7 +108,6 @@ class AutoFactory(object):
         self.goal1traj.setDefaultOption("C", AutoFactory.trajectoriesToSideC)
         self.goal1traj.addOption("D", AutoFactory.trajectoriesToSideD)
         self.goal1traj.addOption("E", AutoFactory.trajectoriesToSideE)
-        self.goal1traj.addOption("F", AutoFactory.trajectoriesToSideF)
 
         # - which branch to choose for goal 1
         self.goal1branch = SendableChooser()
@@ -242,12 +241,6 @@ class AutoFactory(object):
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
 
         return heading, approach, retreat, take2, heading2
-
-
-    @staticmethod
-    def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point"):
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
-        assert False, "not implemented"
 
 
     @staticmethod
