@@ -75,7 +75,7 @@ class Localizer(commands2.Subsystem):
         self.learningRateMult.addOption("10%", 0.1)
         self.learningRateMult.addOption("1%", 0.01)
         self.learningRateMult.addOption("0.1%", 0.001)
-        SmartDashboard.putData("LoclzrLearnRate", self.learningRateMult)
+        SmartDashboard.putData("LoclzLearnRate", self.learningRateMult)
 
         self.ignoreTagIDs = set(ignoreTagIDs)
         self.importantTagIDs = set(importantTagIDs)
