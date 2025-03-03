@@ -92,6 +92,7 @@ class Localizer(commands2.Subsystem):
             if color is None:
                 return  # we cannot yet decide on whether the field should be flipped
             flipped = self.flippedFromAllianceColor(color)
+            print("Localizer: color={}, flippedFromAllianceColor={}".format(color, flipped))
         print("Localizer will assume flipped={}".format(flipped))
 
         self.enabled = SendableChooser()
@@ -100,8 +101,8 @@ class Localizer(commands2.Subsystem):
             self.enabled.addOption("demo", (False, False))
             self.enabled.addOption("on", (True, False))
         if flipped in (None, True):
-            self.enabled.addOption("demo-flip", (False, True))
-            self.enabled.addOption("on-flip", (True, True))
+            self.enabled.addOption("demo-red", (False, True))
+            self.enabled.addOption("on-red", (True, True))
         SmartDashboard.putData("Localizer", self.enabled)
 
 
