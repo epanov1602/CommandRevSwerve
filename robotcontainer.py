@@ -296,8 +296,14 @@ class RobotContainer:
         self.trajectoryBoard.button(8).onTrue(InstantCommand(lambda: chooseTrajectory(letter="D")))
         self.trajectoryBoard.button(9).onTrue(InstantCommand(lambda: chooseTrajectory(letter="E")))
         self.trajectoryBoard.button(10).onTrue(InstantCommand(lambda: chooseTrajectory(letter="F")))
-        self.trajectoryBoard.button(11).onTrue(InstantCommand(lambda: chooseTrajectory(side="left")))
-        self.trajectoryBoard.button(12).onTrue(InstantCommand(lambda: chooseTrajectory(side="right")))
+
+        # while the right or left button is pressed, keep driving the chosen trajectory
+        self.trajectoryBoard.button(11).onTrue(
+            InstantCommand(lambda: chooseTrajectory(side="left"))
+        ).whileTrue(self.trajectoryPicker)
+        self.trajectoryBoard.button(12).onTrue(InstantCommand(
+            lambda: chooseTrajectory(side="right"))
+        ).whileTrue(self.trajectoryPicker)
 
 
         # now add the trajectories (please replace these with the real ones):
