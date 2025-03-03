@@ -173,8 +173,6 @@ class RobotContainer:
 
         resetOdometryButton = self.driverController.button(XboxController.Button.kBack )
         resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
-        # resetSwerveFrontButton = self.driverController.povDown()
-        # resetSwerveFrontButton.onTrue(ResetSwerveFront(self.robotDrive))
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
@@ -213,18 +211,19 @@ class RobotContainer:
         level0PosButton = self.scoringController.button(XboxController.Button.kA)
         level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70)
         level0PosButton.onTrue(level0PositionCmd)
-        #  - 1
-        level1PosButton = self.scoringController.button(XboxController.Button.kB)
-        level1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
-        level1PosButton.onTrue(level1PositionCmd)
+        # (in game manual there are levels 2, 3 and 4)
         #  - 2
-        level2PosButton = self.scoringController.button(XboxController.Button.kY)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PosButton = self.scoringController.button(XboxController.Button.kB)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level2PosButton.onTrue(level2PositionCmd)
         #  - 3
-        level3PosButton = self.scoringController.button(XboxController.Button.kX)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
+        level3PosButton = self.scoringController.button(XboxController.Button.kY)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level3PosButton.onTrue(level3PositionCmd)
+        #  - 4
+        level4PosButton = self.scoringController.button(XboxController.Button.kX)
+        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
+        level4PosButton.onTrue(level4PositionCmd)
 
 
     def configureFpvDriving(self, joystick, speed):

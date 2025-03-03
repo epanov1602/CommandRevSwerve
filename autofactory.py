@@ -90,9 +90,9 @@ class AutoFactory(object):
         # - which scoring level to choose for goal 1
         self.goal1level = SendableChooser()
         self.goal1level.setDefaultOption("base", "base")
-        self.goal1level.addOption("1", "1")
         self.goal1level.addOption("2", "2")
         self.goal1level.addOption("3", "3")
+        self.goal1level.addOption("4", "4")
 
         SmartDashboard.putData("autoLevel1", self.goal1level)
         SmartDashboard.putData("autoStartPos", self.startPos)
@@ -217,7 +217,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def alignToTag(self, headingDegrees, branch="right", speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
+    def alignToTag(self, headingDegrees, branch="right", pipeline=1, tags=(), speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
         assert branch in ("right", "left")
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
@@ -230,13 +230,24 @@ class AutoFactory(object):
         from commands.alignwithtag import AlignWithTag
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(camera, 1)
+        lookForWhichTags = SetCameraPipeline(camera, pipelineIndex=pipeline, tags=tags)
+
+        # if tag is not seen, wiggle right and left until it is maybe seen
+        wiggle = AimToDirection(headingDegrees + 30, self.robotDrive).andThen(
+            WaitCommand(seconds=0.1)
+        ).andThen(
+            AimToDirection(headingDegrees - 30, self.robotDrive)
+        )
+        findTheTag = wiggle.until(camera.hasDetection)
+
         approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=speed)  # stop when tag size=4 (4% of the frame pixels)
         alignAndPush = AlignWithTag(camera, self.robotDrive, headingDegrees, speed=speed, pushForwardSeconds=pushFwdSeconds, pushForwardSpeed=pushFwdSpeed)
 
         # connect them together
         alignToScore = (
-            runCmd("align: setpipe...", lookForTheseTags)
+            runCmd("align: setpipe...", lookForWhichTags)
+        ).andThen(
+            runCmd("align: find...", findTheTag)
         ).andThen(
             runCmd("align: approach...", approachTheTag)
         ).andThen(
@@ -255,11 +266,11 @@ class AutoFactory(object):
 
         if level == "intake" or level == "base":
             return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=42)
-        if level == "1":
-            return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         if level == "2":
-            return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+            return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         if level == "3":
+            return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        if level == "4":
             return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=135)
 
         assert False, f"level={level} is not supported"
