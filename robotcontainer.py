@@ -225,6 +225,11 @@ class RobotContainer:
         level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
         level4PosButton.onTrue(level4PositionCmd)
 
+        # right and left POV of scoring joystick = aligning to AprilTags (using current, imprecise, robot heading!)
+        if self.scoringController != self.driverController:
+            self.scoringController.povLeft().whileTrue(self.alignToTagCmd(self.frontRightCamera, None))
+            self.scoringController.povRight().whileTrue(self.alignToTagCmd(self.frontLeftCamera, None))
+
 
     def configureFpvDriving(self, joystick, speed):
         """
