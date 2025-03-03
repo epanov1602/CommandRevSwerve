@@ -194,7 +194,9 @@ class RobotContainer:
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
         goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
-        intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
+        keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
+        intakeWithWheelsLocked = goToIntakePositionCmd.andThen(intakeCmd).deadlineFor(keepWheelsLocked)
+        intakingPosButton.whileTrue(intakeWithWheelsLocked)
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
