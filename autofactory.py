@@ -13,6 +13,7 @@ from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
+from commands.intakecommands import IntakeGamepiece
 from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
@@ -27,21 +28,38 @@ class AutoFactory(object):
 
         goal1traj = self.goal1traj.getSelected()
         goal1branch = self.goal1branch.getSelected()
-        goal1level = self.goal1level.getSelected()
+        goal1height = self.goal1height.getSelected()
+
+        goal2height = self.goal2height.getSelected()
+        if goal2height == "same": goal2height = goal1height
 
         # commands for approaching and retreating from goal 1 scoring location
-        headingDegrees, approachCmd, retreatCmd = goal1traj(self, startPos, branch=goal1branch)
+        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch)
+        # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
-        alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=headingDegrees, branch=goal1branch)
+        alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch)
 
         # commands for raising the arm and firing that gamepiece for goal 1
-        raiseArmCmd = AutoFactory.moveArm(self, level=goal1level)
-        shootCmd = AutoFactory.ejectGamepiece(self)
+        raiseArmCmd = AutoFactory.moveArm(self, height=goal1height)
+        shootCmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5)
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
-        dropArmCmd = AutoFactory.moveArm(self, level="intake")
+        dropArmCmd = AutoFactory.moveArm(self, height="intake")
 
-        # not yet done: add goal 2
+        # commands for reloading a new gamepiece from the feeding station
+        pushIntoFeedingStationCmd = SwerveMove(0, metersBackwards=0.3, speed=0.1, drivetrain=self.robotDrive)
+        armToIntakePositionCmd = AutoFactory.moveArm(self, height="intake")
+        intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(armToIntakePositionCmd.succeeded)
+        reloadCmd = pushIntoFeedingStationCmd.alongWith(armToIntakePositionCmd).andThen(intakeCmd)
+
+        # commands for aligning with the second tag
+        alignWithTag2Cmd = AutoFactory.alignToTag(self, headingDegrees=heading2, branch=goal1branch)
+
+        # commands for scoring that second gamepiece
+        raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height)
+        shoot2Cmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5)
+        backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
+        dropArm2Cmd = AutoFactory.moveArm(self, height="intake")
 
         # connect them all (and report status in "autoStatus" widget at dashboard)
         result = startPosCmd.andThen(
@@ -51,9 +69,19 @@ class AutoFactory(object):
         ).andThen(
             runCmd("shoot...", shootCmd)
         ).andThen(
-            runCmd("back up...", backupCmd)
+            runCmd("backup...", backupCmd)
         ).andThen(
             runCmd("retreat...", retreatCmd.alongWith(dropArmCmd))
+        ).andThen(
+            runCmd("reload...", reloadCmd)
+        ).andThen(
+            runCmd("take2...", take2Cmd)
+        ).andThen(
+            runCmd("align+raise2...", alignWithTag2Cmd.alongWith(raiseArm2Cmd))
+        ).andThen(
+            runCmd("shoot2...", shoot2Cmd)
+        ).andThen(
+            runCmd("backup2...", backup2Cmd.andThen(dropArm2Cmd))
         ).andThen(
             autoStatus("done")
         )
@@ -88,32 +116,31 @@ class AutoFactory(object):
         self.goal1branch.addOption("right", "right")
 
         # - which scoring level to choose for goal 1
-        self.goal1level = SendableChooser()
-        self.goal1level.setDefaultOption("base", "base")
-        self.goal1level.addOption("2", "2")
-        self.goal1level.addOption("3", "3")
-        self.goal1level.addOption("4", "4")
+        self.goal1height = SendableChooser()
+        self.goal1height.addOption("base", "base")
+        self.goal1height.addOption("level 2", "level 2")
+        self.goal1height.setDefaultOption("level 3", "level 3")
+        self.goal1height.addOption("level 4", "level 4")
 
-        SmartDashboard.putData("autoLevel1", self.goal1level)
-        SmartDashboard.putData("autoStartPos", self.startPos)
-        SmartDashboard.putData("autoTgtReef1", self.goal1traj)
-        SmartDashboard.putData("autoBranch1", self.goal1branch)
+        # goal 2
+        # - which scoring level to choose for goal 2
+        self.goal2height = SendableChooser()
+        self.goal2height.setDefaultOption("same", "same")
+        self.goal2height.addOption("base", "base")
+        self.goal1height.addOption("level 2", "level 2")
+        self.goal1height.addOption("level 3", "level 3")
+        self.goal1height.addOption("level 4", "level 4")
+
+        SmartDashboard.putData("auto1StartPos", self.startPos)
+        SmartDashboard.putData("auto2Paths", self.goal1traj)
+        SmartDashboard.putData("auto3Branch", self.goal1branch)
+        SmartDashboard.putData("auto4Scoring1", self.goal1height)
+        SmartDashboard.putData("auto5Scoring2", self.goal2height)
 
         self.startPos.onChange(lambda _: AutoFactory.updateDashboard(self))
         self.goal1traj.onChange(lambda _: AutoFactory.updateDashboard(self))
         self.goal1branch.onChange(lambda _: AutoFactory.updateDashboard(self))
 
-        # goal 2
-        # - which branch to choose for goal 2
-        self.goal2branch = SendableChooser()
-        self.goal2branch.setDefaultOption("left", "left")
-        self.goal2branch.addOption("right", "right")
-        SmartDashboard.putData("autoBranch2", self.goal2branch)
-        # - which scoring level to choose for goal 2
-        self.goal2level = SendableChooser()
-        self.goal2level.setDefaultOption("left", "left")
-        self.goal2level.addOption("right", "right")
-        SmartDashboard.putData("autoLevel2", self.goal2level)
 
 
     @staticmethod
@@ -144,7 +171,9 @@ class AutoFactory(object):
             endpoint=(1.285, 1.135, +54.0),
         )
 
-        return heading, approach, retreat
+        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
+
+        return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
@@ -176,7 +205,9 @@ class AutoFactory(object):
             endpoint=(1.285, 1.135, +54.0),
         )
 
-        return heading, approach, retreat
+        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
+
+        return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
@@ -184,7 +215,7 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         heading = -120
-        endpoint = (5.095, 5.829, heading) if branch == "right" else (5.706, 5.709, heading)
+        endpoint = (5.155, 5.899, heading) if branch == "right" else (5.706, 5.619, heading)
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
@@ -208,12 +239,45 @@ class AutoFactory(object):
             endpoint=(1.285, 6.915, -54.0),
         )
 
-        return heading, approach, retreat
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+
+        return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
     def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point"):
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
         assert False, "not implemented"
+
+
+    @staticmethod
+    def goToSideB(self, branch, speed, swerve):
+        heading = +60  # side B endpoint is at +60 degrees (West)
+        trajectory = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=swerve,
+            endpoint=(3.660, 2.165, heading) if branch == "right" else (3.250, 2.374, heading),
+            waypoints=[
+                (1.285, 1.135, 54),
+            ],
+            speed=speed
+        )
+        return trajectory, heading
+
+
+    @staticmethod
+    def goToSideF(self, branch, speed, swerve):
+        heading = -60  # side F endpoint is at -60 degrees (East)
+        trajectory = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=swerve,
+            endpoint=(3.370, 5.646, -60.0) if branch == "right" else (3.650, 5.806, -60.0),
+            waypoints=[
+                (1.285, 6.915, -54),
+            ],
+            speed=speed
+        )
+        return trajectory, heading
 
 
     @staticmethod
@@ -257,29 +321,39 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def moveArm(self, level):
+    def moveArm(self, height):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=1)  # play pretend arm move in simulation
 
         from commands.elevatorcommands import MoveElevatorAndArm
         from subsystems.arm import ArmConstants
 
-        if level == "intake" or level == "base":
+        if height == "intake" or height == "base":
             return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=42)
-        if level == "2":
+        if height == "level 2":
             return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
-        if level == "3":
+        if height == "level 3":
             return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
-        if level == "4":
+        if height == "level 4":
             return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=135)
 
-        assert False, f"level={level} is not supported"
+        assert False, f"height='{height}' is not supported"
 
 
     @staticmethod
-    def ejectGamepiece(self, speed=0.3, timeoutSeconds=0.3):
+    def ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5, speed=0.3, timeoutSeconds=0.3):
         from commands.intakecommands import IntakeFeedGamepieceForward
-        return IntakeFeedGamepieceForward(self.intake, speed=speed).withTimeout(timeoutSeconds)
+        calmdown = WaitCommand(seconds=calmdownSecondsBeforeFiring)
+        shoot = IntakeFeedGamepieceForward(self.intake, speed=speed).withTimeout(timeoutSeconds)
+        return calmdown.andThen(shoot)
+
+
+    @staticmethod
+    def intakeGamepiece(self, speed):
+        if TimedCommandRobot.isSimulation():
+            return WaitCommand(seconds=0.5)  # play pretend, in simulation
+
+        return IntakeGamepiece(self.intake, speed=speed)  # .onlyIf(armToIntakePositionCmd.succeeded)
 
 
     @staticmethod
@@ -299,7 +373,9 @@ class AutoFactory(object):
             fieldDashboard.getObject("approaching").setPoses([])
             fieldDashboard.getObject("score").setPoses([])
             fieldDashboard.getObject("retreating").setPoses([])
-            fieldDashboard.getObject("retreated").setPoses([])
+            fieldDashboard.getObject("reload").setPoses([])
+            fieldDashboard.getObject("take2").setPoses([])
+            fieldDashboard.getObject("score2").setPoses([])
 
 
     @staticmethod
@@ -308,18 +384,22 @@ class AutoFactory(object):
         if fieldDashboard is not None:
             start = self.startPos.getSelected()
             sX, sY, sDeg = start
+
             goal1traj = self.goal1traj.getSelected()
             goal1branch = self.goal1branch.getSelected()
 
-            heading, approach, retreat = goal1traj(self, start=start, branch=goal1branch)
+            heading, approach, retreat, take2, heading2 = goal1traj(self, start=start, branch=goal1branch)
+
             display = lambda t: t.trajectoryToDisplay() if hasattr(t, "trajectoryToDisplay") else []
-            approach, retreat = display(approach), display(retreat)
+            approach, retreat, take2 = display(approach), display(retreat), display(take2)
 
             fieldDashboard.getObject("start").setPoses([Pose2d(Translation2d(sX, sY), Rotation2d.fromDegrees(sDeg))])
             fieldDashboard.getObject("approaching").setPoses(interpolate(approach))
             fieldDashboard.getObject("score").setPoses(scorePoint(approach, heading))
             fieldDashboard.getObject("retreating").setPoses(interpolate(retreat))
-            fieldDashboard.getObject("retreated").setPoses(retreat[-1:])
+            fieldDashboard.getObject("reload").setPoses(scorePoint(retreat[-1:], distance=-0.4))
+            fieldDashboard.getObject("take2").setPoses(interpolate(take2))
+            fieldDashboard.getObject("score2").setPoses(scorePoint(take2, heading2))
 
 
 def interpolate(poses, chunks=10):
@@ -336,11 +416,14 @@ def interpolate(poses, chunks=10):
     return result
 
 
-def scorePoint(approachPoses, headingDegrees, distance=0.8):
+def scorePoint(approachPoses, headingDegrees=None, distance=0.8):
     if not approachPoses:
         return []
-    startPose = approachPoses[-1]
-    heading = Rotation2d.fromDegrees(headingDegrees)
+    startPose: Pose2d = approachPoses[-1]
+    if headingDegrees is not None:
+        heading = Rotation2d.fromDegrees(headingDegrees)
+    else:
+        heading = startPose.rotation()
     location = startPose.translation() + Translation2d(distance, 0).rotateBy(heading)
     return [Pose2d(location, heading)]
 
