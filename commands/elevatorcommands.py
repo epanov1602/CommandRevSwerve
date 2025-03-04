@@ -2,7 +2,7 @@ from __future__ import annotations
 import commands2
 from commands2 import InstantCommand
 from commands2.waitcommand import WaitCommand
-from wpilib import SmartDashboard, Timer
+from wpilib import SmartDashboard, Timer, TimedRobot
 
 from subsystems.elevator import Elevator
 from subsystems.arm import Arm, ArmConstants
@@ -124,9 +124,12 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
     def initialize(self):
         # are we already at the goal?
         self.finishedImmediately = self.succeeded()
+        if commands2.TimedCommandRobot.isSimulation():
+            self.finishedImmediately = True
         if self.finishedImmediately:
             self.log("finished immediately")
-            super().initialize()
+            return
+        super().initialize()
 
     def isFinished(self) -> bool:
         if self.finishedImmediately:

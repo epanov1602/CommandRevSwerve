@@ -211,6 +211,12 @@ class RobotContainer:
         intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
         keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
         intakeWithWheelsLocked = goToIntakePositionCmd.andThen(intakeCmd).deadlineFor(keepWheelsLocked)
+
+        # if rear camera is seeing feeder station, back into it first (and then run intake)
+        intakeWithWheelsLocked = AutoFactory.backIntoFeeder(
+            self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5
+        ).andThen(intakeWithWheelsLocked)
+
         intakingPosButton.whileTrue(intakeWithWheelsLocked)
 
         # pull the right trigger = eject to score that gamepiece
@@ -272,7 +278,7 @@ class RobotContainer:
         )
 
 
-    def configureTrajectoryPicker(self):
+    def configureTrajectoryPicker(self, swerve="last-point"):
         from commands.trajectory_picker import TrajectoryPicker, ReversedTrajectoryPicker
 
         # trajectory picker will only run when these subsystems are not busy with other commands
@@ -337,7 +343,7 @@ class RobotContainer:
         #  - go to left branch of reef side B
         goSideELeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(5.594, 5.635, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
@@ -345,7 +351,7 @@ class RobotContainer:
                 (4.806, 6.943, -90),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "E-left",
@@ -355,7 +361,7 @@ class RobotContainer:
 
         goSideERightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(5.165, 5.606, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
@@ -363,7 +369,7 @@ class RobotContainer:
                 (4.306, 6.643, -75),
             ],
             speed=0.4,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "E-right",
@@ -374,7 +380,7 @@ class RobotContainer:
         #  - go to right branch of reef side B
         goSideCLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(5.045, 2.611, 120.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
@@ -383,7 +389,7 @@ class RobotContainer:
                 (5.045, 1.741, 50.001),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "C-left",
@@ -393,7 +399,7 @@ class RobotContainer:
 
         goSideCRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(5.454, 2.724, 120.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
@@ -402,7 +408,7 @@ class RobotContainer:
                 (5.045, 1.741, 50.001),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "C-right",
@@ -412,14 +418,14 @@ class RobotContainer:
 
         goSideALeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(2.47, 4.250, 0),
             waypoints=[
                 (1.285, 6.915, -54),
                 (1.641, 5.922, -54),
             ],
             speed=0.1,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "A-left",
@@ -428,14 +434,14 @@ class RobotContainer:
         )
         goSideARightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(2.472, 3.501, 0),
             waypoints=[
                 (1.285, 6.915, -54),
                 (1.641, 5.922, -54),
             ],
             speed=0.1,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "A-right",
@@ -445,14 +451,14 @@ class RobotContainer:
 
         goSideBLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(3.450, 2.574, 60.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "B-left",
@@ -464,14 +470,14 @@ class RobotContainer:
 
         goSideBRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(3.660, 2.265, 60.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "B-right",
@@ -481,16 +487,16 @@ class RobotContainer:
 
         goSideDLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(6.202, 3.791, 180),
             waypoints=[
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
-                (5.155, 1.516, 19.799),
-                (6.402, 2.694, 64.359),
+                (5.155, 1.516, 90),
+                (6.402, 2.694, 135),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "D-left",
@@ -500,7 +506,7 @@ class RobotContainer:
 
         goSideDRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(6.252, 4.180, 180),
             waypoints=[
                 (1.285, 1.135, 54.0),
@@ -509,7 +515,7 @@ class RobotContainer:
                 (6.482, 2.824, 135),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "D-right",
@@ -519,14 +525,14 @@ class RobotContainer:
 
         goSideFLeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(3.600, 5.546, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
 
         self.trajectoryPicker.addCommands(
@@ -536,14 +542,14 @@ class RobotContainer:
         )
         goSideFRightBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
-            swerve="last-point",
+            swerve=swerve,
             endpoint=(3.470, 5.446, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
             speed=0.2,
-            reverseSetup=prepareToBackIntoLeftFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "F-right",

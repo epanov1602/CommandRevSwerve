@@ -28,7 +28,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints: typing.List[Pose2d | Translation2d | tuple | list] = (),
         swerve: bool | str = False,
         speed=1.0,
-        reverseSetup: typing.Optional[typing.Callable[[], None]] = None,
+        setup: typing.Optional[typing.Callable[[], None]] = None,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
@@ -48,7 +48,7 @@ class JerkyTrajectory(commands2.Command):
         self.drivetrain = drivetrain
         self.speed = speed
         self.swerve = swerve
-        self.reverseSetup = reverseSetup
+        self.setup = setup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints] + [self._makeWaypoint(endpoint)]
         assert len(self.waypoints) > 0
         self.command = None
@@ -59,10 +59,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        result = JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
-        if self.reverseSetup is not None:
-            result = InstantCommand(self.reverseSetup).andThen(result)
-        return result
+        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
 
     def trajectoryToDisplay(self):
         result = []
@@ -71,6 +68,9 @@ class JerkyTrajectory(commands2.Command):
         return result
 
     def initialize(self):
+        if self.setup is not None:
+            self.setup()
+
         # skip the waypoints that are already behind
         waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0
@@ -181,12 +181,12 @@ class SwerveTrajectory(JerkyTrajectory):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        result = SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
-        if self.reverseSetup is not None:
-            result = InstantCommand(self.reverseSetup).andThen(result)
-        return result
+        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
 
     def initialize(self):
+        if self.setup is not None:
+            self.setup()
+
         # skip the waypoints that are already behind
         waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0

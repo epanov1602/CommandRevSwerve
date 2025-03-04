@@ -394,6 +394,32 @@ class AutoFactory(object):
 
 
     @staticmethod
+    def backIntoFeeder(self, camera, headingDegrees, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5):
+        from commands.followobject import FollowObject, StopWhen
+        from commands.alignwithtag import AlignWithTag
+
+        approachTheTag = FollowObject(
+            camera,
+            self.robotDrive,
+            stopWhen=StopWhen(maxY=13), # stop when tag is 13 degrees above horizon (or higher)
+            speed=speed
+        )
+
+        alignAndPush = AlignWithTag(
+            camera,
+            self.robotDrive,
+            headingDegrees,
+            reverse=True,
+            speed=speed,
+            pushForwardSeconds=pushFwdSeconds,
+            pushForwardSpeed=pushFwdSpeed
+        )
+
+        # connect approach+align together
+        return approachTheTag.andThen(alignAndPush).onlyIf(camera.hasDetection)
+
+
+    @staticmethod
     def moveArm(self, height):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=1)  # play pretend arm move in simulation
