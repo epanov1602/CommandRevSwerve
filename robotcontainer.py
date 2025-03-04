@@ -205,18 +205,18 @@ class RobotContainer:
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
 
+        # pov down = approach the feeder using camera
+        if self.scoringController != self.driverController:
+            self.scoringController.povDown().whileTrue(AutoFactory.backIntoFeeder(
+                self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5
+            ))
+
         # right bumper = intake new gamepiece
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
         goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
         keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
         intakeWithWheelsLocked = goToIntakePositionCmd.andThen(intakeCmd).deadlineFor(keepWheelsLocked)
-
-        # if rear camera is seeing feeder station, back into it first (and then run intake)
-        intakeWithWheelsLocked = AutoFactory.backIntoFeeder(
-            self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5
-        ).andThen(intakeWithWheelsLocked)
-
         intakingPosButton.whileTrue(intakeWithWheelsLocked)
 
         # pull the right trigger = eject to score that gamepiece
