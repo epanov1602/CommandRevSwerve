@@ -21,6 +21,7 @@ import constants
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
+from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveToSide
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
@@ -377,6 +378,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "E-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(11, 20)),
             goSideERightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+240)
         )
@@ -416,6 +418,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "C-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(9, 22)),
             goSideCRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+120)
         )
@@ -449,6 +452,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "A-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(7, 18)),
             goSideARightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=0)
         )
@@ -485,6 +489,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "B-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(8, 17)),
             goSideBRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+60)
         )
@@ -523,6 +528,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "D-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(10, 21)),
             goSideDRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+180)
         )
@@ -541,6 +547,7 @@ class RobotContainer:
 
         self.trajectoryPicker.addCommands(
             "F-left",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(6, 19)),
             goSideFLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
         )
@@ -557,6 +564,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "F-right",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(6, 19)),
             goSideFRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+300)
         )

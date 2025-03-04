@@ -33,6 +33,11 @@ class PhotonTagCamera(Subsystem):
         if onlyTagIds != self.onlyTagIds:
             self.heartbeating = False  # assume camera not ready after this change
         self.onlyTagIds = onlyTagIds
+        if onlyTagIds:
+            print(f"camera {self.cameraName} only looking at tags {onlyTagIds}")
+        else:
+            print(f"camera {self.cameraName} looking at ALL tags")
+
 
 #    def setPipeline(self, index: int):
 #        self.camera.setPipelineIndex(index)
