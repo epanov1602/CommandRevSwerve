@@ -45,8 +45,10 @@ class AutoFactory(object):
         alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch)
 
         # commands for raising the arm and firing that gamepiece for goal 1
-        raiseArmCmd = AutoFactory.moveArm(self, height=goal1height)
-        shootCmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
+        raiseArmCmd = AutoFactory.moveArm(self, height=goal1height, final=False)
+        shootCmd = AutoFactory.moveArm(self, height=goal1height, final=True).andThen(
+            AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
+        )
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
         dropArmCmd = AutoFactory.moveArm(self, height="intake")
 
@@ -420,7 +422,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def moveArm(self, height):
+    def moveArm(self, height, final=True):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=1)  # play pretend arm move in simulation
 
@@ -434,7 +436,8 @@ class AutoFactory(object):
         if height == "level 3":
             return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         if height == "level 4":
-            return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=135)
+            angle = ArmConstants.kArmSafeStartingAngle if not final else 135
+            return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=angle)
 
         assert False, f"height='{height}' is not supported"
 
