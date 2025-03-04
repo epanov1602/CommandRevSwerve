@@ -36,7 +36,7 @@ class AutoFactory(object):
         # commands for approaching and retreating from goal 1 scoring location
         heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch, swerve=True)
         # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
-        approachCmd = approachCmd.withTimeout(5)
+        approachCmd = approachCmd.withTimeout(20)
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch)
@@ -284,7 +284,7 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         heading = -60
-        endpoint = (3.070, 6.246, -60.0) if branch == "right" else (3.350, 6.306, -60.0)
+        endpoint = (3.370, 5.646, -60.0) if branch == "right" else (3.650, 5.806, -60.0)
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
