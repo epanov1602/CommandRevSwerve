@@ -120,10 +120,10 @@ class RobotContainer:
                 y = self.robotDrive.getPose().y
                 if y > 4 and self.robot.isTeleop():
                     print("resetting odometry to match the left feeder location exactly")
-                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kLeftFeederPose)
+                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kLeftFeederPose, resetGyro=False)
                 if y <= 4 and self.robot.isTeleop():
                     print("resetting odometry to match the right feeder location exactly")
-                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kRightFeederPose)
+                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kRightFeederPose, resetGyro=False)
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
 
@@ -188,8 +188,8 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        resetOdometryButton = self.driverController.button(XboxController.Button.kBack)
-        resetOdometryButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
+        resetSwerveFrontButton = self.driverController.button(XboxController.Button.kBack)
+        resetSwerveFrontButton.onTrue(ResetSwerveFront(drivetrain=self.robotDrive))
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)

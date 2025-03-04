@@ -131,16 +131,17 @@ class DriveSubsystem(Subsystem):
         """
         return self.odometry.getPose()
 
-    def resetOdometry(self, pose: Pose2d) -> None:
+    def resetOdometry(self, pose: Pose2d, resetGyro=True) -> None:
         """Resets the odometry to the specified pose.
 
         :param pose: The pose to which to set the odometry.
 
         """
-        self.gyro.reset()
-        self.gyro.setAngleAdjustment(0)
-        self._lastGyroAngleTime = 0
-        self._lastGyroAngle = 0
+        if resetGyro:
+            self.gyro.reset()
+            self.gyro.setAngleAdjustment(0)
+            self._lastGyroAngleTime = 0
+            self._lastGyroAngle = 0
 
         self.odometry.resetPosition(
             self.getGyroHeading(),
