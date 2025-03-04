@@ -239,19 +239,23 @@ class RobotContainer:
         level0PosButton = self.scoringController.button(XboxController.Button.kA)
         level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70)
         level0PosButton.onTrue(level0PositionCmd)
+        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kB)
         level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level2PosButton.onTrue(level2PositionCmd)
+        self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kY)
         level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level3PosButton.onTrue(level3PositionCmd)
+        self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
         #  - 4
         level4PosButton = self.scoringController.button(XboxController.Button.kX)
         level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level4PosButton.onTrue(level4PositionCmd)
+        self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
 
         # right and left POV of scoring joystick = aligning to AprilTags (using current, imprecise, robot heading!)
         if self.scoringController != self.driverController:
