@@ -109,21 +109,18 @@ def getSwerveTurningMotorConfig(turnMotorInverted: bool) -> SparkBaseConfig:
 class ModuleConstants:
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
-    #  , depending which swerve module you have (MK4i, MK4n, Rev, WCP, ThriftyBot, etc)
+    #  , depending which swerve module you have (MK4i, MK4n, MAXSwerve, WCP, ThriftyBot, etc.)
     kTurningEncoderInverted = False
     kTurningMotorInverted = True
 
-    # The MAXSwerve module can be configured with one of three pinion gears: 12T, 13T, or 14T.
-    # This changes the drive speed of the module (a pinion gear with more teeth will result in a
-    # robot that drives faster).
-    kDrivingMotorPinionTeeth = 14
+    kWheelDiameterMeters = units.inchesToMeters(4) * 1.00  # MK4i/MK4n: 4 inches, MAXSwerve: 3 inches
+    # ^^ might need to be multiplied by 0.93 instead of 1.00 if we believe Eric's calibration
 
     # Calculations required for driving motor conversion factors and feed forward
-    kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60
-    kWheelDiameterMeters = 0.0762 * 0.90
     kWheelCircumferenceMeters = kWheelDiameterMeters * math.pi
-    # 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15 teeth on the bevel pinion
-    kDrivingMotorReduction = (45.0 * 22) / (kDrivingMotorPinionTeeth * 15)
+    kDrivingMotorReduction = 6.5  # MK4i/MK4n: 6.5, MAXSwerve: 4.714 for a 14 tooth pinion (greater for 13 or 12 tooth)
+
+    kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60
     kDriveWheelFreeSpeedRps = (
         kDrivingMotorFreeSpeedRps * kWheelCircumferenceMeters
     ) / kDrivingMotorReduction
@@ -131,9 +128,8 @@ class ModuleConstants:
     kDrivingEncoderPositionFactor = (
         kWheelDiameterMeters * math.pi
     ) / kDrivingMotorReduction  # meters
-    kDrivingEncoderVelocityFactor = (
-        (kWheelDiameterMeters * math.pi) / kDrivingMotorReduction
-    ) / 60.0  # meters per second
+
+    kDrivingEncoderVelocityFactor = kDrivingEncoderPositionFactor / 60
 
     kTurningEncoderPositionFactor = math.tau  # radian
     kTurningEncoderVelocityFactor = math.tau / 60.0  # radians per second
