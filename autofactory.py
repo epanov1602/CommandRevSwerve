@@ -43,7 +43,7 @@ class AutoFactory(object):
 
         # commands for raising the arm and firing that gamepiece for goal 1
         raiseArmCmd = AutoFactory.moveArm(self, height=goal1height)
-        shootCmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5)
+        shootCmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
         dropArmCmd = AutoFactory.moveArm(self, height="intake")
 
@@ -58,7 +58,7 @@ class AutoFactory(object):
 
         # commands for scoring that second gamepiece
         raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height)
-        shoot2Cmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5)
+        shoot2Cmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
         backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
         dropArm2Cmd = AutoFactory.moveArm(self, height="intake")
 
