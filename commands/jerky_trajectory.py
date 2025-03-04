@@ -184,9 +184,6 @@ class SwerveTrajectory(JerkyTrajectory):
         assert len(waypoints) > 0
         endPoint, endRotation = waypoints[-1]
 
-        last = len(waypoints) - 1
-        direction = None
-
         import math
         from constants import DriveConstants, AutoConstants
         from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
@@ -194,7 +191,7 @@ class SwerveTrajectory(JerkyTrajectory):
 
         # Create config for trajectory
         config = TrajectoryConfig(
-            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxSpeedMetersPerSecond * abs(self.speed),
             AutoConstants.kMaxAccelerationMetersPerSecondSquared,
         )
         # Add kinematics to ensure max speed is actually obeyed
@@ -234,10 +231,11 @@ class SwerveTrajectory(JerkyTrajectory):
             (self.drivetrain,),
         )
 
-        # Run path following command, then stop at the end
-        stop = InstantCommand(
-            lambda: self.drivetrain.drive(0, 0, 0, False, False),
-            self.drivetrain,
-        )
-        self.command = swerveControllerCommand.andThen(stop)
+        # Run path following command, then stop at the end (possibly turn in correct direction)
+        if endRotation is not None:
+            last = AimToDirection(endRotation.degrees(), speed=self.speed, drivetrain=self.drivetrain)
+        else:
+            last = InstantCommand(self.drivetrain.stop, self.drivetrain)
+
+        self.command = swerveControllerCommand.andThen(last)
         self.command.initialize()
