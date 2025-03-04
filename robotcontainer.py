@@ -43,8 +43,8 @@ class RobotContainer:
     def __init__(self, robot) -> None:
         # The driver's controller
         self.driverController = CommandGenericHID(0)
-        self.scoringController = self.driverController # CommandGenericHID(1)
-        self.trajectoryBoard = self.driverController # CommandGenericHID(2)
+        self.scoringController = CommandGenericHID(1)
+        self.trajectoryBoard = CommandGenericHID(2)
         self.trajectorySide = "left"  # some kind of initial value
         self.trajectoryLetter = "A"  # we need some kind of initial value
 
