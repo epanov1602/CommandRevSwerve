@@ -203,7 +203,7 @@ class RobotContainer:
             self.configureFpvDriving(self.scoringController, speed=0.3)
 
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
-        from commands.elevatorcommands import MoveElevatorAndArm
+        from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
 
         # right bumper = intake new gamepiece
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
@@ -221,7 +221,11 @@ class RobotContainer:
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
-        ejectForwardCmd = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
+
+        ejectForwardIfElevatorLow = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
+        ejectForwardIfElevatorHigh = MoveArm(self.arm, 135).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
+        ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20);
+
         ejectButton.whileTrue(ejectForwardCmd)
 
         # pull the left trigger = spin the intake in reverse direction
@@ -245,7 +249,7 @@ class RobotContainer:
         level3PosButton.onTrue(level3PositionCmd)
         #  - 4
         level4PosButton = self.scoringController.button(XboxController.Button.kX)
-        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=135)
+        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level4PosButton.onTrue(level4PositionCmd)
 
         # right and left POV of scoring joystick = aligning to AprilTags (using current, imprecise, robot heading!)
@@ -573,7 +577,7 @@ class RobotContainer:
         :returns: the command to run in test mode (to exercise all systems)
         """
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward
-        from commands.elevatorcommands import MoveElevatorAndArm
+        from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
         from commands.aimtodirection import AimToDirection
 
         # 1. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
