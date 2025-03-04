@@ -284,7 +284,7 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         heading = -60
-        endpoint = (3.370, 5.646, -60.0) if branch == "right" else (3.650, 5.806, -60.0)
+        endpoint = (3.070, 6.146, -60.0) if branch == "right" else (3.050, 6.306, -60.0)
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
