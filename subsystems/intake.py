@@ -97,6 +97,11 @@ class Intake(Subsystem):
         return not self.isGamepieceInside()
 
 
+    def assumeGamepieceInside(self) -> None:
+        self.enableLimitSwitch()
+        self.rangefinderT1, self.rangefinderT2, self.rangefinderT3 = 0.1, 0.2, 0.3
+
+
     def isUnsafeToMoveElevator(self):
         if self.rangefinderT2 != 0 and self.stopIfSensingGamepiece:
             return False  # exception: gamepiece is fully inside and nobody tried to eject it yet (2nd condition above)

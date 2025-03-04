@@ -13,7 +13,7 @@ from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
-from commands.intakecommands import IntakeGamepiece
+from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
 from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
@@ -64,6 +64,8 @@ class AutoFactory(object):
 
         # connect them all (and report status in "autoStatus" widget at dashboard)
         result = startPosCmd.andThen(
+            runCmd("intake loaded...", AssumeIntakeLoaded(self.intake))  # tell the robot to assume intake loaded
+        ).andThen(
             runCmd("approach...", approachCmd)
         ).andThen(
             runCmd("align+raise...", alignWithTagCmd.alongWith(raiseArmCmd))

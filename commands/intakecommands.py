@@ -65,3 +65,21 @@ class IntakeEjectGamepieceBackward(commands2.Command):
 
     def execute(self):
         pass
+
+
+class AssumeIntakeLoaded(commands2.Command):
+    def __init__(self, intake: Intake):
+        super().__init__()
+        self.intake = intake
+
+    def initialize(self):
+        self.intake.assumeGamepieceInside()
+
+    def isFinished(self) -> bool:
+        return True
+
+    def execute(self):
+        pass
+
+    def end(self, interrupted: bool):
+        pass
