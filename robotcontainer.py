@@ -242,11 +242,11 @@ class RobotContainer:
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kB)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level2PosButton.onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kY)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
         level3PosButton.onTrue(level3PositionCmd)
         #  - 4
         level4PosButton = self.scoringController.button(XboxController.Button.kX)
