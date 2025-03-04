@@ -110,6 +110,7 @@ class AutoFactory(object):
         self.goal1traj.setDefaultOption("D<", AutoFactory.trajectoriesToSideDLeft)
         self.goal1traj.addOption("D>", AutoFactory.trajectoriesToSideDRight)
         self.goal1traj.addOption("E", AutoFactory.trajectoriesToSideE)
+        self.goal1traj.addOption("F", AutoFactory.trajectoriesToSideF)
 
         # - which branch to choose for goal 1
         self.goal1branch = SendableChooser()
@@ -268,6 +269,40 @@ class AutoFactory(object):
             waypoints=[
                 endpoint,
                 (4.691, 6.332, -54.0),
+            ],
+            endpoint=(1.285, 6.915, -54.0),
+        )
+
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+
+        return heading, approach, retreat, take2, heading2
+
+
+
+    @staticmethod
+    def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point"):
+        assert branch in ("right", "left")
+
+        heading = -60
+        endpoint = (3.070, 6.246, -60.0) if branch == "right" else (3.350, 6.306, -60.0)
+
+        approach = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=swerve,
+            speed=speed,
+            waypoints=[
+                start,
+                (4.691, 6.932, -54.0),
+            ],
+            endpoint=endpoint,
+        )
+
+        retreat = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=True,
+            speed=-speed,
+            waypoints=[
+                endpoint,
             ],
             endpoint=(1.285, 6.915, -54.0),
         )
