@@ -230,8 +230,12 @@ class AlignWithTag(commands2.Command):
         if timeSinceLastDetection > self.detectionTimeoutSeconds:
             self.lostTag = f"no detection for {int(1000 * timeSinceLastDetection)}ms"
             return 0.0
+
         if self.tAlignedToTag != 0 and timeSinceLastDetection > 0.5 * self.frameTimeoutSeconds:
             return 0.0  # the last detection we know is not fresh, no need to use it
+        if not objectSizePercent >= 0:
+            print(f"alignwithtag: object not there? now={now}, timeSinceLast={timeSinceLastDetection}")
+            return 0.0  # the object is not there, perhaps temporarily?
 
         swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
         if self.tAlignedToTag == 0 and abs(swerveSpeed) <= GoToPointConstants.kMinTranslateSpeed:
