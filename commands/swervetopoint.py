@@ -38,6 +38,7 @@ class SwerveToPoint(commands2.Command):
         self.overshot = False
 
     def initialize(self):
+        print("swervetopoint: initialize")
         initialPose = self.drivetrain.getPose()
         self.initialPosition = initialPose.translation()
 
@@ -95,11 +96,14 @@ class SwerveToPoint(commands2.Command):
         if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
             return True  # close enough
 
+        print("swervetopoint: isfinished, distancefrominitial={}, shouldbe={}, overshot={}".format(distanceFromInitialPosition, self.initialDistance, self.overshot))
         if distanceFromInitialPosition > self.initialDistance:
             self.overshot = True
 
         if self.overshot:
             distanceFromTargetDirectionDegrees = self.getDegreesLeftToTurn()
+            print("swervetopoint: isfinished, degreesleft={}, tol={}".format(
+                distanceFromTargetDirectionDegrees, 3 * AimToDirectionConstants.kAngleToleranceDegrees ))
             if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
                 return True  # case 2: overshot in distance and target direction is correct
 

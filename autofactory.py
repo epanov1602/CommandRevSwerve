@@ -34,8 +34,9 @@ class AutoFactory(object):
         if goal2height == "same": goal2height = goal1height
 
         # commands for approaching and retreating from goal 1 scoring location
-        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch)
+        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch, swerve=True)
         # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
+        approachCmd = approachCmd.withTimeout(5)
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch)
@@ -165,7 +166,7 @@ class AutoFactory(object):
             speed=-speed,
             waypoints=[
                 endpoint,
-                (5.991, 5.632, -160.0),
+                (5.991, 6.232, -160.0),
             ],
             endpoint=(1.285, 6.915, -54.0),
         )

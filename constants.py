@@ -120,7 +120,7 @@ class ModuleConstants:
 
     # Calculations required for driving motor conversion factors and feed forward
     kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60
-    kWheelDiameterMeters = 0.0762 * 0.88
+    kWheelDiameterMeters = 0.0762 * 0.94
     kWheelCircumferenceMeters = kWheelDiameterMeters * math.pi
     # 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15 teeth on the bevel pinion
     kDrivingMotorReduction = (45.0 * 22) / (kDrivingMotorPinionTeeth * 15)

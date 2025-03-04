@@ -123,7 +123,7 @@ class RobotContainer:
             flippedFromAllianceColor=fieldShouldBeFlipped
         )
         self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
-        self.localizer.addPhotonCamera("ELP_Right", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
+        self.localizer.addPhotonCamera("ELP_RightSide", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
         self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
 
         # Configure the button bindings and autos
@@ -178,7 +178,7 @@ class RobotContainer:
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
         #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
+        startButton.onTrue(ResetXY(x=2.285, y=5.915, headingDegrees=-54, drivetrain=self.robotDrive))
         # ^^ this (x,Y) is the right feeding station for today's practice
 
         # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
