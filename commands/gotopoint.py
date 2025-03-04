@@ -10,6 +10,7 @@ import math
 
 from subsystems.drivesubsystem import DriveSubsystem
 from wpimath.geometry import Rotation2d, Translation2d
+from wpilib import SmartDashboard
 
 from commands.aimtodirection import AimToDirectionConstants
 from constants import AutoConstants
@@ -60,6 +61,7 @@ class GoToPoint(commands2.Command):
             self.desiredEndDirection = self.desiredEndDirection.rotateBy(GoToPoint.REVERSE_DIRECTION)
         self.initialDistance = self.initialPosition.distance(self.targetPosition)
         self.pointingInGoodDirection = False
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def execute(self):
         # 1. to which direction we should be pointing?
@@ -81,7 +83,9 @@ class GoToPoint(commands2.Command):
             self.drivetrain.arcadeDrive(0.0, -rotateSpeed)
             return
 
-        self.pointingInGoodDirection = True
+        if not self.pointingInGoodDirection:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "in good direction")
+            self.pointingInGoodDirection = True
 
         # 3. otherwise, drive forward but with an oversteer adjustment (better way is to use RAMSETE unicycle)
         distanceRemaining = self.targetPosition.distance(currentPoint)
@@ -127,6 +131,8 @@ class GoToPoint(commands2.Command):
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
     def isFinished(self) -> bool:
         # 1. did we reach the point where we must move very slow?
@@ -135,6 +141,7 @@ class GoToPoint(commands2.Command):
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
 
         if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "close enough")
             return True  # close enough
 
         distanceRemaining = self.targetPosition.distance(currentPosition)
@@ -146,8 +153,12 @@ class GoToPoint(commands2.Command):
         tooSlowNow = translateSpeed < 0.125 * GoToPointConstants.kMinTranslateSpeed and self.stop
 
         # 2. did we overshoot?
-        if distanceFromInitialPosition >= self.initialDistance or tooSlowNow:
+        if distanceFromInitialPosition >= self.initialDistance:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "overshot")
             return True  # we overshot or driving too slow
+        if tooSlowNow:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "slow enough")
+            return True
 
     REVERSE_DIRECTION = Rotation2d.fromDegrees(180)
 

@@ -100,7 +100,7 @@ class AlignWithTag(commands2.Command):
         self.lastSeenObjectTime = Timer.getFPGATimestamp()
         self.everSawObject = False
         self.finished = ""
-        SmartDashboard.putString("alignWithTag", "running...")
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
 
     def isFinished(self) -> bool:
@@ -126,7 +126,9 @@ class AlignWithTag(commands2.Command):
 
         if not self.finished:
             return False
+
         print(f"AlignWithTag finished: {self.finished}")
+        SmartDashboard.putString("command/c" + self.__class__.__name__, self.finished)
         return True
 
 
@@ -134,7 +136,8 @@ class AlignWithTag(commands2.Command):
         if self.pushForwardCommand is not None:
             self.pushForwardCommand.end(interrupted)
         self.drivetrain.arcadeDrive(0, 0)
-        SmartDashboard.putString("alignWithTag", self.finished if not interrupted else "interrupt")
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
 
     def execute(self):
@@ -170,8 +173,8 @@ class AlignWithTag(commands2.Command):
         swerveSpeed = self.getSwerveSpeed(degreesRemaining)
 
         # 4. if we just aligned the heading and the swerve axis and should be pushing forward, make that push command
-        if self.tAlignedToTag != 0 and self.pushForwardCommand is None:
-            print("AlignWithTag: making a push forward command")
+        if self.tAlignedToTag != 0 and self.pushForwardCommand is None and not AlignWithTag.USE_PRECISE_FORWARD_PUSH:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "pushing forward")
             self.drivetrain.stop()
             self.pushForwardCommand = self.getPushForwardCommand()
             self.pushForwardCommand.initialize()
@@ -232,17 +235,22 @@ class AlignWithTag(commands2.Command):
             return 0.0
 
         if self.tAlignedToTag != 0 and timeSinceLastDetection > 0.5 * self.frameTimeoutSeconds:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "not fresh")
             return 0.0  # the last detection we know is not fresh, no need to use it
-        if not objectSizePercent >= 0:
-            print(f"alignwithtag: object not there? now={now}, timeSinceLast={timeSinceLastDetection}")
+
+        if not (objectSizePercent >= 0):
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "not yet acquired")
             return 0.0  # the object is not there, perhaps temporarily?
 
         swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
         if self.tAlignedToTag == 0 and abs(swerveSpeed) <= GoToPointConstants.kMinTranslateSpeed:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "90% aligned")
             print(f"AlignSwerveWithTag: almost done, since swerve speed {swerveSpeed} is already small")
             if abs(objectXMeters) <= AlignWithTag.TOLERANCE_METERS:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "99% aligned")
                 print(f"AlignSwerveWithTag: objectXMeters={objectXMeters} is small enough too")
                 if self.tAlignedToTag == 0 and abs(degreesRemaining) <= AimToDirectionConstants.kAngleToleranceDegrees:
+                    SmartDashboard.putString("command/c" + self.__class__.__name__, "aligned")
                     print(f"AlignSwerveWithTag: degreesRemaining={degreesRemaining} is small, we are done aligning")
                     self.tAlignedToTag = Timer.getFPGATimestamp()
 

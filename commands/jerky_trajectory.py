@@ -17,6 +17,7 @@ from commands.swervetopoint import SwerveToPoint
 from commands.gotopoint import GoToPoint
 
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpilib import SmartDashboard
 
 
 class JerkyTrajectory(commands2.Command):
@@ -87,6 +88,7 @@ class JerkyTrajectory(commands2.Command):
         self.command.initialize()
 
     def getRemainingWaypointsAheadOfUs(self):
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
         # find the waypoint nearest to the current location: we want to skip all the waypoints before it
         nearest, distance = None, None
         location = self.drivetrain.getPose()
@@ -119,6 +121,10 @@ class JerkyTrajectory(commands2.Command):
         if self.command is not None:
             self.command.end(interrupted)
             self.command = None
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
+        else:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "finished")
 
     def _makeWaypoint(self, waypoint):
         point, heading = None, None
@@ -152,13 +158,16 @@ class JerkyTrajectory(commands2.Command):
     def _makeWaypointCommand(self, point, heading, last):
         if not self.swerve or (not last and self.swerve == "last-point"):
             # use arcade drive, if we aren't allowed to use swerve (or not allowed to use swerve for non-end points)
-            return GoToPoint(
+            command = GoToPoint(
                 point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
             )
         else:
-            return SwerveToPoint(
+            command = SwerveToPoint(
                 point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last, rateLimit=not last
             )
+
+        log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"next: {point.x}, {point.y}")
+        return InstantCommand(log).andThen(command)
 
 
 class SwerveTrajectory(JerkyTrajectory):

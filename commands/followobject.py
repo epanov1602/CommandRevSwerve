@@ -12,7 +12,7 @@ from commands.gotopoint import GoToPointConstants
 
 from subsystems.drivesubsystem import DriveSubsystem
 from wpimath.geometry import Rotation2d
-from wpilib import Timer
+from wpilib import Timer, SmartDashboard
 
 
 class FollowObject(commands2.Command):
@@ -55,6 +55,7 @@ class FollowObject(commands2.Command):
         self.stepSeconds = self.initialStepSeconds
         self.drivingAllowed = (self.initialStepSeconds > 0)  # driving allowed if we are allowed to make steps forward
         self.minDetectionIndex = None
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def execute(self):
         # 1. if there is subcommand to go in some direction, just work on executing it
@@ -62,6 +63,7 @@ class FollowObject(commands2.Command):
             if self.subcommand.isFinished():
                 self.subcommand.end(False)  # if subcommand is finished, we must end() it
                 self.subcommand = None  # and we don't have it anymore
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "looking")
             else:
                 self.subcommand.execute()  # otherwise, the subcommand must run
 
@@ -86,10 +88,12 @@ class FollowObject(commands2.Command):
                 stepSeconds = atLeast(stepSeconds * slowdownFactor, FollowObject.MIN_STEP_SECONDS)
                 speed = atLeast(speed * slowdownFactor, FollowObject.MIN_SPEED)
 
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "driving")
             drive = AimToDirection(direction.degrees(), self.drivetrain, fwd_speed=speed)
             newSubcommand = drive.withTimeout(stepSeconds)  # correct timeout for the step
         else:
             # 2. otherwise, rotate if robot is pointing too far from the object (or if we aren't supposed to make steps)
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "turning")
             turn = AimToDirection(direction.degrees(), self.drivetrain)
 
             newSubcommand = turn

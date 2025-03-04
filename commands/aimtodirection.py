@@ -10,6 +10,7 @@ import math
 import typing
 import commands2
 
+from wpilib import SmartDashboard
 from wpimath.geometry import Rotation2d
 from constants import AutoConstants
 
@@ -43,6 +44,7 @@ class AimToDirection(commands2.Command):
 
     def initialize(self):
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def execute(self):
         # 1. how many degrees are left to turn?
@@ -74,6 +76,8 @@ class AimToDirection(commands2.Command):
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
     def isFinished(self) -> bool:
         if self.fwdSpeed != 0:
@@ -85,5 +89,7 @@ class AimToDirection(commands2.Command):
         # if we are pretty close to the direction we wanted, consider the command finished
         if abs(degreesRemaining) < AimToDirectionConstants.kAngleToleranceDegrees:
             turnVelocity = self.drivetrain.getTurnRateDegreesPerSec()
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "good angle")
             if abs(turnVelocity) < AimToDirectionConstants.kAngleVelocityToleranceDegreesPerSec:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "completed")
                 return True
