@@ -238,7 +238,7 @@ class AlignWithTag(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, "not fresh")
             return 0.0  # the last detection we know is not fresh, no need to use it
 
-        if not (objectSizePercent >= 0):
+        if not (objectSizePercent > 0):
             SmartDashboard.putString("command/c" + self.__class__.__name__, "not yet acquired")
             return 0.0  # the object is not there, perhaps temporarily?
 
