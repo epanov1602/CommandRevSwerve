@@ -216,9 +216,15 @@ class RobotContainer:
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
         goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
         intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
-        keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
-        intakeWithWheelsLocked = goToIntakePositionCmd.andThen(intakeCmd).deadlineFor(keepWheelsLocked)
-        intakingPosButton.whileTrue(intakeWithWheelsLocked)
+        intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
+
+        # right bumper for driver and X button for driver = lock the wheels in X brake
+        if self.driverController != self.scoringController:
+            xBrakeButton = self.driverController.button(XboxController.Button.kRightBumper)
+            keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
+            xBrakeButton.whileTrue(keepWheelsLocked)
+            xButton = self.driverController.button(XboxController.Button.kRightBumper)
+            xButton.whileTrue(keepWheelsLocked)
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
@@ -627,7 +633,7 @@ class RobotContainer:
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(camera, 1)
+        lookForTheseTags = SetCameraPipeline(camera, 0)
         approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
 
         # TODO: add timeout
