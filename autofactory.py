@@ -121,8 +121,8 @@ class AutoFactory(object):
         self.goal1height = SendableChooser()
         self.goal1height.addOption("base", "base")
         self.goal1height.addOption("level 2", "level 2")
-        self.goal1height.setDefaultOption("level 3", "level 3")
-        self.goal1height.addOption("level 4", "level 4")
+        self.goal1height.addOption("level 3", "level 3")
+        self.goal1height.setDefaultOption("level 4", "level 4")
 
         # goal 2
         # - which scoring level to choose for goal 2
