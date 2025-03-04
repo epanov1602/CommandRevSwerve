@@ -17,6 +17,9 @@ from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
 from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
+# which trajectory to use
+TrajectoryCommand = JerkyTrajectory
+BACKUP_METERS = 0.7
 
 class AutoFactory(object):
 
@@ -34,7 +37,7 @@ class AutoFactory(object):
         if goal2height == "same": goal2height = goal1height
 
         # commands for approaching and retreating from goal 1 scoring location
-        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch) #, swerve=True)
+        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch, swerve=True)
         # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
         approachCmd = approachCmd
 
@@ -44,7 +47,7 @@ class AutoFactory(object):
         # commands for raising the arm and firing that gamepiece for goal 1
         raiseArmCmd = AutoFactory.moveArm(self, height=goal1height)
         shootCmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
-        backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
+        backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
         dropArmCmd = AutoFactory.moveArm(self, height="intake")
 
         # commands for reloading a new gamepiece from the feeding station
@@ -59,7 +62,7 @@ class AutoFactory(object):
         # commands for scoring that second gamepiece
         raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height)
         shoot2Cmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
-        backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=0.4, drivetrain=self.robotDrive)
+        backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
         dropArm2Cmd = AutoFactory.moveArm(self, height="intake")
 
         # connect them all (and report status in "autoStatus" widget at dashboard)
@@ -153,7 +156,7 @@ class AutoFactory(object):
         heading = 180
         endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -163,13 +166,15 @@ class AutoFactory(object):
             endpoint=endpoint,
         )
 
-        retreat = JerkyTrajectory(
+        retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=True,
             speed=-speed,
             waypoints=[
                 endpoint,
-                (5.991, 6.232, -160.0),
+                (6.791, 4.832, -100.0),
+                (5.291, 6.632, -0.0),
+                (2.085, 6.215, -54.0),
             ],
             endpoint=(1.285, 6.915, -54.0),
         )
@@ -187,7 +192,7 @@ class AutoFactory(object):
         heading = 180
         endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -197,7 +202,7 @@ class AutoFactory(object):
             endpoint=endpoint,
         )
 
-        retreat = JerkyTrajectory(
+        retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=True,
             speed=-speed,
@@ -220,7 +225,7 @@ class AutoFactory(object):
         heading = 120
         endpoint = (5.838, 2.329, heading) if branch == "right" else (5.335, 2.053, heading)
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -230,7 +235,7 @@ class AutoFactory(object):
             endpoint=endpoint,
         )
 
-        retreat = JerkyTrajectory(
+        retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=True,
             speed=-speed,
@@ -253,24 +258,27 @@ class AutoFactory(object):
         heading = -120
         endpoint = (5.155, 5.899, heading) if branch == "right" else (5.706, 5.619, heading)
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[
                 start,
-                # no waypoints are needed for side E
+                (6.491, 5.846, -170.0),
+                (6.491, 5.846, -170.0),
+                #(5.991, 6.146, -150.0),
             ],
             endpoint=endpoint,
         )
 
-        retreat = JerkyTrajectory(
+        retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=True,
             speed=-speed,
             waypoints=[
                 endpoint,
-                (4.691, 6.332, -54.0),
+                (4.755, 6.199, -90),
+                (2.085, 6.215, -54.0),
             ],
             endpoint=(1.285, 6.915, -54.0),
         )
@@ -288,23 +296,24 @@ class AutoFactory(object):
         heading = -60
         endpoint = (3.070, 6.146, -60.0) if branch == "right" else (3.050, 6.306, -60.0)
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[
                 start,
-                (4.691, 6.932, -54.0),
+                (5.991, 6.146, -60.0),
             ],
             endpoint=endpoint,
         )
 
-        retreat = JerkyTrajectory(
+        retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=True,
             speed=-speed,
             waypoints=[
                 endpoint,
+                (2.085, 6.215, -54.0),
             ],
             endpoint=(1.285, 6.915, -54.0),
         )
@@ -317,7 +326,7 @@ class AutoFactory(object):
     @staticmethod
     def goToSideB(self, branch, speed, swerve):
         heading = +60  # side B endpoint is at +60 degrees (West)
-        trajectory = JerkyTrajectory(
+        trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             endpoint=(3.660, 2.165, heading) if branch == "right" else (3.250, 2.374, heading),
@@ -332,7 +341,7 @@ class AutoFactory(object):
     @staticmethod
     def goToSideF(self, branch, speed, swerve):
         heading = -60  # side F endpoint is at -60 degrees (East)
-        trajectory = JerkyTrajectory(
+        trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             endpoint=(3.370, 5.646, -60.0) if branch == "right" else (3.650, 5.806, -60.0),
@@ -495,5 +504,12 @@ def scorePoint(approachPoses, headingDegrees=None, distance=0.8):
 def autoStatus(text) -> Command:
     return InstantCommand(lambda: SmartDashboard.putString("autoStatus", text))
 
+
 def runCmd(text, command):
     return autoStatus(text).andThen(command)
+
+
+def backup(pose, factor=0.5):
+    x, y, heading = pose
+    result = Translation2d(x, y) + Translation2d(-factor * BACKUP_METERS, 0).rotateBy(Rotation2d.fromDegrees(heading))
+    return result.x, result.y, heading
