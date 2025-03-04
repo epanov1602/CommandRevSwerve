@@ -13,6 +13,7 @@ from commands.aimtodirection import AimToDirectionConstants
 from commands.gotopoint import GoToPointConstants
 
 from wpimath.geometry import Rotation2d, Translation2d, Pose2d
+from wpilib import SmartDashboard
 
 
 class SwerveToPoint(commands2.Command):
@@ -38,7 +39,6 @@ class SwerveToPoint(commands2.Command):
         self.overshot = False
 
     def initialize(self):
-        print("swervetopoint: initialize")
         initialPose = self.drivetrain.getPose()
         self.initialPosition = initialPose.translation()
 
@@ -47,6 +47,8 @@ class SwerveToPoint(commands2.Command):
 
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
         self.overshot = False
+
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def execute(self):
         currentXY = self.drivetrain.getPose()
@@ -86,6 +88,8 @@ class SwerveToPoint(commands2.Command):
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
     def isFinished(self) -> bool:
         currentPose = self.drivetrain.getPose()
@@ -94,17 +98,18 @@ class SwerveToPoint(commands2.Command):
         # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
         if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "acceptable")
             return True  # close enough
 
-        print("swervetopoint: isfinished, distancefrominitial={}, shouldbe={}, overshot={}".format(distanceFromInitialPosition, self.initialDistance, self.overshot))
         if distanceFromInitialPosition > self.initialDistance:
+            if not self.overshot:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "overshooting")
             self.overshot = True
 
         if self.overshot:
             distanceFromTargetDirectionDegrees = self.getDegreesLeftToTurn()
-            print("swervetopoint: isfinished, degreesleft={}, tol={}".format(
-                distanceFromTargetDirectionDegrees, 3 * AimToDirectionConstants.kAngleToleranceDegrees ))
             if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "completed")
                 return True  # case 2: overshot in distance and target direction is correct
 
     def getDegreesLeftToTurn(self):

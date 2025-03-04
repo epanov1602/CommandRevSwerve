@@ -2,35 +2,50 @@ from __future__ import annotations
 import commands2
 from commands2 import InstantCommand
 from commands2.waitcommand import WaitCommand
-from wpilib import SmartDashboard
+from wpilib import SmartDashboard, Timer
 
 from subsystems.elevator import Elevator
 from subsystems.arm import Arm, ArmConstants
 
 
 class MoveElevator(commands2.Command):
-    def __init__(self, elevator: Elevator, position: float):
+    def __init__(self, elevator: Elevator, position: float, unsafeToMoveTimeoutSeconds=1.0):
         super().__init__()
         self.position = position
         self.elevator = elevator
         self.addRequirements(elevator)
+        self.unsafeToMoveTimeoutSeconds = unsafeToMoveTimeoutSeconds
+
+        self.unsafeToMoveSinceWhen = None
 
     def initialize(self):
         self.elevator.setPositionGoal(self.position)
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def isFinished(self) -> bool:
-        return self.elevator.isDoneMoving()
+        # timed out while waiting for safe moment to move?
+        if self.unsafeToMoveSinceWhen is not None:
+            if Timer.getFPGATimestamp() > self.unsafeToMoveSinceWhen + self.unsafeToMoveTimeoutSeconds:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "timed out while unsafe to move")
+                return True
+        if self.elevator.isDoneMoving():
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "finished")
+            return True
 
     def execute(self):
-        pass  # nothing to do
+        safeToMove = not self.elevator.unsafeToMove
+        if not safeToMove and self.unsafeToMoveSinceWhen is None:
+            self.unsafeToMoveSinceWhen = Timer.getFPGATimestamp()
+            SmartDashboard.putString("command/c" + self.__class__.__name__, f"! {self.elevator.unsafeToMove}")
+        elif safeToMove and self.unsafeToMoveSinceWhen is not None:
+            self.unsafeToMoveSinceWhen = None
+            self.elevator.setPositionGoal(self.position)
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "moving again")
 
     def end(self, interrupted: bool):
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
             self.elevator.stopAndReset()
-        else:
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "finished")
 
     def succeeded(self) -> bool:
         return self.elevator.reachedThisPositionGoal(self.position, 2)
