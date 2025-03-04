@@ -42,6 +42,7 @@ class RobotContainer:
 
     def __init__(self, robot) -> None:
         wpilib.DriverStation.silenceJoystickConnectionWarning(True)
+        self.robot: MyRobot = robot
 
         # The driver's controller
         self.driverController = CommandGenericHID(0)
@@ -57,6 +58,7 @@ class RobotContainer:
         from subsystems.photon_tag_camera import PhotonTagCamera
         self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
         self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
+        self.rearCamera = PhotonTagCamera("Arducam_Rear")
 
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
@@ -112,6 +114,18 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
         if commands2.TimedCommandRobot.isSimulation():
             self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
+
+        def onIntakeSensingGamepiece(sensing):
+            if sensing:
+                y = self.robotDrive.getPose().y
+                if y > 4 and self.robot.isTeleop():
+                    print("resetting odometry to match the left feeder location exactly")
+                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kLeftFeederPose)
+                if y <= 4 and self.robot.isTeleop():
+                    print("resetting odometry to match the right feeder location exactly")
+                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kRightFeederPose)
+
+        self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
 
         from subsystems.localizer import Localizer
 
@@ -180,7 +194,7 @@ class RobotContainer:
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
         #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        startButton.onTrue(ResetXY(x=2.285, y=5.915, headingDegrees=-54, drivetrain=self.robotDrive))
+        startButton.onTrue(ResetXY(drivetrain=self.robotDrive, **constants.FieldMapConstants.kLeftFeeder))
         # ^^ this (x,Y) is the right feeding station for today's practice
 
         # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
@@ -306,6 +320,13 @@ class RobotContainer:
         self.trajectoryBoard.button(11).whileTrue(self.trajectoryPicker)
         self.trajectoryBoard.button(12).whileTrue(self.trajectoryPicker)
 
+        # when moving on a reversed trajectory, robot can prepare to back into left feeder or right feeder
+        def prepareToBackIntoLeftFeeder():
+            self.rearCamera.setOnlyTagIds([1, 13])
+
+        def prepareToBackIntoRightFeeder():
+            self.rearCamera.setOnlyTagIds([2, 12])
+
 
         # now add the trajectories (please replace these with the real ones):
 
@@ -320,10 +341,11 @@ class RobotContainer:
             endpoint=(5.594, 5.635, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
-                (3.141, 6.822, 6.340),
-                (4.806, 6.643, -21.448),
+                (2.641, 5.922, -40),
+                (4.806, 6.943, -90),
             ],
             speed=0.2,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "E-left",
@@ -337,10 +359,11 @@ class RobotContainer:
             endpoint=(5.165, 5.606, -120),
             waypoints=[
                 (1.285, 6.915, -54.0),
-                (3.141, 6.822, 6.340),
-                (4.806, 6.643, -21.448),
+                (2.641, 5.922, -40),
+                (4.306, 6.643, -75),
             ],
-            speed=0.4
+            speed=0.4,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "E-right",
@@ -359,7 +382,8 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "C-left",
@@ -377,7 +401,8 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "C-right",
@@ -388,11 +413,13 @@ class RobotContainer:
         goSideALeftBranch = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve="last-point",
-            endpoint=(2.222, 4.050, 0),
+            endpoint=(2.47, 4.250, 0),
             waypoints=[
                 (1.285, 6.915, -54),
+                (1.641, 5.922, -54),
             ],
-            speed=0.1
+            speed=0.1,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "A-left",
@@ -405,8 +432,10 @@ class RobotContainer:
             endpoint=(2.472, 3.501, 0),
             waypoints=[
                 (1.285, 6.915, -54),
+                (1.641, 5.922, -54),
             ],
-            speed=0.1
+            speed=0.1,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "A-right",
@@ -420,8 +449,10 @@ class RobotContainer:
             endpoint=(3.450, 2.574, 60.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
+                (2.201, 1.986, 54.0),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "B-left",
@@ -437,8 +468,10 @@ class RobotContainer:
             endpoint=(3.660, 2.265, 60.0),
             waypoints=[
                 (1.285, 1.135, 54.0),
+                (2.201, 1.986, 54.0),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "B-right",
@@ -452,11 +485,12 @@ class RobotContainer:
             endpoint=(6.202, 3.791, 180),
             waypoints=[
                 (1.285, 1.135, 54.0),
-                (3.201, 1.786, 0),
-                (5.155, 2.016, 19.799),
-                (6.202, 2.694, 64.359),
+                (2.201, 1.986, 54.0),
+                (5.155, 1.516, 19.799),
+                (6.402, 2.694, 64.359),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "D-left",
@@ -470,10 +504,12 @@ class RobotContainer:
             endpoint=(6.252, 4.180, 180),
             waypoints=[
                 (1.285, 1.135, 54.0),
-                (4.477, 1.906, 3.576),
-                (6.382, 1.824, 2.056),
+                (2.201, 1.986, 54.0),
+                (4.477, 1.306, 90),
+                (6.482, 2.824, 135),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
             "D-right",
@@ -487,8 +523,10 @@ class RobotContainer:
             endpoint=(3.600, 5.546, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
+                (2.641, 5.922, -40),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
 
         self.trajectoryPicker.addCommands(
@@ -502,8 +540,10 @@ class RobotContainer:
             endpoint=(3.470, 5.446, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
+                (2.641, 5.922, -40),
             ],
-            speed=0.2
+            speed=0.2,
+            reverseSetup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "F-right",

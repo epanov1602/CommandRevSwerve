@@ -12,7 +12,7 @@ import math
 
 import rev
 from wpimath import units
-from wpimath.geometry import Translation2d
+from wpimath.geometry import Translation2d, Pose2d, Rotation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.trajectory import TrapezoidProfileRadians
 
@@ -183,6 +183,18 @@ class AutoConstants:
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(
         kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared
     )
+
+
+def makePose(x, y, headingDegrees):
+    return Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(headingDegrees))
+
+class FieldMapConstants:
+    kLeftFeeder = {"x": 1.285, "y": 6.917, "headingDegrees": -54}
+    kRightFeeder = {"x": 1.285, "y": 1.135, "headingDegrees": +54}
+    kLeftFeederPose = makePose(**kLeftFeeder)
+    kRightFeederPose = makePose(**kRightFeeder)
+
+
 # elevator position of scoring Max=30  Mid=13 Min=4
 # arm angle scoring position Max = 135 Mid&Min=71
 

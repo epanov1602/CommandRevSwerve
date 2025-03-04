@@ -1,3 +1,4 @@
+import typing
 
 from commands2 import Subsystem
 from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
@@ -76,6 +77,12 @@ class Intake(Subsystem):
         if recoilSpeed > 0:
             assert rangeFinder is not None, f"if recoilSpeed>0, rangeFinder must be not None"
 
+        self.onSensingGamepiece = None
+
+
+    def setOnSensingGamepiece(self, callback: typing.Callable[[bool], None]):
+        self.onSensingGamepiece = callback
+
 
     def enableLimitSwitch(self):
         if not self.stopIfSensingGamepiece:
@@ -151,6 +158,7 @@ class Intake(Subsystem):
             SmartDashboard.putNumber("intakeRfBlocked", int(100 * self.rangefinderConsistentlyBlockedByGamepiece + 0.5))
 
         # 3. we say we are sensing that gamepiece if either limit switch or rangefinder is sensing it
+        wasSensingGamepiece = self.sensingGamepiece
         limitSwitchThinkingItsInside = self.isLimitSwitchThinkingGamepieceInside()
         rangefinderThinkingItsInside = self.isRangefinderThinkingGamepieceInside()
         self.sensingGamepiece = limitSwitchThinkingItsInside or rangefinderThinkingItsInside
@@ -175,6 +183,10 @@ class Intake(Subsystem):
         if self.followerMotor is not None:
             self.followerMotor.set(speedF)
             SmartDashboard.putNumber("intakeSpeedF", speedF)
+
+        if wasSensingGamepiece != self.sensingGamepiece and self.onSensingGamepiece is not None:
+            self.onSensingGamepiece(self.sensingGamepiece)
+
 
     def updateT1T2T3(self, range):
         now = Timer.getFPGATimestamp()

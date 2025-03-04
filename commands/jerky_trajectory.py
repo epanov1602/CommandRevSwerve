@@ -28,6 +28,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints: typing.List[Pose2d | Translation2d | tuple | list] = (),
         swerve: bool | str = False,
         speed=1.0,
+        reverseSetup: typing.Optional[typing.Callable[[], None]] = None,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
@@ -47,17 +48,21 @@ class JerkyTrajectory(commands2.Command):
         self.drivetrain = drivetrain
         self.speed = speed
         self.swerve = swerve
+        self.reverseSetup = reverseSetup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints] + [self._makeWaypoint(endpoint)]
         assert len(self.waypoints) > 0
         self.command = None
 
         self.addRequirements(self.drivetrain)
 
-    def reversed(self) -> JerkyTrajectory:
+    def reversed(self):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
+        result = JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
+        if self.reverseSetup is not None:
+            result = InstantCommand(self.reverseSetup).andThen(result)
+        return result
 
     def trajectoryToDisplay(self):
         result = []
@@ -172,11 +177,14 @@ class JerkyTrajectory(commands2.Command):
 
 class SwerveTrajectory(JerkyTrajectory):
 
-    def reversed(self) -> SwerveTrajectory:
+    def reversed(self):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
+        result = SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
+        if self.reverseSetup is not None:
+            result = InstantCommand(self.reverseSetup).andThen(result)
+        return result
 
     def initialize(self):
         # skip the waypoints that are already behind
