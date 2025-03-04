@@ -404,7 +404,7 @@ class AutoFactory(object):
             camera,
             self.robotDrive,
             stopWhen=StopWhen(maxY=13), # stop when tag is 13 degrees above horizon (or higher)
-            speed=speed
+            speed=-speed
         )
 
         alignAndPush = AlignWithTag(
