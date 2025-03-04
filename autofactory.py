@@ -356,7 +356,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def alignToTag(self, headingDegrees, branch="right", pipeline=1, tags=None, speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
+    def alignToTag(self, headingDegrees, branch="right", pipeline=0, tags=None, speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
         assert branch in ("right", "left")
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
