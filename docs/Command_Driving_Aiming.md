@@ -1257,8 +1257,8 @@ class AlignWithTag(commands2.Command):
         if self.lostTag:
             self.finished = self.lostTag
         elif now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
-            delay = now - (self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds)
-            self.finished = f"not seen {1000 * delay}ms"
+            delay = now - self.lastSeenObjectTime
+            self.finished = f"not seen for >= {1000 * delay}ms"
 
         # good ways to finish
         elif self.tAlignedToTag != 0 and now > self.tAlignedToTag + self.pushForwardSeconds:
