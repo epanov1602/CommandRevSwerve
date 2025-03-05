@@ -242,7 +242,7 @@ class AlignWithTag(commands2.Command):
         distanceMeters = math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
 
         # trigonometry: how many meters on the left is our object? (if negative, then it's on the right)
-        objectXMeters = -distanceMeters * Rotation2d.fromDegrees(objectXDegrees).tan()
+        objectXMeters = -distanceMeters * Rotation2d.fromDegrees(objectXDegrees).sin()
         # if the camera is on the back of the robot, then right and left are swapped
         if self.reverse:
             objectXMeters = -objectXMeters
