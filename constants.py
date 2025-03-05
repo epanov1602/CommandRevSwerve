@@ -185,14 +185,20 @@ class AutoConstants:
     )
 
 
-def makePose(x, y, headingDegrees):
-    return Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(headingDegrees))
+def makePose(x, y, heading):
+    return Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(heading))
 
-class FieldMapConstants:
-    kLeftFeeder = {"x": 1.285, "y": 6.917, "headingDegrees": -54}
-    kRightFeeder = {"x": 1.285, "y": 1.135, "headingDegrees": +54}
-    kLeftFeederPose = makePose(**kLeftFeeder)
-    kRightFeederPose = makePose(**kRightFeeder)
+
+class LeftFeeder:
+    location = (1.285, 6.917, -54)
+    pose = makePose(*location)
+    tags = (1, 13)
+
+
+class RightFeeder:
+    location = (1.285, 1.135, +54)
+    pose = makePose(*location)
+    tags = (2, 12)
 
 
 # elevator position of scoring Max=30  Mid=13 Min=4

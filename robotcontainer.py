@@ -118,13 +118,14 @@ class RobotContainer:
 
         def onIntakeSensingGamepiece(sensing):
             if sensing:
+                print("intake is sensing a new gamepiece")
                 y = self.robotDrive.getPose().y
                 if y > 4 and self.robot.isTeleop():
                     print("resetting odometry to match the left feeder location exactly")
-                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kLeftFeederPose, resetGyro=False)
+                    self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
                 if y <= 4 and self.robot.isTeleop():
                     print("resetting odometry to match the right feeder location exactly")
-                    self.robotDrive.resetOdometry(constants.FieldMapConstants.kRightFeederPose, resetGyro=False)
+                    self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
 
@@ -194,9 +195,10 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        startButton.onTrue(ResetXY(drivetrain=self.robotDrive, **constants.FieldMapConstants.kLeftFeeder))
-        # ^^ this (x,Y) is the right feeding station for today's practice
+        startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
+        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose)))
+
+        # ^^ this (Y,Y) is the right feeding station for today's practice
 
         # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
         self.configureFpvDriving(self.driverController, speed=0.3)

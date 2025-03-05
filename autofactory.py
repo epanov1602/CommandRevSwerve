@@ -11,9 +11,11 @@ from wpimath.geometry import Translation2d, Rotation2d, Pose2d, Transform2d
 from wpimath.units import degreesToRadians
 from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
+import constants
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
 from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
+from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
@@ -157,6 +159,7 @@ class AutoFactory(object):
 
         heading = 180
         endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
+        feeder = constants.LeftFeeder
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -178,7 +181,7 @@ class AutoFactory(object):
                 (5.291, 6.632, -0.0),
                 (2.085, 6.215, -54.0),
             ],
-            endpoint=(1.285, 6.915, -54.0),
+            endpoint=feeder.location,
         )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
@@ -193,6 +196,7 @@ class AutoFactory(object):
 
         heading = 180
         endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
+        feeder = constants.RightFeeder
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -212,7 +216,7 @@ class AutoFactory(object):
                 endpoint,
                 (6.253, 2.138, 150),
             ],
-            endpoint=(1.285, 1.135, +54.0),
+            endpoint=feeder.location,
         )
 
         take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
@@ -226,6 +230,7 @@ class AutoFactory(object):
 
         heading = 120
         endpoint = (5.838, 2.329, heading) if branch == "right" else (5.335, 2.053, heading)
+        feeder = constants.RightFeeder
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -245,7 +250,7 @@ class AutoFactory(object):
                 endpoint,
                 (4.843, 1.478, +54),
             ],
-            endpoint=(1.285, 1.135, +54.0),
+            endpoint=feeder.location,
         )
 
         take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
@@ -259,6 +264,7 @@ class AutoFactory(object):
 
         heading = -120
         endpoint = (5.155, 5.899, heading) if branch == "right" else (5.706, 5.619, heading)
+        feeder = constants.LeftFeeder
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -282,7 +288,7 @@ class AutoFactory(object):
                 (4.755, 6.199, -90),
                 (2.085, 6.215, -54.0),
             ],
-            endpoint=(1.285, 6.915, -54.0),
+            endpoint=feeder.location,
         )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
@@ -297,6 +303,7 @@ class AutoFactory(object):
 
         heading = -60
         endpoint = (3.070, 6.146, -60.0) if branch == "right" else (3.050, 6.306, -60.0)
+        feeder = constants.LeftFeeder
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -317,8 +324,14 @@ class AutoFactory(object):
                 endpoint,
                 (2.085, 6.215, -54.0),
             ],
-            endpoint=(1.285, 6.915, -54.0),
+            endpoint=feeder.location,
         )
+
+        # use vision to back into feeder?
+        if branch == "right":
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
 
@@ -396,7 +409,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def backIntoFeeder(self, camera, headingDegrees, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5):
+    def backIntoFeeder(self, camera, headingDegrees, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5, traj=None, tags=None):
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
 
@@ -417,9 +430,30 @@ class AutoFactory(object):
             pushForwardSpeed=pushFwdSpeed
         )
 
-        # connect approach+align together
-        return approachTheTag.andThen(alignAndPush).onlyIf(camera.hasDetection)
+        # 1. connect approach+align together
+        result = approachTheTag.andThen(alignAndPush).onlyIf(camera.hasDetection)
 
+        # 2. do we have an existing trajectory to terminate when feeder is visible?
+        if traj is not None:
+            def feederVisible():
+                if (
+                    camera.hasDetection()
+                    and abs(self.robotDrive.getHeading().degrees()) < 90  # robot is looking at our side of field
+                    and self.robotDrive.getPose().x < 4.5  # robot is located between reef and feeder
+                ):
+                    SmartDashboard.putString(
+                        "autoFeederVisible",
+                        f"x={camera.getX()}, y={camera.getY()}, a={camera.getA()}, delay={camera.getSecondsSinceLastHeartbeat()}"
+                    )
+                    return True
+            result = traj.until(feederVisible).andThen(result)
+
+        # 3. do we have specific tags to watch?
+        if tags is not None:
+            pipepine = SetCameraPipeline(camera, 0, tags)
+            result = pipepine.andThen(result)
+
+        return result
 
     @staticmethod
     def moveArm(self, height, final=True):
