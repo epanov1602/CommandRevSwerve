@@ -172,7 +172,13 @@ class AlignWithTag(commands2.Command):
         # 3. if the robot heading is almost aligned, start swerving right or left (for centering on that tag precisely)
         swerveSpeed = self.getSwerveSpeed(degreesRemaining)
 
-        # 4. if we just aligned the heading and the swerve axis and should be pushing forward, make that push command
+        # 4. if we just aligned and no forward move is needed
+        if self.tAlignedToTag != 0 and self.pushForwardSeconds == 0:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "no need to push")
+            self.drivetrain.stop()
+            return
+
+        # 5. if we just aligned the heading and the swerve axis and should be pushing forward, make that push command
         if self.tAlignedToTag != 0 and self.pushForwardCommand is None and not AlignWithTag.USE_PRECISE_FORWARD_PUSH:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "pushing forward")
             self.drivetrain.stop()
@@ -180,7 +186,7 @@ class AlignWithTag(commands2.Command):
             self.pushForwardCommand.initialize()
             return
 
-        # 5. if precise forward push is enabled, use it
+        # 6. if precise forward push is enabled, use it
         fwdSpeed = 0.0
         if self.tAlignedToTag != 0 and AlignWithTag.USE_PRECISE_FORWARD_PUSH:
             fwdSpeed = (now - self.tAlignedToTag) * DriveConstants.kMagnitudeSlewRate
@@ -231,8 +237,12 @@ class AlignWithTag(commands2.Command):
 
         timeSinceLastDetection = now - self.lastSeenObjectTime
         if timeSinceLastDetection > self.detectionTimeoutSeconds:
-            self.lostTag = f"no detection for {int(1000 * timeSinceLastDetection)}ms"
-            return 0.0
+            if self.tAlignedToTag == 0:
+                self.lostTag = f"not aligned and no detection for {int(1000 * timeSinceLastDetection)}ms"
+                return 0.0
+            if timeSinceLastDetection > self.detectionTimeoutSeconds + self.pushForwardSeconds:
+                self.lostTag = f"aligned but no detection for {int(1000 * timeSinceLastDetection)}ms"
+                return 0.0
 
         if self.tAlignedToTag != 0 and timeSinceLastDetection > 0.5 * self.frameTimeoutSeconds:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "not fresh")
