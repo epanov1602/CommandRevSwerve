@@ -150,8 +150,6 @@ class SwerveMove(commands2.Command):
     def initialize(self):
         position = self.drivetrain.getPose()
         heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
-        # position.rotation() becomes unstable when NavX resets
-        # (try Pigeon or avoid taking gyro angle when it is rebooting)
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
             x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
