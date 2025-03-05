@@ -635,7 +635,7 @@ class RobotContainer:
         # and the complicated part: turn around and kiss same AprilTag with the back camera
         turnAround = SwerveMove(metersBackwards=0.3, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2,
                                 heading=lambda: self.robotDrive.getHeading().rotateBy(Rotation2d.fromDegrees(180)))
-        alighWBackCam = turnAround.andThen(
+        alignWBackCam = turnAround.andThen(
             SetCameraPipeline(self.rearCamera, 0, None)
         ).andThen(
             AutoFactory.backIntoFeeder(
@@ -645,7 +645,7 @@ class RobotContainer:
 
         # 5. the combination
         movement = squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
-        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(turnAround).andThen(alighWBackCam)
+        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(turnAround).andThen(alignWBackCam)
         return movement.andThen(vision)
 
 
