@@ -372,6 +372,7 @@ from commands.aimtodirection import AimToDirectionConstants
 from commands.gotopoint import GoToPointConstants
 
 from wpimath.geometry import Rotation2d, Translation2d, Pose2d
+from wpilib import SmartDashboard
 
 
 class SwerveToPoint(commands2.Command):
@@ -405,6 +406,8 @@ class SwerveToPoint(commands2.Command):
 
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
         self.overshot = False
+
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
     def execute(self):
         currentXY = self.drivetrain.getPose()
@@ -444,6 +447,8 @@ class SwerveToPoint(commands2.Command):
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
     def isFinished(self) -> bool:
         currentPose = self.drivetrain.getPose()
@@ -452,14 +457,18 @@ class SwerveToPoint(commands2.Command):
         # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
         if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "acceptable")
             return True  # close enough
 
         if distanceFromInitialPosition > self.initialDistance:
+            if not self.overshot:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "overshooting")
             self.overshot = True
 
         if self.overshot:
             distanceFromTargetDirectionDegrees = self.getDegreesLeftToTurn()
             if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "completed")
                 return True  # case 2: overshot in distance and target direction is correct
 
     def getDegreesLeftToTurn(self):
@@ -479,7 +488,7 @@ class SwerveToPoint(commands2.Command):
         return degreesLeftToTurn
 
 
-class SwerveToSide(commands2.Command):
+class SwerveMove(commands2.Command):
     def __init__(
         self,
         metersToTheLeft: float,
@@ -500,8 +509,6 @@ class SwerveToSide(commands2.Command):
     def initialize(self):
         position = self.drivetrain.getPose()
         heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
-        # position.rotation() becomes unstable when NavX resets
-        # (try Pigeon or avoid taking gyro angle when it is rebooting)
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
             x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
@@ -516,6 +523,9 @@ class SwerveToSide(commands2.Command):
 
     def end(self, interrupted: bool):
         self.subcommand.end(interrupted)
+
+
+SwerveToSide = SwerveMove
 
 ```
 </details>
@@ -1150,14 +1160,15 @@ from commands.aimtodirection import AimToDirectionConstants, AimToDirection
 from commands.gotopoint import GoToPointConstants
 
 from wpimath.geometry import Rotation2d
-from wpilib import Timer
+from wpilib import Timer, SmartDashboard
 
 from commands.swervetopoint import SwerveToSide
+from constants import DriveConstants
 
 
 class AlignWithTag(commands2.Command):
     TOLERANCE_METERS = 0.025  # one inch tolerance for alignment
-    KP_MULT = 0.33
+    KP_MULT = 0.3
 
     def __init__(self,
                  camera,
@@ -1167,7 +1178,8 @@ class AlignWithTag(commands2.Command):
                  reverse=False,
                  pushForwardSeconds=0.0,
                  pushForwardSpeed=0.1,
-                 detectionTimeoutSeconds=2.0):
+                 detectionTimeoutSeconds=2.0,
+                 cameraMinimumFps=4.0):
         """
         Align the swerve robot to AprilTag precisely and then optionally slowly push it forward for a split second
         :param camera: camera to use, LimelightCamera or PhotonVisionCamera (from https://github.com/epanov1602/CommandRevSwerve/blob/main/docs/Adding_Camera.md)
@@ -1177,6 +1189,7 @@ class AlignWithTag(commands2.Command):
         :param pushForwardSeconds: if you want the robot to push forward at the end of alignment
         :param reverse: set it =True if the camera is on the back of the robot (not front)
         :param detectionTimeoutSeconds: if no detection within this many seconds, assume the tag is lost
+        :param cameraMinimumFps: what is the minimal number of **detected** frames per second expected from this camera
         """
         super().__init__()
         assert hasattr(camera, "getX"), "camera must have `getX()` to give us the object coordinate (in degrees)"
@@ -1197,8 +1210,12 @@ class AlignWithTag(commands2.Command):
         self.speed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.pushForwardSeconds = pushForwardSeconds
         self.pushForwardSpeed = pushForwardSpeed
-        self.detectionTimeoutSeconds = detectionTimeoutSeconds
+
         assert detectionTimeoutSeconds > 0, f"non-positive detectionTimeoutSeconds={detectionTimeoutSeconds}"
+        self.detectionTimeoutSeconds = detectionTimeoutSeconds
+
+        assert cameraMinimumFps > 0, f"non-positive cameraMinimumFps={cameraMinimumFps}"
+        self.frameTimeoutSeconds = 1.0 / cameraMinimumFps
 
         # setting the target angle in a way that works for all cases
         self.targetDegrees = specificHeadingDegrees
@@ -1209,62 +1226,67 @@ class AlignWithTag(commands2.Command):
 
         # state
         self.targetDirection = None
-        self.alignedToTag = False
-        self.lostTag = False
-        self.pushForwardCommand = None
         self.lastSeenObjectTime = None
         self.lastSeenObjectX = 0.0
         self.lastSeenObjectSize = 0.0
         self.everSawObject = False
+        self.tAlignedToTag = 0.0  # time when aligned to the tag and desired direction for the first time
+        self.lostTag = ""
+        self.finished = ""
 
 
     def initialize(self):
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
-        self.alignedToTag = False
+        self.tAlignedToTag = 0.0  # time when aligned to the tag and desired direction
         self.lostTag = False
-        self.pushForwardCommand = None
         self.lastSeenObjectX = 0.0
         self.lastSeenObjectSize = 0.0
         self.lastSeenObjectTime = Timer.getFPGATimestamp()
         self.everSawObject = False
+        self.finished = ""
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
 
     def isFinished(self) -> bool:
+        if self.finished:
+            return True
+
         now = Timer.getFPGATimestamp()
-        if now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
-            print(f"AlignSwerveWithTag: finished since have not seen the object for {now - self.lastSeenObjectTime} s")
-            return True
+
+        # bad ways to finish
         if self.lostTag:
-            print("AlignSwerveWithTag: finished because lost track of the object")
-            return True
-        if self.alignedToTag and self.pushForwardCommand is None:
-            print("AlignSwerveWithTag: finished because aligned to the tag and don't need to push forward")
-            return True
-        if self.alignedToTag and self.pushForwardCommand is not None and self.pushForwardCommand.isFinished():
-            print("AlignSwerveWithTag: finished because aligned to the tag and the forward push is finished")
-            return True
+            self.finished = self.lostTag
+        elif now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
+            delay = now - (self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds)
+            self.finished = f"not seen {1000 * delay}ms"
+
+        # good ways to finish
+        elif self.tAlignedToTag != 0 and now > self.tAlignedToTag + self.pushForwardSeconds:
+            self.finished = "algnd+ppushed" if self.pushForwardSeconds > 0 else "aligned"
+
+        if not self.finished:
+            return False
+
+        SmartDashboard.putString("command/c" + self.__class__.__name__, self.finished)
+        return True
 
 
     def end(self, interrupted: bool):
-        if self.pushForwardCommand is not None:
-            self.pushForwardCommand.end(interrupted)
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
 
     def execute(self):
+        now = Timer.getFPGATimestamp()
         if self.camera.hasDetection():
             x = self.camera.getX()
             a = self.camera.getA()
             if x != 0 and a > 0:
-                self.lastSeenObjectTime = Timer.getFPGATimestamp()
+                self.lastSeenObjectTime = now
                 self.lastSeenObjectSize = a
                 self.lastSeenObjectX = x
                 self.everSawObject = True
-
-        # 0. are we pushing forward already?
-        if self.alignedToTag and self.pushForwardCommand is not None:
-            self.pushForwardCommand.execute()
-            return
 
         # 1. how many degrees are left to turn?
         currentDirection = self.drivetrain.getHeading()
@@ -1280,17 +1302,24 @@ class AlignWithTag(commands2.Command):
         turnSpeed = self.getTurnSpeed(degreesRemaining)
 
         # 3. if the robot heading is almost aligned, start swerving right or left (for centering on that tag precisely)
-        #swerveSpeed = 0
-        #if abs(degreesRemaining) < 4 * AimToDirectionConstants.kAngleToleranceDegrees or abs(turnSpeed) < AimToDirectionConstants.kMinTurnSpeed:
-        swerveSpeed, objectX = self.getSwerveLeftSpeed(degreesRemaining)
+        swerveSpeed = self.getSwerveSpeed(degreesRemaining)
 
-        # 4. if we just aligned the heading and the swerve axis and should be pushing forward, make that push
-        if not self.alignedToTag:
-            self.drivetrain.drive(0, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
-        elif self.pushForwardCommand is None and self.pushForwardSeconds > 0:
-            print("AlignWithTag: making a push forward command")
-            self.pushForwardCommand = self.getPushForwardCommand()
-            self.pushForwardCommand.initialize()
+        # 4. if we just aligned and no forward move is needed
+        if self.tAlignedToTag != 0 and self.pushForwardSeconds == 0:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "no need to push")
+            self.drivetrain.stop()
+            return
+
+        # 6. if aligned, push forward
+        fwdSpeed = 0.0
+        if self.tAlignedToTag != 0:
+            fwdSpeed = (now - self.tAlignedToTag) * DriveConstants.kMagnitudeSlewRate
+            if abs(fwdSpeed) > self.pushForwardSpeed:
+                fwdSpeed = self.pushForwardSpeed
+            if self.reverse:
+                fwdSpeed = -fwdSpeed
+
+        self.drivetrain.drive(fwdSpeed, swerveSpeed, turnSpeed, fieldRelative=False, rateLimit=False)
 
 
     def getTurnSpeed(self, degreesRemaining):
@@ -1307,48 +1336,46 @@ class AlignWithTag(commands2.Command):
         return turnSpeed
 
 
-    def getPushForwardCommand(self):
-        from commands.swervetopoint import SwerveToSide
-
-        command = SwerveToSide(
-            metersToTheLeft=0,
-            metersBackwards=-1.0,
-            heading=self.targetDirection,
-            speed=self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed,
-            drivetrain=self.drivetrain
-        )
-        return command.withTimeout(self.pushForwardSeconds)
-
-
-    def getSwerveLeftSpeed(self, degreesRemaining):
+    def getSwerveSpeed(self, degreesRemaining):
         now = Timer.getFPGATimestamp()
         objectXDegrees = self.lastSeenObjectX
         objectSizePercent = self.lastSeenObjectSize
-        if now > self.lastSeenObjectTime + self.detectionTimeoutSeconds:
-            print(f"AlignSwerveWithTag: have not seen the object for at least {now - self.lastSeenObjectTime} seconds")
-            self.lostTag = True
-            return 0.0, None  # no swerve speed possible, since last detected object was too far in the past
 
         secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
-        if secondsSinceHeartbeat > 0.25:
-            print(f"AlignSwerveWithTag: camera not usable (dead or too few frames per second), we see {secondsSinceHeartbeat} seconds since last hearbeat")
-            self.lostTag = True
-            return 0.0, None
+        if secondsSinceHeartbeat > self.frameTimeoutSeconds:
+            self.lostTag = f"late heartbeat > {int(1000 * secondsSinceHeartbeat)}ms"
+            return 0.0
 
-        elif objectXDegrees == 0 or objectSizePercent <= 0:
-            print(f"AlignSwerveWithTag: invalid camera detection (objectX, objectSize) = ({objectXDegrees}, {objectSizePercent})")
-            return 0.0, None
+        timeSinceLastDetection = now - self.lastSeenObjectTime
+        if timeSinceLastDetection > self.detectionTimeoutSeconds:
+            if self.tAlignedToTag == 0:
+                self.lostTag = f"not aligned and no detection for {int(1000 * timeSinceLastDetection)}ms"
+                return 0.0
+            if timeSinceLastDetection > self.detectionTimeoutSeconds + self.pushForwardSeconds:
+                self.lostTag = f"aligned but no detection for {int(1000 * timeSinceLastDetection)}ms"
+                return 0.0
 
-        else:
-            swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
-            if not self.alignedToTag and abs(swerveSpeed) <= GoToPointConstants.kMinTranslateSpeed:
-                print(f"AlignSwerveWithTag: almost done, since swerve speed {swerveSpeed} is already small")
-                if abs(objectXMeters) <= AlignWithTag.TOLERANCE_METERS:
-                    print(f"AlignSwerveWithTag: objectXMeters={objectXMeters} is small enough too")
-                    if abs(degreesRemaining) <= AimToDirectionConstants.kAngleToleranceDegrees:
-                        print(f"AlignSwerveWithTag: degreesRemaining={degreesRemaining} is small, we are done aligning")
-                        self.alignedToTag = True
-            return swerveSpeed, objectXMeters
+        if self.tAlignedToTag != 0 and timeSinceLastDetection > 0.5 * self.frameTimeoutSeconds:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "not fresh")
+            return 0.0  # the last detection we know is not fresh, no need to use it
+
+        if not (objectSizePercent > 0):
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "not yet acquired")
+            return 0.0  # the object is not there, perhaps temporarily?
+
+        swerveSpeed, objectXMeters = self.calculateSwerveLeftSpeed(objectSizePercent, objectXDegrees)
+        if self.tAlignedToTag == 0 and abs(swerveSpeed) <= GoToPointConstants.kMinTranslateSpeed:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "90% aligned")
+            print(f"AlignWithTag: almost done, since swerve speed {swerveSpeed} is already small")
+            if abs(objectXMeters) <= AlignWithTag.TOLERANCE_METERS:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "99% aligned")
+                print(f"AlignWithTag: objectXMeters={objectXMeters} is small enough too")
+                if abs(degreesRemaining) <= AimToDirectionConstants.kAngleToleranceDegrees:
+                    SmartDashboard.putString("command/c" + self.__class__.__name__, "aligned")
+                    print(f"AlignWithTag: degreesRemaining={degreesRemaining} is small, we are done aligning")
+                    self.tAlignedToTag = Timer.getFPGATimestamp()
+
+        return swerveSpeed
 
 
     def calculateSwerveLeftSpeed(self, objectSizePercent, objectXDegrees):
