@@ -25,7 +25,7 @@ from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveToSide, SwerveMove
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
-from subsystems.arm import Arm, ArmConstants
+from subsystems.arm import Arm, ArmConstants, safeArmAngleRange
 
 from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
@@ -90,11 +90,7 @@ class RobotContainer:
 
         # make sure the arm respects a possibly tighter safe angle range, depending on current elevator pos
         if self.arm is not None:
-            def safeArmAngleRange():
-                elevatorPosition = self.elevator.getPosition()
-                return constants.safeArmAngleRange(elevatorPosition)
-
-            self.arm.setSafeAngleRangeFunction(safeArmAngleRange)
+            self.arm.setSafeAngleRangeFunction(lambda: safeArmAngleRange(self.elevator.getPosition()))
 
         self.elevator.setDefaultCommand(
             commands2.RunCommand(lambda: self.elevator.drive(

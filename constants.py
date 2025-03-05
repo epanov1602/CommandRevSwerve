@@ -200,14 +200,3 @@ class RightFeeder:
     pose = makePose(*location)
     tags = (2, 12)
 
-
-# elevator position of scoring Max=30  Mid=13 Min=4
-# arm angle scoring position Max = 135 Mid&Min=71
-
-def safeArmAngleRange(elevatorPosition: float):
-    if elevatorPosition < 0.5:
-        return 35, 160
-    elif elevatorPosition < 28:
-        return 65, 75
-    else:
-        return 35, 160

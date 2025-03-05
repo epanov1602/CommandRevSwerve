@@ -26,10 +26,10 @@ class ArmConstants:
     kArmMinAngle = 35
     kArmMaxAngle = 200
 
-    kArmIntakeAngle = 42
-    kArmSafeTravelAngle = 71.4
-    kArmLevel4ReleaseAngle = 135
-    kArmMaxWeightAngle = 84.2 - 90
+    kArmIntakeAngle = 44.4  # spare has 42
+    kArmSafeTravelAngle = 73.8  # spare has 71.4
+    kArmLevel4ReleaseAngle = 137.4  # spare has 135
+    kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
 
     kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
@@ -41,6 +41,15 @@ class ArmConstants:
     initialMinOutput = -1
 
     additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
+
+def safeArmAngleRange(elevatorPosition: float):
+    offset = 2.4  # spare has zero
+    if elevatorPosition < 0.5:
+        return 35 + offset, 160 + offset
+    elif elevatorPosition < 28:
+        return 65 + offset, 75 + offset
+    else:
+        return 35 + offset, 160 + offset
 
 class Arm(Subsystem):
     def __init__(
