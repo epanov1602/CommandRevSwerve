@@ -606,12 +606,7 @@ class RobotContainer:
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
         from commands.aimtodirection import AimToDirection
 
-        # 1. rotate 60 degrees left and back, to test the gyro (did it come back? or continued to spin left?)
-        rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)
-        rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
-        rotations = rotation1.andThen(rotation2)
-
-        # 2. square dance to test the drivetrain (did it drive crooked or made a good square? rezero the wheels!)
+        # 1. square dance to test the drivetrain (did it drive crooked or made a good square? rezero the wheels!)
         from commands.swervetopoint import SwerveMove
         forward = SwerveMove(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
         left = SwerveMove(metersToTheLeft=0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
@@ -619,7 +614,7 @@ class RobotContainer:
         right = SwerveMove(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
         squareDance = forward.andThen(left).andThen(back).andThen(right)
 
-        # 3. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
+        # 2. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
         intake = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm).andThen(
             IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
         )
@@ -628,14 +623,19 @@ class RobotContainer:
         )
         armDown = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
 
+        # 3. rotate 60 degrees left and back, to test the gyro (did it come back? or continued to spin left?)
+        rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)
+        rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
+        rotations = rotation1.andThen(rotation2)
+
         # 4. vision: kiss an AprilTag in front with the right camera, and then with the left camera
-        alignWithRightCamera = self.alignToTagCmd(self.frontRightCamera, allTags=True, desiredHeading=None)
+        alignWRightCam = self.alignToTagCmd(self.frontRightCamera, allTags=True, desiredHeading=None)
         moveBack = SwerveMove(metersBackwards=0.5, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2)
-        alignWithLeftCamera = self.alignToTagCmd(self.frontLeftCamera, allTags=True, desiredHeading=None)
+        alignWLeftCam = self.alignToTagCmd(self.frontLeftCamera, allTags=True, desiredHeading=None)
         # and the complicated part: turn around and kiss same AprilTag with the back camera
         turnAround = SwerveMove(metersBackwards=0.3, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2,
                                 heading=lambda: self.robotDrive.getHeading().rotateBy(Rotation2d.fromDegrees(180)))
-        alighWithBackCamera = turnAround.andThen(
+        alighWBackCam = turnAround.andThen(
             SetCameraPipeline(self.rearCamera, 0, None)
         ).andThen(
             AutoFactory.backIntoFeeder(
@@ -644,8 +644,8 @@ class RobotContainer:
         )
 
         # 5. the combination
-        movement = squareDance.andThen(rotations).andThen(intake).andThen(score).andThen(armDown)
-        vision = alignWithRightCamera.andThen(moveBack).andThen(alignWithLeftCamera).andThen(turnAround).andThen(alighWithBackCamera)
+        movement = squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
+        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(turnAround).andThen(alighWBackCam)
         return movement.andThen(vision)
 
 
