@@ -113,6 +113,10 @@ class FollowObject(commands2.Command):
             self.subcommand.end(interrupted)
             self.subcommand = None
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
+        else:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "finished")
 
     def isFinished(self) -> bool:
         return self.finished
