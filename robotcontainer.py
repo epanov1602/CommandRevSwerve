@@ -370,6 +370,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "E-left",
+            SetCameraPipeline(self.frontRightCamera, 5, onlyTagIds=(11, 20)),
             goSideELeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+240)
         )
@@ -409,6 +410,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "C-left",
+            SetCameraPipeline(self.frontRightCamera, 9, onlyTagIds=(9, 22)),
             goSideCLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+120)
         )
@@ -446,6 +448,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "A-left",
+            SetCameraPipeline(self.frontRightCamera, 7, onlyTagIds=(7, 18)),
             goSideALeftBranch,
            self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
         )
@@ -480,6 +483,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "B-left",
+            SetCameraPipeline(self.frontRightCamera, 8, onlyTagIds=(8, 17)),
             goSideBLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
         )
@@ -519,6 +523,7 @@ class RobotContainer:
         )
         self.trajectoryPicker.addCommands(
             "D-left",
+            SetCameraPipeline(self.frontRightCamera, 4, onlyTagIds=(10, 21)),
             goSideDLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
@@ -557,7 +562,7 @@ class RobotContainer:
 
         self.trajectoryPicker.addCommands(
             "F-left",
-            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(6, 19)),
+            SetCameraPipeline(self.frontRightCamera, 6, onlyTagIds=(6, 19)),
             goSideFLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
         )
