@@ -86,7 +86,7 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  position: float,
                  arm: Arm,
                  angle: float | None=None,
-                 safeTravelAngle=71.4,
+                 safeTravelAngle=ArmConstants.kArmSafeTravelAngle,
                  additionalTimeoutSeconds=0.0):
         self.arm = arm
         self.angle = angle

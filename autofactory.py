@@ -522,13 +522,13 @@ class AutoFactory(object):
         from subsystems.arm import ArmConstants
 
         if height == "intake" or height == "base":
-            return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=42)
+            return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         if height == "level 2":
-            return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+            return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 3":
-            return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+            return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 4":
-            angle = ArmConstants.kArmSafeStartingAngle if not final else 135
+            angle = ArmConstants.kArmSafeTravelAngle if not final else ArmConstants.kArmLevel4ReleaseAngle
             return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=angle)
 
         assert False, f"height='{height}' is not supported"

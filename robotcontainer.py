@@ -216,7 +216,7 @@ class RobotContainer:
 
         # right bumper = intake new gamepiece
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
-        goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
+        goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
         intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
 
@@ -230,7 +230,7 @@ class RobotContainer:
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
 
         ejectForwardIfElevatorLow = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
-        ejectForwardIfElevatorHigh = MoveArm(self.arm, 135).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
+        ejectForwardIfElevatorHigh = MoveArm(self.arm, ArmConstants.kArmLevel4ReleaseAngle).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
         ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20);
 
         ejectButton.whileTrue(ejectForwardCmd)
@@ -243,23 +243,23 @@ class RobotContainer:
         # elevator buttons for different levels
         #  - 0
         level0PosButton = self.scoringController.button(XboxController.Button.kA)
-        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=70)
+        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level0PosButton.onTrue(level0PositionCmd)
         self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kB)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level2PosButton.onTrue(level2PositionCmd)
         self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kY)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level3PosButton.onTrue(level3PositionCmd)
         self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
         #  - 4
         level4PosButton = self.scoringController.button(XboxController.Button.kX)
-        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeStartingAngle)
+        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level4PosButton.onTrue(level4PositionCmd)
         self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
 
@@ -313,7 +313,7 @@ class RobotContainer:
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.5)
-        armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=42)
+        armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
         # POV down: run the reverse trajectory while pushed
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
@@ -617,13 +617,13 @@ class RobotContainer:
         squareDance = forward.andThen(left).andThen(back).andThen(right)
 
         # 2. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
-        intake = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm).andThen(
+        intake = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm).andThen(
             IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
         )
         score = MoveElevatorAndArm(position=13.0, elevator=self.elevator, arm=self.arm).andThen(
             IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(0.3)
         )
-        armDown = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
+        armDown = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm)
 
         # 3. rotate 60 degrees left and back, to test the gyro (did it come back? or continued to spin left?)
         rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)

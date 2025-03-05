@@ -25,8 +25,12 @@ class ArmConstants:
 
     kArmMinAngle = 35
     kArmMaxAngle = 200
-    kArmSafeStartingAngle = 71.4
+
+    kArmIntakeAngle = 42
+    kArmSafeTravelAngle = 71.4
+    kArmLevel4ReleaseAngle = 135
     kArmMaxWeightAngle = 84.2 - 90
+
     kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
     # PID controller settings
@@ -91,9 +95,9 @@ class Arm(Subsystem):
         self.safeAngleRangeFunction = None
 
         # first angle goal
-        assert ArmConstants.kArmSafeStartingAngle <= ArmConstants.kArmMaxAngle
-        assert ArmConstants.kArmSafeStartingAngle >= ArmConstants.kArmMinAngle
-        self.angleGoal = ArmConstants.kArmSafeStartingAngle
+        assert ArmConstants.kArmSafeTravelAngle <= ArmConstants.kArmMaxAngle
+        assert ArmConstants.kArmSafeTravelAngle >= ArmConstants.kArmMinAngle
+        self.angleGoal = ArmConstants.kArmSafeTravelAngle
         self.setAngleGoal(self.angleGoal)
 
 
