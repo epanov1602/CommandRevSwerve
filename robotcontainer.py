@@ -209,7 +209,7 @@ class RobotContainer:
         # pov down = approach the feeder using camera
         if self.scoringController != self.driverController:
             self.scoringController.povDown().whileTrue(AutoFactory.backIntoFeeder(
-                self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.5
+                self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=15
             ))
 
         # right bumper = intake new gamepiece

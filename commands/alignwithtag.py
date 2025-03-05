@@ -211,7 +211,7 @@ class AlignWithTag(commands2.Command):
 
         command = SwerveToSide(
             metersToTheLeft=0,
-            metersBackwards=-1.0 if not self.reverse else 1.0,
+            metersBackwards=-9.9 if not self.reverse else 9.9,
             speed=self.pushForwardSpeed if not self.reverse else -self.pushForwardSpeed,
             heading=self.targetDirection,
             drivetrain=self.drivetrain
