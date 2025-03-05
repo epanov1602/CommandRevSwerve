@@ -1341,9 +1341,9 @@ class AlignWithTag(commands2.Command):
         objectXDegrees = self.lastSeenObjectX
         objectSizePercent = self.lastSeenObjectSize
 
-        secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
-        if secondsSinceHeartbeat > self.frameTimeoutSeconds:
-            self.lostTag = f"no camera heartbeat > {int(1000 * secondsSinceHeartbeat)}ms"
+        timeSinceLastHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
+        if timeSinceLastHeartbeat > self.frameTimeoutSeconds:
+            self.lostTag = f"no camera heartbeat > {int(1000 * timeSinceLastHeartbeat)}ms"
             return 0.0
 
         timeSinceLastDetection = now - self.lastSeenObjectTime
