@@ -1258,7 +1258,7 @@ class AlignWithTag(commands2.Command):
             self.finished = self.lostTag
         elif now > self.lastSeenObjectTime + self.detectionTimeoutSeconds + self.pushForwardSeconds:
             delay = now - self.lastSeenObjectTime
-            self.finished = f"not seen for >= {1000 * delay}ms"
+            self.finished = f"not seen {int(1000 * delay)}ms"
 
         # good ways to finish
         elif self.tAlignedToTag != 0 and now > self.tAlignedToTag + self.pushForwardSeconds:
@@ -1343,7 +1343,7 @@ class AlignWithTag(commands2.Command):
 
         secondsSinceHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
         if secondsSinceHeartbeat > self.frameTimeoutSeconds:
-            self.lostTag = f"late heartbeat > {int(1000 * secondsSinceHeartbeat)}ms"
+            self.lostTag = f"no camera heartbeat > {int(1000 * secondsSinceHeartbeat)}ms"
             return 0.0
 
         timeSinceLastDetection = now - self.lastSeenObjectTime
