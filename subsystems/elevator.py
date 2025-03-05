@@ -41,7 +41,7 @@ class ElevatorConstants:
     positionTolerance = 0.5
 
     # PID configuration (after you are done with calibrating=True)
-    kStaticGain = 0.19  # drop it by 50% when doubling kP
+    kStaticGain = 0.24  # drop it by 50% when doubling kP
     kP = 0.12 # 0.9 was our real choice  # at first make it very small like 0.05 and then start doubling
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kMaxOutput = 0.8
