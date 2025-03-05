@@ -638,10 +638,9 @@ class RobotContainer:
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(camera, 0)
+        lookForTheseTags = SetCameraPipeline(camera, 0, onlyTagIds=None)
         approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
 
-        # TODO: add timeout
         alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07).withTimeout(8)
 
         # connect them together

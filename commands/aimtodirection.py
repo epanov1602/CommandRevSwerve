@@ -20,7 +20,7 @@ class AimToDirectionConstants:
     kUseSqrtControl = AutoConstants.kUseSqrtControl
 
     kMinTurnSpeed = 0.03  # turning slower than this is unproductive for the motor (might not even spin)
-    kAngleToleranceDegrees = 2.0  # plus minus 2 degrees is "close enough"
+    kAngleToleranceDegrees = 3.0  # plus minus 3 degrees is "close enough"
     kAngleVelocityToleranceDegreesPerSec = 50  # velocity under 100 degrees/second is considered "stopped"
 
 
