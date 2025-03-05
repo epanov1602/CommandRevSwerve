@@ -22,7 +22,7 @@ from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
 from commands.setcamerapipeline import SetCameraPipeline
-from commands.swervetopoint import SwerveToSide
+from commands.swervetopoint import SwerveToSide, SwerveMove
 from constants import DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.arm import Arm, ArmConstants
@@ -144,7 +144,7 @@ class RobotContainer:
         self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
 
         # Configure the button bindings and autos
-        self.configureTrajectoryPicker()
+        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
         self.configureButtonBindings()
         self.configureAutos()
 
@@ -215,16 +215,14 @@ class RobotContainer:
         # right bumper = intake new gamepiece
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
         goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=42)
-        intakeCmd = IntakeGamepiece(self.intake, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
+        intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
         intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
 
-        # right bumper for driver and X button for driver = lock the wheels in X brake
+        # right bumper for driver joystick = keep wheels locked in X brake
         if self.driverController != self.scoringController:
             xBrakeButton = self.driverController.button(XboxController.Button.kRightBumper)
             keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
             xBrakeButton.whileTrue(keepWheelsLocked)
-            xButton = self.driverController.button(XboxController.Button.kRightBumper)
-            xButton.whileTrue(keepWheelsLocked)
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
@@ -263,10 +261,15 @@ class RobotContainer:
         level4PosButton.onTrue(level4PositionCmd)
         self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
 
-        # right and left POV of scoring joystick = aligning to AprilTags (using current, imprecise, robot heading!)
+        # X and B buttons of driver controller allow to approach reef AprilTags for scoring
+        # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
-            self.scoringController.povLeft().whileTrue(self.alignToTagCmd(self.frontRightCamera, None, allTags=True))
-            self.scoringController.povRight().whileTrue(self.alignToTagCmd(self.frontLeftCamera, None, allTags=True))
+            self.driverController.button(XboxController.Button.kX).whileTrue(
+                self.alignToTagCmd(self.frontRightCamera, None, allTags=True)
+            )
+            self.driverController.button(XboxController.Button.kB).whileTrue(
+                self.alignToTagCmd(self.frontLeftCamera, None, allTags=True)
+            )
 
 
     def configureFpvDriving(self, joystick, speed):
@@ -293,7 +296,7 @@ class RobotContainer:
         )
 
 
-    def configureTrajectoryPicker(self, swerve="last-point"):
+    def configureTrajectoryPicker(self, swerve=True, speed=0.2, TrajectoryCommand=JerkyTrajectory):
         from commands.trajectory_picker import TrajectoryPicker, ReversedTrajectoryPicker
 
         # trajectory picker will only run when these subsystems are not busy with other commands
@@ -307,7 +310,7 @@ class RobotContainer:
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
-        backUp = SwerveToSide(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.2)
+        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.5)
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=42)
 
         # POV down: run the reverse trajectory while pushed
@@ -365,7 +368,7 @@ class RobotContainer:
                 (2.641, 5.922, -40),
                 (4.806, 6.943, -90),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -384,7 +387,7 @@ class RobotContainer:
                 (2.641, 5.922, -40),
                 (4.306, 6.643, -75),
             ],
-            speed=0.4,
+            speed=speed,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -405,7 +408,7 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -425,7 +428,7 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -478,7 +481,7 @@ class RobotContainer:
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -498,7 +501,7 @@ class RobotContainer:
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -518,7 +521,7 @@ class RobotContainer:
                 (5.155, 1.516, 90),
                 (6.402, 2.694, 135),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -538,7 +541,7 @@ class RobotContainer:
                 (4.477, 1.306, 90),
                 (6.482, 2.824, 135),
             ],
-            speed=0.2,
+            speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -556,7 +559,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
-            speed=0.2,
+            speed=0.3,
             setup=prepareToBackIntoLeftFeeder,
         )
 
@@ -603,39 +606,43 @@ class RobotContainer:
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
         from commands.aimtodirection import AimToDirection
 
-        # 1. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
+        # 1. rotate 60 degrees left and back, to test the gyro (did it come back? or continued to spin left?)
+        rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)
+        rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
+        rotations = rotation1.andThen(rotation2)
+
+        # 2. square dance to test the drivetrain (did it drive crooked or made a good square? rezero the wheels!)
+        from commands.swervetopoint import SwerveMove
+        forward = SwerveMove(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
+        left = SwerveMove(metersToTheLeft=0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
+        back = SwerveMove(metersToTheLeft=0, metersBackwards=0.5, speed=0.2, drivetrain=self.robotDrive)
+        right = SwerveMove(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
+        squareDance = forward.andThen(left).andThen(back).andThen(right)
+
+        # 3. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
         intake = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm).andThen(
             IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
         )
         score = MoveElevatorAndArm(position=13.0, elevator=self.elevator, arm=self.arm).andThen(
             IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(0.3)
         )
-        drop = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
+        armDown = MoveElevatorAndArm(position=0, angle=42, elevator=self.elevator, arm=self.arm)
 
-        # 2. some rotations to test the gyro
-        rotation1 = AimToDirection(degrees=60, speed=0.3, drivetrain=self.robotDrive)
-        rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
-        rotations = rotation1.andThen(rotation2)
-
-        # 3. square dance to test the drivetrain
-        from commands.swervetopoint import SwerveToSide
-        forward = SwerveToSide(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
-        left = SwerveToSide(metersToTheLeft=0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
-        back = SwerveToSide(metersToTheLeft=0, metersBackwards=0.5, speed=0.2, drivetrain=self.robotDrive)
-        right = SwerveToSide(metersToTheLeft=-0.5, metersBackwards=0, speed=0.2, drivetrain=self.robotDrive)
-        squareDance = forward.andThen(left).andThen(back).andThen(right)
-
-        # 4. not yet done: add commands for tag alignment with both cameras?
+        # 4. vision: kiss an AprilTag in front with the right camera, and then with the left camera
+        alignWithRightCamera = self.alignToTagCmd(self.frontRightCamera, allTags=True, desiredHeading=None)
+        moveBack = SwerveMove(metersBackwards=0.5, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2)
+        alignWithLeftCamera = self.alignToTagCmd(self.frontLeftCamera, allTags=True, desiredHeading=None)
 
         # 5. the combination
-        return intake.andThen(score).andThen(drop).andThen(rotations).andThen(squareDance)
+        movement = squareDance.andThen(rotations).andThen(intake).andThen(score).andThen(armDown)
+        vision = alignWithRightCamera.andThen(moveBack).andThen(alignWithLeftCamera)
+        return movement.andThen(vision)
 
 
     def alignToTagCmd(self, camera, desiredHeading, allTags=False):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
-        from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
@@ -643,11 +650,12 @@ class RobotContainer:
         alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=0.5, pushForwardSpeed=0.14).withTimeout(8)
 
         # connect them together
-        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+        alignToScore = approachTheTag.andThen(alignAndPush)
         if allTags:
             alignToScore = SetCameraPipeline(camera, 0, onlyTagIds=None).andThen(alignToScore)
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
+        # from commands.swervetopoint import SwerveToSide
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
         # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
 

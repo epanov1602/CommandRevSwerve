@@ -455,7 +455,7 @@ class AutoFactory(object):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=0.5)  # play pretend, in simulation
 
-        return IntakeGamepiece(self.intake, speed=speed)  # .onlyIf(armToIntakePositionCmd.succeeded)
+        return IntakeGamepiece(self.intake, speed=speed)
 
 
     @staticmethod
