@@ -7,8 +7,7 @@
 from __future__ import annotations
 
 from wpilib import SendableChooser, SmartDashboard
-from wpimath.geometry import Translation2d, Rotation2d, Pose2d, Transform2d
-from wpimath.units import degreesToRadians
+from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 import constants
@@ -20,7 +19,6 @@ from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
 # which trajectory to use
-TrajectoryCommand = JerkyTrajectory
 BACKUP_METERS = 0.7
 
 class AutoFactory(object):
@@ -38,8 +36,13 @@ class AutoFactory(object):
         goal2height = self.goal2height.getSelected()
         if goal2height == "same": goal2height = goal1height
 
+        trajectoryClass, swerve = self.autoTrajStyle.getSelected()
+        rearview = self.autoRearview.getSelected()
+
         # commands for approaching and retreating from goal 1 scoring location
-        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(self, startPos, branch=goal1branch, swerve=True)
+        heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(
+            self, startPos, branch=goal1branch, swerve=swerve, rearview=rearview, TrajectoryCommand=trajectoryClass
+        )
         # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
         approachCmd = approachCmd
 
@@ -142,11 +145,24 @@ class AutoFactory(object):
         self.goal2height.addOption("level 3", "level 3")
         self.goal2height.addOption("level 4", "level 4")
 
+        # do we use rearview?
+        self.autoRearview = SendableChooser()
+        self.autoRearview.setDefaultOption("blind", False)
+        self.autoRearview.addOption("camera", True)
+
+        # how to drive between waypoints? (like a tank, like a frog, or what)
+        self.autoTrajStyle = SendableChooser()
+        self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
+        self.autoTrajStyle.setDefaultOption("rabbit", (JerkyTrajectory, True))
+        self.autoTrajStyle.addOption("snowboard", (SwerveTrajectory, True))
+
         SmartDashboard.putData("auto1StartPos", self.startPos)
         SmartDashboard.putData("auto2Paths", self.goal1traj)
         SmartDashboard.putData("auto3Branch", self.goal1branch)
         SmartDashboard.putData("auto4Scoring1", self.goal1height)
         SmartDashboard.putData("auto5Scoring2", self.goal2height)
+        SmartDashboard.putData("auto6Rearview", self.autoRearview)
+        SmartDashboard.putData("auto7TrjStyle", self.autoTrajStyle)
 
         self.startPos.onChange(lambda _: AutoFactory.updateDashboard(self))
         self.goal1traj.onChange(lambda _: AutoFactory.updateDashboard(self))
@@ -154,7 +170,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def trajectoriesToSideDLeft(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideDLeft(self, start, branch="right", speed=0.2, swerve="last-point", rearview=False, TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
         heading = 180
@@ -184,14 +200,38 @@ class AutoFactory(object):
             endpoint=feeder.location,
         )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
         return heading, approach, retreat, take2, heading2
 
 
 
     @staticmethod
-    def trajectoriesToSideDRight(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideDRight(self, start, branch="right", speed=0.2, swerve="last-point", rearview=False, TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
         heading = 180
@@ -219,13 +259,19 @@ class AutoFactory(object):
             endpoint=feeder.location,
         )
 
-        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
 
         return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
-    def trajectoriesToSideC(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideC(self, start, branch="right", speed=0.2, swerve="last-point", rearview=False, TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
         heading = 120
@@ -253,13 +299,19 @@ class AutoFactory(object):
             endpoint=feeder.location,
         )
 
-        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve)
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
 
         return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
-    def trajectoriesToSideE(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideE(self, start, branch="right", speed=0.2, swerve="last-point", rearview=False, TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
         heading = -120
@@ -291,14 +343,20 @@ class AutoFactory(object):
             endpoint=feeder.location,
         )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+        # use vision to back the robot into the feeder?
+        if rearview:
+            retreat = AutoFactory.backIntoFeeder(
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+            )
+
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
         return heading, approach, retreat, take2, heading2
 
 
 
     @staticmethod
-    def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point"):
+    def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point", rearview=False, TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
         heading = -60
@@ -327,19 +385,19 @@ class AutoFactory(object):
             endpoint=feeder.location,
         )
 
-        # use vision to back into feeder?
-        if branch == "right":
+        # use vision to back the robot into the feeder?
+        if rearview:
             retreat = AutoFactory.backIntoFeeder(
                 self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
             )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve)
+        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
         return heading, approach, retreat, take2, heading2
 
 
     @staticmethod
-    def goToSideB(self, branch, speed, swerve):
+    def goToSideB(self, branch, speed, swerve, TrajectoryCommand):
         heading = +60  # side B endpoint is at +60 degrees (West)
         trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -354,7 +412,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def goToSideF(self, branch, speed, swerve):
+    def goToSideF(self, branch, speed, swerve, TrajectoryCommand):
         heading = -60  # side F endpoint is at -60 degrees (East)
         trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -540,7 +598,7 @@ class AutoFactory(object):
 
 def interpolate(poses, chunks=10):
     result = []
-    prev: Pose2d = None
+    prev = None
     for pose in poses:
         if prev is None:
             result.append(pose)
