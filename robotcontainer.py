@@ -265,8 +265,8 @@ class RobotContainer:
 
         # right and left POV of scoring joystick = aligning to AprilTags (using current, imprecise, robot heading!)
         if self.scoringController != self.driverController:
-            self.scoringController.povLeft().whileTrue(self.alignToTagCmd(self.frontRightCamera, None))
-            self.scoringController.povRight().whileTrue(self.alignToTagCmd(self.frontLeftCamera, None))
+            self.scoringController.povLeft().whileTrue(self.alignToTagCmd(self.frontRightCamera, None, allTags=True))
+            self.scoringController.povRight().whileTrue(self.alignToTagCmd(self.frontLeftCamera, None, allTags=True))
 
 
     def configureFpvDriving(self, joystick, speed):
@@ -574,7 +574,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
-            speed=0.2,
+            speed=0.5,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -631,20 +631,21 @@ class RobotContainer:
         return intake.andThen(score).andThen(drop).andThen(rotations).andThen(squareDance)
 
 
-    def alignToTagCmd(self, camera, desiredHeading):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(camera, 0, onlyTagIds=None)
-        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.1)  # stop when tag size=4 (4% of the frame pixels)
+        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
-        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.2, pushForwardSeconds=1.5, pushForwardSpeed=0.07).withTimeout(8)
+        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=0.5, pushForwardSpeed=0.14).withTimeout(8)
 
         # connect them together
         alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+        if allTags:
+            alignToScore = SetCameraPipeline(camera, 0, onlyTagIds=None).andThen(alignToScore)
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
