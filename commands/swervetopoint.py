@@ -144,12 +144,16 @@ class SwerveMove(commands2.Command):
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
         self.metersBackwards = metersBackwards
+
         self.desiredHeading = heading
+        if heading is not None and not callable(heading):
+            self.desiredHeading = lambda: heading
+
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
-        heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
+        heading = self.desiredHeading() if self.desiredHeading is not None else position.rotation()
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
             x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
