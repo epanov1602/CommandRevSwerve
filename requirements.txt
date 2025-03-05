@@ -1,9 +1,1 @@
 robotpy==2025.2.1.3
-robotpy-commands-v2
-robotpy-rev
-robotpy-navx
-wpilib
-pyntcore
-photonlibpy
-robotpy-apriltag
-robotpy-playingwithfusion
