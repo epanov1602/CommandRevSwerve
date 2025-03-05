@@ -26,11 +26,6 @@ class ArmConstants:
     kArmMinAngle = 35
     kArmMaxAngle = 200
 
-    kArmIntakeAngle = 44.4  # spare has 42
-    kArmSafeTravelAngle = 73.8  # spare has 71.4
-    kArmLevel4ReleaseAngle = 137.4  # spare has 135
-    kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
-
     kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
     # PID controller settings
@@ -41,6 +36,13 @@ class ArmConstants:
     initialMinOutput = -1
 
     additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
+
+    kArmIntakeAngle = 44.4  # spare has 42
+    kArmSafeTravelAngle = 73.8  # spare has 71.4
+    kArmLevel4ReleaseAngle = 137.4  # spare has 135
+    kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
+    # ^^ warning: you are not done if you are changing these constants, look at the function below too
+
 
 def safeArmAngleRange(elevatorPosition: float):
     offset = 2.4  # spare has zero
