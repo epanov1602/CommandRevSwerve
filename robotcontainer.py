@@ -43,7 +43,7 @@ class RobotContainer:
 
     def __init__(self, robot) -> None:
         wpilib.DriverStation.silenceJoystickConnectionWarning(True)
-        self.robot: MyRobot = robot
+        self.robot = robot
 
         # The driver's controller
         self.driverController = CommandGenericHID(0)
