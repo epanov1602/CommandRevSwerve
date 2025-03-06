@@ -89,9 +89,9 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  safeTravelAngle=ArmConstants.kArmSafeTravelAngle,
                  additionalTimeoutSeconds=0.0):
         self.arm = arm
+        if angle is None:
+            angle = safeTravelAngle
         self.angle = angle
-        if self.angle is None:
-            self.angle = safeTravelAngle
         self.elevator = elevator
         self.position = position
         self.finishedImmediately = False
