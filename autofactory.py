@@ -11,8 +11,10 @@ from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 import constants
+import autowaypoints
+from autowaypoints import SideDLeft
 from commands.aimtodirection import AimToDirection
-from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
+from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
 from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove
@@ -184,17 +186,15 @@ class AutoFactory(object):
     def trajectoriesToSideDLeft(self, start, branch="right", speed=0.2, swerve="last-point", TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
-        heading = 180
-        endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
+        endpoint = autowaypoints.SideDLeft.kEndpoint[branch]
         feeder = constants.LeftFeeder
+        heading = endpoint[2]
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
-            waypoints=[
-                start,
-            ],
+            waypoints=[start] + autowaypoints.SideDLeft.kApproach,
             endpoint=endpoint,
         )
 
@@ -202,12 +202,7 @@ class AutoFactory(object):
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=-speed,
-            waypoints=[
-                endpoint,
-                (6.791, 4.832, -100.0),
-                (5.291, 6.632, -0.0),
-                (2.085, 6.215, -54.0),
-            ],
+            waypoints=[endpoint] + autowaypoints.SideDLeft.kReload,
             endpoint=feeder.location,
         )
 
@@ -221,17 +216,15 @@ class AutoFactory(object):
     def trajectoriesToSideDRight(self, start, branch="right", speed=0.2, swerve="last-point", TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
-        heading = 180
-        endpoint = (6.59, 4.20, heading) if branch == "right" else (6.59, 3.80, heading)
+        endpoint = autowaypoints.SideDRight.kEndpoint[branch]
         feeder = constants.RightFeeder
+        heading = endpoint[2]
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
-            waypoints=[
-                start,
-            ],
+            waypoints=[start] + autowaypoints.SideDRight.kApproach,
             endpoint=endpoint,
         )
 
@@ -239,10 +232,7 @@ class AutoFactory(object):
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=-speed,
-            waypoints=[
-                endpoint,
-                (6.253, 2.138, 150),
-            ],
+            waypoints=[endpoint] + autowaypoints.SideDRight.kReload,
             endpoint=feeder.location,
         )
 
@@ -255,17 +245,17 @@ class AutoFactory(object):
     def trajectoriesToSideC(self, start, branch="right", speed=0.2, swerve="last-point", TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
-        heading = 120
-        endpoint = (5.838, 2.329, heading) if branch == "right" else (5.335, 2.053, heading)
+        # make the mirror image of side E
+
+        endpoint = autowaypoints.SideC.kEndpoint[branch]
         feeder = constants.RightFeeder
+        heading = endpoint[2]
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
-            waypoints=[
-                start,
-            ],
+            waypoints=[start] + autowaypoints.SideC.kApproach,
             endpoint=endpoint,
         )
 
@@ -273,10 +263,7 @@ class AutoFactory(object):
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=-speed,
-            waypoints=[
-                endpoint,
-                (4.843, 1.478, +54),
-            ],
+            waypoints=[endpoint] + autowaypoints.SideC.kReload,
             endpoint=feeder.location,
         )
 
@@ -289,20 +276,15 @@ class AutoFactory(object):
     def trajectoriesToSideE(self, start, branch="right", speed=0.2, swerve="last-point", TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
-        heading = -120
-        endpoint = (5.155, 5.899, heading) if branch == "right" else (5.706, 5.619, heading)
+        endpoint = autowaypoints.SideE.kEndpoint[branch]
         feeder = constants.LeftFeeder
+        heading = endpoint[2]
 
         approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
-            waypoints=[
-                start,
-                (6.491, 5.846, -170.0),
-                (6.491, 5.846, -170.0),
-                #(5.991, 6.146, -150.0),
-            ],
+            waypoints=[start] + autowaypoints.SideE.kApproach,
             endpoint=endpoint,
         )
 
@@ -310,11 +292,7 @@ class AutoFactory(object):
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=-speed,
-            waypoints=[
-                endpoint,
-                (4.755, 6.199, -90),
-                (2.085, 6.215, -54.0),
-            ],
+            waypoints=[endpoint] + autowaypoints.SideE.kReload,
             endpoint=feeder.location,
         )
 

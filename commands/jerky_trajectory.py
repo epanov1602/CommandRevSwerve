@@ -11,6 +11,7 @@ import typing
 import commands2
 from commands2 import InstantCommand
 
+import constants
 from subsystems.drivesubsystem import DriveSubsystem
 from commands.aimtodirection import AimToDirection
 from commands.swervetopoint import SwerveToPoint
@@ -272,6 +273,9 @@ def mirror(waypoints, fieldWidth=8.052):
     :param fieldWidth: width of the field
     :return: a mirror image of trajectory waypoints
     """
+    # a tuple is treated as a single waypoint
+    if isinstance(waypoints, tuple):
+        return mirror([waypoints])[0]
 
     def reflect(heading):
         if heading is not None:
