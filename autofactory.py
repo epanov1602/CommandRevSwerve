@@ -41,7 +41,7 @@ class AutoFactory(object):
 
         # commands for approaching and retreating from goal 1 scoring location
         heading1, approachCmd, retreatCmd, take2Cmd, heading2 = goal1traj(
-            self, startPos, branch=goal1branch, swerve=swerve, rearview=rearview, TrajectoryCommand=trajectoryClass
+            self, startPos, speed=0.2, branch=goal1branch, swerve=swerve, rearview=rearview, TrajectoryCommand=trajectoryClass
         )
         # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
         approachCmd = approachCmd
@@ -189,7 +189,7 @@ class AutoFactory(object):
 
         retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
-            swerve=True,
+            swerve=swerve,
             speed=-speed,
             waypoints=[
                 endpoint,
@@ -232,7 +232,7 @@ class AutoFactory(object):
 
         retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
-            swerve=True,
+            swerve=swerve,
             speed=-speed,
             waypoints=[
                 endpoint,
@@ -272,7 +272,7 @@ class AutoFactory(object):
 
         retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
-            swerve=True,
+            swerve=swerve,
             speed=-speed,
             waypoints=[
                 endpoint,
@@ -315,7 +315,7 @@ class AutoFactory(object):
 
         retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
-            swerve=True,
+            swerve=swerve,
             speed=-speed,
             waypoints=[
                 endpoint,
@@ -358,7 +358,7 @@ class AutoFactory(object):
 
         retreat = TrajectoryCommand(
             drivetrain=self.robotDrive,
-            swerve=True,
+            swerve=swerve,
             speed=-speed,
             waypoints=[
                 endpoint,
