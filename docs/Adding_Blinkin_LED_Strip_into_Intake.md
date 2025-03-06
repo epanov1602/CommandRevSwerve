@@ -41,7 +41,7 @@ class LedStrip(Subsystem):
 
 ```
 
-### this goes to `periodic` function of `subsystems/intake.py`
+### this goes to the end of `periodic` function of `subsystems/intake.py` (if such function was missing, need to add it)
 
 ```python3
 
