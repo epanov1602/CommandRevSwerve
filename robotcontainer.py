@@ -116,7 +116,7 @@ class RobotContainer:
         def onIntakeSensingGamepiece(sensing):
             if sensing:
                 heading = self.robotDrive.getHeading().degrees()
-                print("fintake is sensing a new gamepiece, heading={heading}")
+                print(f"intake is sensing a new gamepiece, heading={heading}")
                 if -10 > heading > -90 and self.robot.isTeleop():
                     print(f"resetting odometry to match the left feeder, heading={heading}")
                     self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
