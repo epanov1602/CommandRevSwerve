@@ -626,7 +626,7 @@ class RobotContainer:
             IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
         )
         score = MoveElevatorAndArm(position=13.0, elevator=self.elevator, arm=self.arm).andThen(
-            IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(0.3)
+            IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(1.0)
         )
         armDown = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm)
 
@@ -652,7 +652,7 @@ class RobotContainer:
 
         # 5. the combination
         movement = squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
-        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(turnAround).andThen(alignWBackCam)
+        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(alignWBackCam)
         return movement.andThen(vision)
 
 
