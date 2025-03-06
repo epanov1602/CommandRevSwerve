@@ -24,7 +24,7 @@ class ArmConstants:
     motorRevolutionsPerDegree = gearReduction * chainReduction / 360 * fudgeFactor
 
     kArmMinAngle = 35
-    kArmMaxAngle = 200
+    kArmMaxAngle = 245
 
     kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
@@ -41,11 +41,21 @@ class ArmConstants:
     kArmSafeTravelAngle = 73.8  # spare has 71.4
     kArmLevel4ReleaseAngle = 137.4  # spare has 135
     kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
+    kArmAlgaeIntakeAngle = 230  # spare does not support this
     # ^^ warning: you are not done if you are changing these constants, look at the function below too
+
+    kArmAlgaeElevatorPosition1 = 9.5
+    kArmAlgaeElevatorPosition2 = 23.5
 
 
 def safeArmAngleRange(elevatorPosition: float):
     offset = 2.4  # spare has zero
+
+    if abs(elevatorPosition - ArmConstants.kArmAlgaeElevatorPosition1) < 3:
+        return 65 + offset, 240 + offset
+    if abs(elevatorPosition - ArmConstants.kArmAlgaeElevatorPosition2) < 3:
+        return 65 + offset, 240 + offset
+
     if elevatorPosition < 0.5:
         return 35 + offset, 160 + offset
     elif elevatorPosition < 28:

@@ -259,6 +259,14 @@ class RobotContainer:
         level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level4PosButton.onTrue(level4PositionCmd)
         self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
+        #  - algae 1
+        levelA1PosButton = self.driverController.button(XboxController.Button.kA)
+        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeFeedGamepieceForward(self.intake, 0.1)))
+        #  - algae 2
+        levelA2PosButton = self.driverController.button(XboxController.Button.kA)
+        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeFeedGamepieceForward(self.intake, 0.1)))
 
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)
