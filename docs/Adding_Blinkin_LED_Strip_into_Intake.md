@@ -3,7 +3,7 @@
 Assuming you already have an intake similar to our [Intake Examples](docs/Adding_Intake.md) , this is what you need:
 
 
-## this code goes to `subsystems/ledstrip.py`
+### this code goes to `subsystems/ledstrip.py`
 
 ```python
 
