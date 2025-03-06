@@ -11,7 +11,6 @@ import typing
 import commands2
 from commands2 import InstantCommand
 
-import constants
 from subsystems.drivesubsystem import DriveSubsystem
 from commands.aimtodirection import AimToDirection
 from commands.swervetopoint import SwerveToPoint
