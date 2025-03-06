@@ -1,6 +1,6 @@
 # LED strip as a part of Intake (light up when it has gamepiece)
 
-Assuming you already have an intake similar to our [Intake Examples](docs/Adding_Intake.md) , this is what you need:
+Assuming you already have an intake similar to our [Intake Examples](Adding_Intake.md) , this is what you need:
 
 
 ### this code goes to `subsystems/ledstrip.py`
