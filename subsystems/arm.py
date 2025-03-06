@@ -96,8 +96,8 @@ class Arm(Subsystem):
             SparkBase.PersistMode.kPersistParameters,
         )
 
-        self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
-        self.reverseLimit = self.leadMotor.getReverseLimitSwitch()
+        self.forwardLimit = None  # self.leadMotor.getForwardLimitSwitch()
+        self.reverseLimit = None  # self.leadMotor.getReverseLimitSwitch()
 
         self.followMotor = None
         if followMotorCANId is not None:
@@ -149,9 +149,11 @@ class Arm(Subsystem):
 
 
     def getState(self) -> str:
-        if self.forwardLimit.get():
-            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
-        if self.reverseLimit.get():
+        forward = self.forwardLimit is not None and self.forwardLimit.get()
+        reverse = self.reverseLimit is not None and self.reverseLimit.get()
+        if forward:
+            return "forward limit" if not reverse else "both limits (CAN disconn?)"
+        if reverse:
             return "reverse limit"
         # otherwise, everything is ok
         return "ok"
@@ -237,8 +239,8 @@ def _getLeadMotorConfig(
     config = SparkBaseConfig()
     config.inverted(True)
     config.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    config.limitSwitch.forwardLimitSwitchEnabled(True)
-    config.limitSwitch.reverseLimitSwitchEnabled(True)
+    config.limitSwitch.forwardLimitSwitchEnabled(False)  # limit switches are not installed, only angle encoder
+    config.limitSwitch.reverseLimitSwitchEnabled(False)  # limit switches are not installed, only angle encoder
     config.limitSwitch.forwardLimitSwitchType(limitSwitchType)
     config.limitSwitch.reverseLimitSwitchType(limitSwitchType)
 
