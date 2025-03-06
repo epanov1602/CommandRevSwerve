@@ -115,13 +115,13 @@ class RobotContainer:
 
         def onIntakeSensingGamepiece(sensing):
             if sensing:
-                print("intake is sensing a new gamepiece")
-                y = self.robotDrive.getPose().y
-                if y > 4 and self.robot.isTeleop():
-                    print("resetting odometry to match the left feeder location exactly")
+                heading = self.robotDrive.getHeading().degrees()
+                print("fintake is sensing a new gamepiece, heading={heading}")
+                if -10 > heading > -90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the left feeder, heading={heading}")
                     self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
-                if y <= 4 and self.robot.isTeleop():
-                    print("resetting odometry to match the right feeder location exactly")
+                if 10 < heading < 90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the right feeder, heading={heading}")
                     self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
@@ -264,10 +264,10 @@ class RobotContainer:
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
             self.driverController.button(XboxController.Button.kX).whileTrue(
-                self.alignToTagCmd(self.frontRightCamera, None, allTags=True)
+                self.alignToTagCmd(self.frontRightCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.alignToTagCmd(self.frontLeftCamera, None, allTags=True)
+                self.alignToTagCmd(self.frontLeftCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
             )
 
 
@@ -648,15 +648,18 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=1.0, pushForwardSpeed=0.2):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
+        if desiredHeading is None:
+            approachTheTag = commands2.WaitCommand(0)
+        else:
+            approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
-        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=0.5, pushForwardSpeed=0.14).withTimeout(8)
+        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
 
         # connect them together
         alignToScore = approachTheTag.andThen(alignAndPush)

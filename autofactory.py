@@ -47,7 +47,7 @@ class AutoFactory(object):
         approachCmd = approachCmd
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
-        alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch)
+        alignWithTagCmd = AutoFactory.alignToTag(self, headingDegrees=heading1, branch=goal1branch, speed=0.25)
 
         # commands for raising the arm and firing that gamepiece for goal 1
         raiseArmCmd = AutoFactory.moveArm(self, height=goal1height, final=False)
@@ -199,24 +199,6 @@ class AutoFactory(object):
             ],
             endpoint=feeder.location,
         )
-
-        # use vision to back the robot into the feeder?
-        if rearview:
-            retreat = AutoFactory.backIntoFeeder(
-                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
-            )
-
-        # use vision to back the robot into the feeder?
-        if rearview:
-            retreat = AutoFactory.backIntoFeeder(
-                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
-            )
-
-        # use vision to back the robot into the feeder?
-        if rearview:
-            retreat = AutoFactory.backIntoFeeder(
-                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
-            )
 
         # use vision to back the robot into the feeder?
         if rearview:
@@ -388,7 +370,7 @@ class AutoFactory(object):
         # use vision to back the robot into the feeder?
         if rearview:
             retreat = AutoFactory.backIntoFeeder(
-                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags
+                self, self.rearCamera, feeder.location[2], traj=retreat, tags=feeder.tags, speed=0.3, pushFwdSeconds=2.5
             )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
@@ -431,7 +413,7 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
-        camera = self.frontLeftCamera if branch == "right" else self.frontLeftCamera
+        camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
 
         if TimedCommandRobot.isSimulation():
             return AutoFactory.alignToTagSim(self, headingDegrees, branch, speed, pushFwdSpeed, pushFwdSeconds)
@@ -450,16 +432,16 @@ class AutoFactory(object):
         )
         findTheTag = wiggle.until(camera.hasDetection)
 
-        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=speed)  # stop when tag size=4 (4% of the frame pixels)
+        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=8), speed=speed)  # stop when tag size=4 (4% of the frame pixels)
         alignAndPush = AlignWithTag(camera, self.robotDrive, headingDegrees, speed=speed, pushForwardSeconds=pushFwdSeconds, pushForwardSpeed=pushFwdSpeed)
 
         # connect them together
         alignToScore = (
             runCmd("align: setpipe...", lookForWhichTags)
+        #).andThen(
+        #    runCmd("align: find...", findTheTag)
         ).andThen(
-            runCmd("align: find...", findTheTag)
-        ).andThen(
-            runCmd("align: approach...", approachTheTag)
+            runCmd(f"align: approach @ {speed}...", approachTheTag)
         ).andThen(
             runCmd("align: algn+push...", alignAndPush)
         )
