@@ -5,7 +5,8 @@ from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitch
 from wpilib import SmartDashboard, Timer
 
 EMA_RATE = 0.05
-
+LED_STRIP_CHANNEL = 1       # PWM channel for LED strip
+LED_COLOR_WHEN_FULL = 0.87  # color of LED when sensing gamepiece
 
 class Intake(Subsystem):
     def __init__(self,
@@ -78,6 +79,10 @@ class Intake(Subsystem):
             assert rangeFinder is not None, f"if recoilSpeed>0, rangeFinder must be not None"
 
         self.onSensingGamepiece = None
+
+        # 4. Set up the LED strip
+        from subsystems.ledstrip import LedStrip
+        self.ledStrip1 = LedStrip(pwmChannel=LED_STRIP_CHANNEL)
 
 
     def setOnSensingGamepiece(self, callback: typing.Callable[[bool], None]):
@@ -163,12 +168,19 @@ class Intake(Subsystem):
         rangefinderThinkingItsInside = self.isRangefinderThinkingGamepieceInside()
         self.sensingGamepiece = limitSwitchThinkingItsInside or rangefinderThinkingItsInside
 
+        # 5. Light the LED strip when sensing gamepiece
+        if self.isGamepieceInside():
+            self.ledStrip.selectColor(LED_COLOR_WHEN_FULL)
+            # (other colors are on manual page 14-17 : https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
+        else:
+            self.ledStrip.selectColor(0)  # no color
+
         SmartDashboard.putBoolean("intakeRecoiling", recoiling)
         SmartDashboard.putBoolean("intakeFull", self.sensingGamepiece)
         SmartDashboard.putBoolean("intakeFull_LS", limitSwitchThinkingItsInside)
         SmartDashboard.putBoolean("intakeFull_RF", rangefinderThinkingItsInside)
 
-        # 4. if we are sensing the gamepiece, maybe stop that motor (otherwise, spin it)
+        # 5. if we are sensing the gamepiece, maybe stop that motor (otherwise, spin it)
         speedL, speedF = self.desiredSpeedL, self.desiredSpeedF
         if recoiling:
             speedL, speedF = -self.recoilSpeed, -self.recoilSpeed
