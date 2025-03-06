@@ -12,7 +12,6 @@ from commands2 import TimedCommandRobot, WaitCommand, InstantCommand, Command
 
 import constants
 import autowaypoints
-from autowaypoints import SideDLeft
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
 from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
