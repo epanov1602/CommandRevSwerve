@@ -110,7 +110,7 @@ class Intake(Subsystem):
 </details>
 
 <details>
-    <summary>(option B: click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed (to spin the object being ejected)</summary>
+    <summary>(option B: click to expand code for intake that can eject/feed at motor1 speed different from motor2 speed, to spin the object being ejected)</summary>
 
 ```python
 
