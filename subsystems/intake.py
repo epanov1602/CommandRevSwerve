@@ -6,7 +6,8 @@ from wpilib import SmartDashboard, Timer
 
 EMA_RATE = 0.05
 LED_STRIP_CHANNEL = 1       # PWM channel for LED strip
-LED_COLOR_WHEN_FULL = 0.87  # color of LED when sensing gamepiece
+LED_COLOR_WHEN_FULL = 0.73  # 0.87 was blue  # color of LED when sensing gamepiece
+LED_COLOR_WHEN_EMPTY = 0.59  # see the last page of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
 
 class Intake(Subsystem):
     def __init__(self,
@@ -173,7 +174,7 @@ class Intake(Subsystem):
             self.ledStrip.selectColor(LED_COLOR_WHEN_FULL)
             # (other colors are on manual page 14-17 : https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
         else:
-            self.ledStrip.selectColor(0)  # no color
+            self.ledStrip.selectColor(LED_COLOR_WHEN_EMPTY)  # no color
 
         SmartDashboard.putBoolean("intakeRecoiling", recoiling)
         SmartDashboard.putBoolean("intakeFull", self.sensingGamepiece)
