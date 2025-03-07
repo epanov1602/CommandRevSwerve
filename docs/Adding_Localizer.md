@@ -7,7 +7,7 @@ pyntcore
 photonlibpy
 robotpy-apriltag
 ```
-, so these two libraries will need to be installed.
+, so these three libraries will need to be installed.
 
 In `pyproject.toml` we need to change `requires` line to:
 ```python
