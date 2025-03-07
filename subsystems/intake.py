@@ -82,7 +82,7 @@ class Intake(Subsystem):
 
         # 4. Set up the LED strip
         from subsystems.ledstrip import LedStrip
-        self.ledStrip1 = LedStrip(pwmChannel=LED_STRIP_CHANNEL)
+        self.ledStrip = LedStrip(pwmChannel=LED_STRIP_CHANNEL)
 
 
     def setOnSensingGamepiece(self, callback: typing.Callable[[bool], None]):
