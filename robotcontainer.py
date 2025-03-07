@@ -232,6 +232,11 @@ class RobotContainer:
 
         ejectButton.whileTrue(ejectForwardCmd)
 
+        # driver can eject algae by pressing right trigger
+        if self.scoringController != self.driverController:
+            ejectButtonDriver = self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
+            ejectButtonDriver.whileTrue(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
+
         # pull the left trigger = spin the intake in reverse direction
         ejectBackwardsButton = self.scoringController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.5)
         ejectBackwards = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
@@ -261,12 +266,12 @@ class RobotContainer:
         self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
         #  - algae 1 (driver controller "A" button)
         levelA1PosButton = self.driverController.button(XboxController.Button.kA)
-        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeFeedGamepieceForward(self.intake, 0.1)))
+        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
+        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
         #  - algae 2 (driver controller "Y" button)
         levelA2PosButton = self.driverController.button(XboxController.Button.kY)
-        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeFeedGamepieceForward(self.intake, 0.1)))
+        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
+        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)

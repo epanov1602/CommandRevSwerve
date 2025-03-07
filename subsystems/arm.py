@@ -32,8 +32,8 @@ class ArmConstants:
     initialStaticGainTimesP = 0  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
     initialP = 0.0128 * 1.0  # 0.0128 was very strong, 0.05 of that is safe starting value
-    initialMaxOutput = 1
-    initialMinOutput = -1
+    initialMaxOutput = 0.3
+    initialMinOutput = -0.3
 
     additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
 
@@ -41,11 +41,11 @@ class ArmConstants:
     kArmSafeTravelAngle = 73.8  # spare has 71.4
     kArmLevel4ReleaseAngle = 137.4  # spare has 135
     kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
-    kArmAlgaeIntakeAngle = 230  # spare does not support this
+    kArmAlgaeIntakeAngle = 230  # spare arm does not support this
     # ^^ warning: you are not done if you are changing these constants, look at the function below too
 
-    kArmAlgaeElevatorPosition1 = 9.5
-    kArmAlgaeElevatorPosition2 = 23.5
+    kArmAlgaeElevatorPosition1 = 14.0
+    kArmAlgaeElevatorPosition2 = 18.5
 
 
 def safeArmAngleRange(elevatorPosition: float):
