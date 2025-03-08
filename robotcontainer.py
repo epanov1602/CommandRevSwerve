@@ -15,7 +15,6 @@ import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
-from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
@@ -46,146 +45,25 @@ class RobotContainer:
         wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.robot = robot
 
-        # joysticks and trajectory board
+        # The driver's controller
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
         self.trajectorySide = "left"  # some kind of initial value
         self.trajectoryLetter = "A"  # we need some kind of initial value
 
-        fieldLayoutFile = "2025-reefscape.json"
+        self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
         # The robot's subsystems
-        self.addArmSubsystems()
-        self.addRobotDrivetrain(robot)
-        self.addCameras(fieldLayoutFile)
-        self.addIntakeBasedLocalizer()
-        self.addCameraBasedLocalizer(fieldLayoutFile)
+        from subsystems.limelight_camera import LimelightCamera
+        from subsystems.photon_tag_camera import PhotonTagCamera
+        self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
+        self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
+        self.rearCamera = PhotonTagCamera("Arducam_Rear")
 
-        # Configure the button bindings and autos
-        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
-        self.configureButtonBindings()
-        self.configureAutos()
-
-        from commands.holonomicdrive import HolonomicDrive
-
-        # Configure drivetrain commands
-        self.robotDrive.setDefaultCommand(
-            # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
-            HolonomicDrive(
-                self.robotDrive,
-                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
-                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
-                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
-                deadband=OIConstants.kDriveDeadband,
-                fieldRelative=True,
-                rateLimit=True,
-                square=True,
-            )
-        )
-
-
-    def addCameras(self, fieldLayoutFile):
-        if not commands2.TimedCommandRobot.isSimulation():
-            # real robot, not simulated
-            from subsystems.limelight_camera import LimelightCamera
-            from subsystems.photon_tag_camera import PhotonTagCamera
-            self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
-            self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
-            self.rearCamera = PhotonTagCamera("Arducam_Rear")
-
-        else:
-            # simulated robot, using simulated cameras
-            print(f"Loading AprilTag field layout from {fieldLayoutFile} ...")
-            fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
-            from subsystems.photon_tag_camera import PhotonTagCameraSim
-            self.frontRightCamera = PhotonTagCameraSim(
-                "Sim_FrontRight", fieldLayout, constants.RobotCameraLocations.kFrontRight, self.robotDrive
-            )  # name of your camera goes in parentheses
-            self.frontLeftCamera = PhotonTagCameraSim(
-                "Sim_FrontLeft", fieldLayout, constants.RobotCameraLocations.kFrontLeft, self.robotDrive
-            )
-            self.rearCamera = PhotonTagCameraSim(
-                "Sim_Rear", fieldLayout, constants.RobotCameraLocations.kRear, self.robotDrive
-            )
-
-
-    def addRobotDrivetrain(self, robot):
-        def maxSpeedScaledownFactor():
-            if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
-                return 0.25  # if elevator does not know its zero, max speed = 25%
-            elevatorPosition = self.elevator.getPosition()
-            if elevatorPosition > 7.0:
-                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
-            # otherwise, full 100%
-            return 1.0
-
-        self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
-        if commands2.TimedCommandRobot.isSimulation():
-            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
-
-
-    def addIntakeBasedLocalizer(self):
-        def onIntakeSensingGamepiece(sensing):
-            if sensing:
-                pose: Pose2d = self.robotDrive.getPose()
-                heading = pose.rotation().degrees()
-                print(f"intake is sensing a new gamepiece, heading={heading}")
-
-                if -10 > heading > -90 and self.robot.isTeleop():
-                    distance = constants.LeftFeeder.pose.translation().distance(pose.translation())
-                    if distance < 2.0:
-                        print(f"resetting odometry to match the left feeder: heading={heading}, distance={distance}")
-                        self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
-                    else:
-                        print(f"not resetting odometry to match the left feeder: distance={distance} meters (high!)")
-
-                if 10 < heading < 90 and self.robot.isTeleop():
-                    distance = constants.RightFeeder.pose.translation().distance(pose.translation())
-                    if distance < 2.0:
-                        print(f"resetting odometry to match the right feeder: heading={heading}, distance={distance}")
-                        self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
-                    else:
-                        print(f"not resetting odometry to match right left feeder: distance={distance} meters (high!)")
-
-        self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
-
-
-    def addCameraBasedLocalizer(self, fieldLayoutFile):
-        from subsystems.localizer import Localizer
-        from constants import RobotCameraLocations
-
-        # tell the localizer to only allow flipped field, if it's known that the alliance color is red
-        def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
-            return allianceColor == wpilib.DriverStation.Alliance.kRed
-
-        self.localizer = Localizer(
-            drivetrain=self.robotDrive,
-            fieldLayoutFile=fieldLayoutFile,
-            flippedFromAllianceColor=fieldShouldBeFlipped
-        )
-        self.localizer.addPhotonCamera(
-            "Arducam_Front",
-            directionDegrees=RobotCameraLocations.kFrontLeft.rotation().degrees(),
-            positionFromRobotCenter=RobotCameraLocations.kFrontLeft.translation(),
-        )
-        self.localizer.addPhotonCamera(
-            "ELP_RightSide",
-            directionDegrees=RobotCameraLocations.kRight.rotation().degrees(),
-            positionFromRobotCenter=RobotCameraLocations.kRight.translation(),
-        )
-        self.localizer.addPhotonCamera(
-        "Arducam_Rear",
-              directionDegrees=RobotCameraLocations.kRear.rotation().degrees(),
-              positionFromRobotCenter=RobotCameraLocations.kRear.translation(),
-        )
-
-
-    def addArmSubsystems(self):
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
-        # The robots Intake (uses a rangefinder to detect gamepieces)
         self.rangefinder = TimeOfFlight(DriveConstants.kIntakeRangefinderCanId)
         self.rangefinder.setRangingMode(TimeOfFlight.RangingMode.kShort, 24)
         self.rangefinder.setRangeOfInterest(0, 0, 16, 16)
@@ -197,9 +75,6 @@ class RobotContainer:
             rangeFinder=self.rangefinder,
             rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count
         )
-
-        # The robots Arm
-        self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
         # The robots Elevator
         from rev import LimitSwitchConfig
@@ -222,6 +97,70 @@ class RobotContainer:
             commands2.RunCommand(lambda: self.elevator.drive(
                 self.scoringController.getRawAxis(XboxController.Axis.kRightY)
             ), self.elevator)
+        )
+
+
+        def maxSpeedScaledownFactor():
+            if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
+                return 0.25  # if elevator does not know its zero, max speed = 25%
+            elevatorPosition = self.elevator.getPosition()
+            if elevatorPosition > 7.0:
+                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
+            # otherwise, full 100%
+            return 1.0
+
+        self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
+        if commands2.TimedCommandRobot.isSimulation():
+            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
+
+        def onIntakeSensingGamepiece(sensing):
+            if sensing:
+                heading = self.robotDrive.getHeading().degrees()
+                print(f"intake is sensing a new gamepiece, heading={heading}")
+                if -10 > heading > -90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the left feeder, heading={heading}")
+                    self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
+                if 10 < heading < 90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the right feeder, heading={heading}")
+                    self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
+
+        self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
+
+        from subsystems.localizer import Localizer
+
+        # tell the localizer to only allow flipped field, if it's known that the alliance color is red
+        def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
+            return allianceColor == wpilib.DriverStation.Alliance.kRed
+
+        self.localizer = Localizer(
+            drivetrain=self.robotDrive,
+            fieldLayoutFile="2025-reefscape.json",
+            flippedFromAllianceColor=fieldShouldBeFlipped
+        )
+        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
+        self.localizer.addPhotonCamera("ELP_RightSide", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
+        self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
+
+        # Configure the button bindings and autos
+        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
+        self.configureButtonBindings()
+        self.configureAutos()
+
+        from commands.holonomicdrive import HolonomicDrive
+
+        # Configure drivetrain commands
+        self.robotDrive.setDefaultCommand(
+            # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
+            HolonomicDrive(
+                self.robotDrive,
+                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                deadband=OIConstants.kDriveDeadband,
+                fieldRelative=True,
+                rateLimit=True,
+                square=True,
+            )
         )
 
 
@@ -286,9 +225,11 @@ class RobotContainer:
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
+
         ejectForwardIfElevatorLow = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
         ejectForwardIfElevatorHigh = MoveArm(self.arm, ArmConstants.kArmLevel4ReleaseAngle).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
-        ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20)
+        ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20);
+
         ejectButton.whileTrue(ejectForwardCmd)
 
         # driver can eject algae by pressing right trigger
@@ -301,6 +242,37 @@ class RobotContainer:
         ejectBackwards = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
         ejectBackwardsButton.whileTrue(ejectBackwards)
 
+        # elevator buttons for different levels
+        #  - 0
+        level0PosButton = self.scoringController.button(XboxController.Button.kA)
+        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        level0PosButton.onTrue(level0PositionCmd)
+        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
+        # (in game manual there are levels 2, 3 and 4)
+        #  - 2
+        level2PosButton = self.scoringController.button(XboxController.Button.kB)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        level2PosButton.onTrue(level2PositionCmd)
+        self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
+        #  - 3
+        level3PosButton = self.scoringController.button(XboxController.Button.kY)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        level3PosButton.onTrue(level3PositionCmd)
+        self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
+        #  - 4
+        level4PosButton = self.scoringController.button(XboxController.Button.kX)
+        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        level4PosButton.onTrue(level4PositionCmd)
+        self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
+        #  - algae 1 (driver controller "A" button)
+        levelA1PosButton = self.driverController.button(XboxController.Button.kA)
+        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
+        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
+        #  - algae 2 (driver controller "Y" button)
+        levelA2PosButton = self.driverController.button(XboxController.Button.kY)
+        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
+        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
+
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
@@ -310,49 +282,6 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.alignToTagCmd(self.frontLeftCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
             )
-
-    def configureElevatorButtons(self):
-        from commands.intakecommands import IntakeEjectGamepieceBackward
-
-        # elevator buttons for different levels
-        #  - 0
-        level0PosButton = self.scoringController.button(XboxController.Button.kA)
-        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle)
-        level0PosButton.onTrue(level0PositionCmd)
-        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
-
-        # (in game manual there are levels 2, 3 and 4)
-        #  - 2
-        level2PosButton = self.scoringController.button(XboxController.Button.kB)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
-        level2PosButton.onTrue(level2PositionCmd)
-        self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
-        #  - 3
-        level3PosButton = self.scoringController.button(XboxController.Button.kY)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=14.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
-        level3PosButton.onTrue(level3PositionCmd)
-        self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
-        #  - 4
-        level4PosButton = self.scoringController.button(XboxController.Button.kX)
-        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=30.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
-        level4PosButton.onTrue(level4PositionCmd)
-        self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
-        #  - algae 1 (driver controller "A" button)
-        levelA1PosButton = self.driverController.button(XboxController.Button.kA)
-        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
-                                                position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm,
-                                                angle=ArmConstants.kArmAlgaeIntakeAngle)
-        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
-        #  - algae 2 (driver controller "Y" button)
-        levelA2PosButton = self.driverController.button(XboxController.Button.kY)
-        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
-                                                position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm,
-                                                angle=ArmConstants.kArmAlgaeIntakeAngle, intake=self.intake)
-        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
 
     def configureFpvDriving(self, joystick, speed):
@@ -732,17 +661,18 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, pushForwardSpeed=0.2):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=1.0, pushForwardSpeed=0.2):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
 
+        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         if desiredHeading is None:
             approachTheTag = commands2.WaitCommand(0)
         else:
             approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
-        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=1.0, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
+        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
 
         # connect them together
         alignToScore = approachTheTag.andThen(alignAndPush)
