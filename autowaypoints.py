@@ -20,8 +20,8 @@ class SideE:
 
 class SideDLeft:
     kEndpoint = {
-        "left": (6.59, 4.25, 180),
-        "right": (6.59, 3.80, 180),
+        "left": (6.59, 3.80, 180),
+        "right": (6.59, 4.25, 180),
     }
 
     kApproach = []
