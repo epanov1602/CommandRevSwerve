@@ -243,9 +243,9 @@ class RobotContainer:
         ejectBackwardsButton.whileTrue(ejectBackwards)
 
         # elevator buttons for different levels
-        #  - 0
+        #  - 0 (use the intake angle anyway, we can always fire the coral out of it)
         level0PosButton = self.scoringController.button(XboxController.Button.kA)
-        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         level0PosButton.onTrue(level0PositionCmd)
         self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
         # (in game manual there are levels 2, 3 and 4)
