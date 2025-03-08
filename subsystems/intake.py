@@ -6,8 +6,11 @@ from wpilib import SmartDashboard, Timer
 
 EMA_RATE = 0.05
 LED_STRIP_CHANNEL = 1       # PWM channel for LED strip
-LED_COLOR_WHEN_FULL = 0.73  # 0.87 was blue  # color of LED when sensing gamepiece
-LED_COLOR_WHEN_EMPTY = 0.59  # see the last page of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
+
+# see the last page of https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
+LED_COLOR_WHEN_FULL = 0.73   # lime  # color of LED when sensing gamepiece
+LED_COLOR_WHEN_EMPTY = 0.59  # dark red
+LED_COLOR_WHEN_READY = 0.67  # gold  # color of LED when ready to receive gamepiece
 
 class Intake(Subsystem):
     def __init__(self,
@@ -169,12 +172,15 @@ class Intake(Subsystem):
         rangefinderThinkingItsInside = self.isRangefinderThinkingGamepieceInside()
         self.sensingGamepiece = limitSwitchThinkingItsInside or rangefinderThinkingItsInside
 
-        # 5. Light the LED strip when sensing gamepiece
+        # 4. Light the LED strip when sensing gamepiece
+        # (colors are on manual page 14-17 : https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
         if self.isGamepieceInside():
             self.ledStrip.selectColor(LED_COLOR_WHEN_FULL)
-            # (other colors are on manual page 14-17 : https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf )
-        else:
-            self.ledStrip.selectColor(LED_COLOR_WHEN_EMPTY)  # no color
+        else:  # no gamepiece inside
+            if self.desiredSpeedL > 0.0 or self.desiredSpeedF > 0.0:  # motors are running, ready to receive
+                self.ledStrip.selectColor(LED_COLOR_WHEN_READY)
+            else:
+                self.ledStrip.selectColor(LED_COLOR_WHEN_EMPTY)
 
         SmartDashboard.putBoolean("intakeRecoiling", recoiling)
         SmartDashboard.putBoolean("intakeFull", self.sensingGamepiece)
