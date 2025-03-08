@@ -89,14 +89,9 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  intake=None,
                  safeTravelAngle=ArmConstants.kArmSafeTravelAngle,
                  additionalTimeoutSeconds=0.0):
+        self.arm = arm
         if angle is None:
             angle = safeTravelAngle
-
-        # do we want "belt and suspenders"? if going to intake position, go to intake angle
-        #if abs(position) < 0.25 and angle == ArmConstants.kArmSafeTravelAngle:
-        #    angle = ArmConstants.kArmIntakeAngle
-
-        self.arm = arm
         self.angle = angle
         self.elevator = elevator
         self.position = position
