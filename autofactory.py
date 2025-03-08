@@ -355,7 +355,8 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[
                 start,
-                (5.991, 6.146, -60.0),
+                (5.991, 6.146, -180.0),
+                (4.991, 6.346, -60.0),
             ],
             endpoint=endpoint,
         )
