@@ -45,25 +45,105 @@ class RobotContainer:
         wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.robot = robot
 
-        # The driver's controller
+        # joysticks and trajectory board
         self.driverController = CommandGenericHID(0)
         self.scoringController = CommandGenericHID(1)
         self.trajectoryBoard = CommandGenericHID(2)
         self.trajectorySide = "left"  # some kind of initial value
         self.trajectoryLetter = "A"  # we need some kind of initial value
 
-        self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
+        fieldLayoutFile = "2025-reefscape.json"
 
         # The robot's subsystems
+        self.addCameras(fieldLayoutFile)
+        self.addArmSubsystems()
+        self.addRobotDrivetrain(robot)
+        self.addIntakeBasedLocalizer()
+        self.addCameraBasedLocalizer(fieldLayoutFile)
+
+        # Configure the button bindings and autos
+        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
+        self.configureButtonBindings()
+        self.configureAutos()
+
+        from commands.holonomicdrive import HolonomicDrive
+
+        # Configure drivetrain commands
+        self.robotDrive.setDefaultCommand(
+            # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
+            HolonomicDrive(
+                self.robotDrive,
+                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
+                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                deadband=OIConstants.kDriveDeadband,
+                fieldRelative=True,
+                rateLimit=True,
+                square=True,
+            )
+        )
+
+
+    def addCameras(self, fieldLayoutFile):
         from subsystems.limelight_camera import LimelightCamera
         from subsystems.photon_tag_camera import PhotonTagCamera
         self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
         self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
         self.rearCamera = PhotonTagCamera("Arducam_Rear")
 
+
+    def addRobotDrivetrain(self, robot):
+        def maxSpeedScaledownFactor():
+            if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
+                return 0.25  # if elevator does not know its zero, max speed = 25%
+            elevatorPosition = self.elevator.getPosition()
+            if elevatorPosition > 7.0:
+                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
+            # otherwise, full 100%
+            return 1.0
+
+        self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
+        if commands2.TimedCommandRobot.isSimulation():
+            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
+
+    def addIntakeBasedLocalizer(self):
+        def onIntakeSensingGamepiece(sensing):
+            if sensing:
+                heading = self.robotDrive.getHeading().degrees()
+                print(f"intake is sensing a new gamepiece, heading={heading}")
+                if -10 > heading > -90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the left feeder, heading={heading}")
+                    self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
+                if 10 < heading < 90 and self.robot.isTeleop():
+                    print(f"resetting odometry to match the right feeder, heading={heading}")
+                    self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
+
+        self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
+
+    def addCameraBasedLocalizer(self, fieldLayoutFile):
+        from subsystems.localizer import Localizer
+        # tell the localizer to only allow flipped field, if it's known that the alliance color is red
+        def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
+            return allianceColor == wpilib.DriverStation.Alliance.kRed
+
+        self.localizer = Localizer(
+            drivetrain=self.robotDrive,
+            fieldLayoutFile=fieldLayoutFile,
+            flippedFromAllianceColor=fieldShouldBeFlipped
+        )
+        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0,
+                                       positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
+        self.localizer.addPhotonCamera("ELP_RightSide", directionDegrees=-90,
+                                       positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
+        self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180,
+                                       positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
+
+
+    def addArmSubsystems(self):
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
+        # The robots Intake (uses a rangefinder to detect gamepieces)
         self.rangefinder = TimeOfFlight(DriveConstants.kIntakeRangefinderCanId)
         self.rangefinder.setRangingMode(TimeOfFlight.RangingMode.kShort, 24)
         self.rangefinder.setRangeOfInterest(0, 0, 16, 16)
@@ -75,6 +155,9 @@ class RobotContainer:
             rangeFinder=self.rangefinder,
             rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count
         )
+
+        # The robots Arm
+        self.arm = Arm(leadMotorCANId=DriveConstants.kArmLeadMotorCanId, followMotorCANId=None)
 
         # The robots Elevator
         from rev import LimitSwitchConfig
@@ -97,70 +180,6 @@ class RobotContainer:
             commands2.RunCommand(lambda: self.elevator.drive(
                 self.scoringController.getRawAxis(XboxController.Axis.kRightY)
             ), self.elevator)
-        )
-
-
-        def maxSpeedScaledownFactor():
-            if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
-                return 0.25  # if elevator does not know its zero, max speed = 25%
-            elevatorPosition = self.elevator.getPosition()
-            if elevatorPosition > 7.0:
-                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
-            # otherwise, full 100%
-            return 1.0
-
-        self.robotDrive = DriveSubsystem(maxSpeedScaleFactor=maxSpeedScaledownFactor)
-        if commands2.TimedCommandRobot.isSimulation():
-            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
-
-        def onIntakeSensingGamepiece(sensing):
-            if sensing:
-                heading = self.robotDrive.getHeading().degrees()
-                print(f"intake is sensing a new gamepiece, heading={heading}")
-                if -10 > heading > -90 and self.robot.isTeleop():
-                    print(f"resetting odometry to match the left feeder, heading={heading}")
-                    self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
-                if 10 < heading < 90 and self.robot.isTeleop():
-                    print(f"resetting odometry to match the right feeder, heading={heading}")
-                    self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
-
-        self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
-
-        from subsystems.localizer import Localizer
-
-        # tell the localizer to only allow flipped field, if it's known that the alliance color is red
-        def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
-            return allianceColor == wpilib.DriverStation.Alliance.kRed
-
-        self.localizer = Localizer(
-            drivetrain=self.robotDrive,
-            fieldLayoutFile="2025-reefscape.json",
-            flippedFromAllianceColor=fieldShouldBeFlipped
-        )
-        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0, positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
-        self.localizer.addPhotonCamera("ELP_RightSide", directionDegrees=-90, positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
-        self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180, positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
-
-        # Configure the button bindings and autos
-        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
-        self.configureButtonBindings()
-        self.configureAutos()
-
-        from commands.holonomicdrive import HolonomicDrive
-
-        # Configure drivetrain commands
-        self.robotDrive.setDefaultCommand(
-            # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
-            HolonomicDrive(
-                self.robotDrive,
-                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
-                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
-                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
-                deadband=OIConstants.kDriveDeadband,
-                fieldRelative=True,
-                rateLimit=True,
-                square=True,
-            )
         )
 
 
