@@ -15,6 +15,7 @@ import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
+from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
@@ -55,9 +56,9 @@ class RobotContainer:
         fieldLayoutFile = "2025-reefscape.json"
 
         # The robot's subsystems
-        self.addCameras(fieldLayoutFile)
         self.addArmSubsystems()
         self.addRobotDrivetrain(robot)
+        self.addCameras(fieldLayoutFile)
         self.addIntakeBasedLocalizer()
         self.addCameraBasedLocalizer(fieldLayoutFile)
 
@@ -85,11 +86,28 @@ class RobotContainer:
 
 
     def addCameras(self, fieldLayoutFile):
-        from subsystems.limelight_camera import LimelightCamera
-        from subsystems.photon_tag_camera import PhotonTagCamera
-        self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
-        self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
-        self.rearCamera = PhotonTagCamera("Arducam_Rear")
+        if not commands2.TimedCommandRobot.isSimulation():
+            # real robot, not simulated
+            from subsystems.limelight_camera import LimelightCamera
+            from subsystems.photon_tag_camera import PhotonTagCamera
+            self.frontRightCamera = LimelightCamera("limelight-aiming")  # name of your camera goes in parentheses
+            self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
+            self.rearCamera = PhotonTagCamera("Arducam_Rear")
+
+        else:
+            # simulated robot, using simulated cameras
+            print(f"Loading AprilTag field layout from {fieldLayoutFile} ...")
+            fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
+            from subsystems.photon_tag_camera import PhotonTagCameraSim
+            self.frontRightCamera = PhotonTagCameraSim(
+                "Sim_FrontRight", fieldLayout, constants.RobotCameraLocations.kFrontRight, self.robotDrive
+            )  # name of your camera goes in parentheses
+            self.frontLeftCamera = PhotonTagCameraSim(
+                "Sim_FrontLeft", fieldLayout, constants.RobotCameraLocations.kFrontLeft, self.robotDrive
+            )
+            self.rearCamera = PhotonTagCameraSim(
+                "Sim_Rear", fieldLayout, constants.RobotCameraLocations.kRear, self.robotDrive
+            )
 
 
     def addRobotDrivetrain(self, robot):
@@ -106,6 +124,7 @@ class RobotContainer:
         if commands2.TimedCommandRobot.isSimulation():
             self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
 
+
     def addIntakeBasedLocalizer(self):
         def onIntakeSensingGamepiece(sensing):
             if sensing:
@@ -120,8 +139,11 @@ class RobotContainer:
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
 
+
     def addCameraBasedLocalizer(self, fieldLayoutFile):
         from subsystems.localizer import Localizer
+        from constants import RobotCameraLocations
+
         # tell the localizer to only allow flipped field, if it's known that the alliance color is red
         def fieldShouldBeFlipped(allianceColor: wpilib.DriverStation.Alliance):
             return allianceColor == wpilib.DriverStation.Alliance.kRed
@@ -131,12 +153,21 @@ class RobotContainer:
             fieldLayoutFile=fieldLayoutFile,
             flippedFromAllianceColor=fieldShouldBeFlipped
         )
-        self.localizer.addPhotonCamera("Arducam_Front", directionDegrees=0,
-                                       positionFromRobotCenter=Translation2d(x=0.30, y=0.18))
-        self.localizer.addPhotonCamera("ELP_RightSide", directionDegrees=-90,
-                                       positionFromRobotCenter=Translation2d(x=0.0, y=-0.30))
-        self.localizer.addPhotonCamera("Arducam_Rear", directionDegrees=180,
-                                       positionFromRobotCenter=Translation2d(x=-0.05, y=0.25))
+        self.localizer.addPhotonCamera(
+            "Arducam_Front",
+            directionDegrees=RobotCameraLocations.kFrontLeft.rotation().degrees(),
+            positionFromRobotCenter=RobotCameraLocations.kFrontLeft.translation(),
+        )
+        self.localizer.addPhotonCamera(
+            "ELP_RightSide",
+            directionDegrees=RobotCameraLocations.kRight.rotation().degrees(),
+            positionFromRobotCenter=RobotCameraLocations.kRight.translation(),
+        )
+        self.localizer.addPhotonCamera(
+        "Arducam_Rear",
+              directionDegrees=RobotCameraLocations.kRear.rotation().degrees(),
+              positionFromRobotCenter=RobotCameraLocations.kRear.translation(),
+        )
 
 
     def addArmSubsystems(self):
