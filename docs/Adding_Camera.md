@@ -190,7 +190,7 @@ Example code for PhotonVision camera that **will only give you tag IDs that you 
 # Other pip packages to install
 requires = [
    "pyntcore",
-   "photonlibpy==2024.3.1",  # or you must use "photonlibpy==2025.0.0b" if you installed PhotonVision 2025.0.0b on your actual camera, instead of 2024.3.1
+   "photonlibpy",
 ]
 ```
 
@@ -199,7 +199,7 @@ requires = [
 ```bash
 # Other pip packages to install
 pyntcore
-photonlibpy==2024.3.1  # or you must use "photonlibpy==2025.0.0b" if you installed PhotonVision 2025.0.0b on your actual camera, instead of 2024.3.1
+photonlibpy
 ```
 
 
