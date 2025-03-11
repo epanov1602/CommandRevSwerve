@@ -275,11 +275,9 @@ class RobotContainer:
 
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
-
         ejectForwardIfElevatorLow = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
         ejectForwardIfElevatorHigh = MoveArm(self.arm, ArmConstants.kArmLevel4ReleaseAngle).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
-        ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20);
-
+        ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20)
         ejectButton.whileTrue(ejectForwardCmd)
 
         # driver can eject algae by pressing right trigger
@@ -292,37 +290,6 @@ class RobotContainer:
         ejectBackwards = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
         ejectBackwardsButton.whileTrue(ejectBackwards)
 
-        # elevator buttons for different levels
-        #  - 0
-        level0PosButton = self.scoringController.button(XboxController.Button.kA)
-        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        level0PosButton.onTrue(level0PositionCmd)
-        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
-        # (in game manual there are levels 2, 3 and 4)
-        #  - 2
-        level2PosButton = self.scoringController.button(XboxController.Button.kB)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 5.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        level2PosButton.onTrue(level2PositionCmd)
-        self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
-        #  - 3
-        level3PosButton = self.scoringController.button(XboxController.Button.kY)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 14.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        level3PosButton.onTrue(level3PositionCmd)
-        self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
-        #  - 4
-        level4PosButton = self.scoringController.button(XboxController.Button.kX)
-        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position= 30.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
-        level4PosButton.onTrue(level4PositionCmd)
-        self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
-        #  - algae 1 (driver controller "A" button)
-        levelA1PosButton = self.driverController.button(XboxController.Button.kA)
-        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
-        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
-        #  - algae 2 (driver controller "Y" button)
-        levelA2PosButton = self.driverController.button(XboxController.Button.kY)
-        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm, angle=ArmConstants.kArmAlgaeIntakeAngle)
-        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
-
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
@@ -332,6 +299,49 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.alignToTagCmd(self.frontLeftCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
             )
+
+    def configureElevatorButtons(self):
+        from commands.intakecommands import IntakeEjectGamepieceBackward
+
+        # elevator buttons for different levels
+        #  - 0
+        level0PosButton = self.scoringController.button(XboxController.Button.kA)
+        level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle)
+        level0PosButton.onTrue(level0PositionCmd)
+        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
+
+        # (in game manual there are levels 2, 3 and 4)
+        #  - 2
+        level2PosButton = self.scoringController.button(XboxController.Button.kB)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+        level2PosButton.onTrue(level2PositionCmd)
+        self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
+        #  - 3
+        level3PosButton = self.scoringController.button(XboxController.Button.kY)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=14.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+        level3PosButton.onTrue(level3PositionCmd)
+        self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
+        #  - 4
+        level4PosButton = self.scoringController.button(XboxController.Button.kX)
+        level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=30.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+        level4PosButton.onTrue(level4PositionCmd)
+        self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
+        #  - algae 1 (driver controller "A" button)
+        levelA1PosButton = self.driverController.button(XboxController.Button.kA)
+        levelA1PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
+                                                position=ArmConstants.kArmAlgaeElevatorPosition1, arm=self.arm,
+                                                angle=ArmConstants.kArmAlgaeIntakeAngle)
+        levelA1PosButton.whileTrue(levelA1PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
+        #  - algae 2 (driver controller "Y" button)
+        levelA2PosButton = self.driverController.button(XboxController.Button.kY)
+        levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
+                                                position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm,
+                                                angle=ArmConstants.kArmAlgaeIntakeAngle, intake=self.intake)
+        levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
 
     def configureFpvDriving(self, joystick, speed):

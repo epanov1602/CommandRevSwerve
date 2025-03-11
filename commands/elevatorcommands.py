@@ -86,6 +86,7 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  position: float,
                  arm: Arm,
                  angle: float | None=None,
+                 intake=None,
                  safeTravelAngle=ArmConstants.kArmSafeTravelAngle,
                  additionalTimeoutSeconds=0.0):
         self.arm = arm
@@ -117,6 +118,12 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
         # 2. assert that we have the correct requirements
         assert set(self.requirements) == {elevator, arm}, "supposed to have {elevator, arm} requirements"
 
+        # 3. make sure intake doesn't move when this command runs (when elevator/arm moves)
+        if intake is not None:
+            self.addRequirements(intake)
+        self.tStart = 0
+
+
     def succeeded(self) -> bool:
         return self.arm.reachedThisAngleGoal(self.angle, 2) and \
             self.elevator.reachedThisPositionGoal(self.position, 2)
@@ -129,6 +136,7 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
         if self.finishedImmediately:
             self.log("finished immediately")
             return
+        self.tStart = Timer.getFPGATimestamp()
         super().initialize()
 
     def isFinished(self) -> bool:
@@ -146,6 +154,9 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
             return
         if interrupted:
             self.log("interrupted")
+        else:
+            duration = Timer.getFPGATimestamp() - self.tStart
+            self.log(f"finished in {int(duration * 1000)} ms")
         super().end(interrupted)
 
     def log(self, status):
