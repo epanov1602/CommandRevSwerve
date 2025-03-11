@@ -1587,7 +1587,7 @@ class ApproachTag(commands2.Command):
 
 ```
 
-Previous code for slower command AlignWithTag was in `commands/alignwithtag.py` :
+Previous code for slower command AlignWithTag was `commands/alignwithtag.py` :
 
 ```python
 
