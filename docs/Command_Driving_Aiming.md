@@ -1127,7 +1127,7 @@ This should go as a function in `robotcontainer.py`, and you can either bind it 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         lookForTheseTags = SetCameraPipeline(self.camera, 3)
         approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.3)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = ApproachTag(self.camera, self.robotDrive, None, speed=0.2, pushForwardSeconds=1.0)
+        alignAndPush = ApproachTag(self.camera, self.robotDrive, None, speed=0.5, pushForwardSeconds=1.0)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
 
         # connect them together
         alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
