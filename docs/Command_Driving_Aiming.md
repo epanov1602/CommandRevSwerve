@@ -1181,6 +1181,7 @@ class Tunable:
         self.value = self.chooser.getSelected()
 
     def __call__(self, *args, **kwargs):
+        self.fetch()
         return self.value
 
 
