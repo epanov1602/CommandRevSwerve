@@ -45,6 +45,9 @@ class AlignWithTag(commands2.Command):
         :param cameraMinimumFps: what is the minimal number of **detected** frames per second expected from this camera
         """
         super().__init__()
+        if pushForwardSeconds is None:
+            pushForwardSeconds = 0.5
+
         assert hasattr(camera, "getX"), "camera must have `getX()` to give us the object coordinate (in degrees)"
         assert hasattr(camera, "getA"), "camera must have `getA()` to give us object size (in % of screen)"
         assert hasattr(camera, "getSecondsSinceLastHeartbeat"), "camera must have a `getSecondsSinceLastHeartbeat()`"

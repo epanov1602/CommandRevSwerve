@@ -711,7 +711,7 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=1.0, pushForwardSpeed=0.2):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, pushForwardSpeed=0.2):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
