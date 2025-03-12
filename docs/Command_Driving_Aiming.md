@@ -787,6 +787,7 @@ This code works with Limelight or PhotonVision cameras from [here](Adding_Camera
 The code below should go to `commands/setcamerapipeline.py` .
 
 ```python
+
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -794,13 +795,11 @@ The code below should go to `commands/setcamerapipeline.py` .
 #
 
 import commands2
+import wpimath.geometry
+from wpilib import Field2d
+from wpimath.geometry import Rotation2d, Transform2d, Pose2d
 
-from commands.aimtodirection import AimToDirection, AimToDirectionConstants
-from commands.gotopoint import GoToPointConstants
-
-from subsystems.drivesubsystem import DriveSubsystem
-from wpimath.geometry import Rotation2d
-from wpilib import Timer
+from os.path import isfile, join
 
 
 class SetCameraPipeline(commands2.Command):
@@ -827,10 +826,229 @@ class SetCameraPipeline(commands2.Command):
         # we are finished when the camera has responded that pipeline index is now set
         if self.camera.getPipeline() == self.pipelineIndex:
             return True
+        # we are in sim, and camera doesn't respond
+        if commands2.TimedCommandRobot.isSimulation():
+            return True
         # otherwise, print that we aren't finished
         print("SetCameraPipeline: not yet finished, because camera pipeline = {} and we want {}".format(
             self.camera.getPipeline(), self.pipelineIndex)
         )
+
+
+DEFAULT_PIPELINE_TO_TAGS = {
+    0: (),  # all tags
+    6: (6, 19),
+    7: (7, 18),
+    8: (8, 17),
+    9: (9, 22),
+    4: (10, 21),
+    5: (11, 20),
+}
+
+
+class SetCameraToTagAhead(commands2.Command):
+    MAX_DISTANCE_TO_TAG = 3  # meters (10 feet)
+
+    def __init__(self, fieldLayoutFile, camera, drivetrain, robotLengthMeters, reverse=False, pipeline2TagGroup=None):
+        super().__init__()
+        assert camera is not None
+
+        self.camera = camera
+        self.addRequirements(camera)
+
+        self.drivetrain = drivetrain
+        self.field2d: Field2d = getattr(self.drivetrain, "field", None)
+
+        self.reverse = reverse
+        if not reverse:
+            self.toRobotFront = Transform2d(0.5 * robotLengthMeters, 0.0, Rotation2d.fromDegrees(0))
+        else:
+            self.toRobotFront = Transform2d(-0.5 * robotLengthMeters, 0.0, Rotation2d.fromDegrees(180))
+
+        from robotpy_apriltag import AprilTagFieldLayout
+
+        self.fieldLayout = None
+        for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
+            candidate = join(prefix, fieldLayoutFile)
+            print(f"Localizer: trying field layout from {candidate}")
+            if isfile(candidate):
+                self.fieldLayout = AprilTagFieldLayout(candidate)
+                self.fieldLength = self.fieldLayout.getFieldLength()
+                self.fieldWidth = self.fieldLayout.getFieldWidth()
+                break
+        assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
+        print(f"SetCameraToTagAhead: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
+
+        # which tag is in which pipeline?
+        if pipeline2TagGroup is None:
+            pipeline2TagGroup = DEFAULT_PIPELINE_TO_TAGS
+
+        self.tagToPipeline = {}
+        self.pipelineToTags = pipeline2TagGroup
+        for pipeline, tags in pipeline2TagGroup.items():
+            for tag in tags:
+                pose = self.fieldLayout.getTagPose(tag)
+                if pose is not None:
+                    self.tagToPipeline[tag] = pipeline
+        self.tagPoses = [(tagId, self.fieldLayout.getTagPose(tagId)) for tagId in self.tagToPipeline.keys()]
+        self.tagPoses = [(tagId, pose.toPose2d()) for tagId, pose in self.tagPoses if pose is not None]
+
+        # state
+        self.chosenTagId = None
+        self.chosenTagPose: Pose2d = None
+        self.chosenPipeline = 0
+        self.chosenTagIds = None
+
+
+    def getChosenHeadingDegrees(self):
+        if self.chosenTagPose is None:
+            return None
+        direction = self.chosenTagPose.rotation()
+        if not self.reverse:  # robot direction should be opposite to tag's (we are supposed to face it)
+            direction = direction.rotateBy(Rotation2d.fromDegrees(180))
+        return direction.degrees()
+
+
+    def recomputeChosenHeadingDegrees(self):
+        self.pickChosenTagId()
+        return self.getChosenHeadingDegrees()
+
+
+    def initialize(self):
+        self.pickChosenTagId()
+
+        if hasattr(self.camera, "setOnlyTagIds"):
+            self.camera.setOnlyTagIds(self.chosenTagIds)
+
+        # if camera has "setPipeline", set it
+        if hasattr(self.camera, "setPipeline"):
+            self.camera.setPipeline(self.chosenPipeline)
+
+
+    def isFinished(self) -> bool:
+        # if camera has no "setPipeline", we have nothing to wait for
+        if not hasattr(self.camera, "setPipeline"):
+            return True
+        # we are finished when the camera has responded that pipeline index is now set
+        if self.camera.getPipeline() == self.chosenPipeline:
+            return True
+        # we are in sim, and camera doesn't respond
+        if commands2.TimedCommandRobot.isSimulation():
+            return True
+        # otherwise, print that we aren't finished
+        print("SetCameraPipeline: not yet finished, because camera pipeline is {} and we want {}".format(
+            self.camera.getPipeline(), self.chosenPipeline)
+        )
+
+
+    def execute(self):
+        pass
+
+
+    def end(self, interrupted: bool):
+        pass
+
+
+    def reset(self):
+        self.chosenTagId = None
+        self.chosenTagPose = None
+        self.chosenPipeline = 0
+        self.chosenTagIds = None
+
+
+    def pickChosenTagId(self):
+        self.reset()
+
+        # 0. where is the front of the robot
+        front: Pose2d = self.drivetrain.getPose().transformBy(self.toRobotFront)
+        self.drawArrow("front", front, flip=False)
+
+        # 1. which of the tags is in front of us?
+        self.chosenTagId = (
+            self.findNearestVisibleTagInFront(front, fieldOfViewDegrees=50) or
+            self.findNearestVisibleTagInFront(front, fieldOfViewDegrees=75)  # if all fails
+        )
+
+        # 2. decide on chosen pipeline and tags
+        if self.chosenTagId is not None:
+            self.chosenPipeline = self.tagToPipeline.get(self.chosenTagId)
+            self.chosenTagIds = self.pipelineToTags.get(self.chosenPipeline)
+            chosenTagPose = self.fieldLayout.getTagPose(self.chosenTagId)
+            self.chosenTagPose = chosenTagPose.toPose2d() if chosenTagPose is not None else None
+
+        if self.chosenPipeline is None:
+            self.chosenPipeline = 0  # this is the default pipeline, if nothing is chosen (the camera better have it)
+            print(f"SetCameraToTagAhead: no pipeline chosen => using 0, chosenTagIds={self.chosenTagIds}")
+
+        # 3. display the result
+        if self.field2d is not None:
+            self.drawArrow("tag", self.chosenTagPose, flip=True)
+        print(f"SetCameraToTagAhead: picked tag {self.chosenTagId}, facing {self.getChosenHeadingDegrees()} degrees")
+
+
+    def findNearestVisibleTagInFront(self, front, fieldOfViewDegrees):
+        bestTagId, bestDistance = None, None
+        for tagId, tagPose in self.tagPoses:
+            visible, distance = self.isTagVisibleFromHere(front, tagPose, fieldOfViewDegrees)
+            if visible and (bestDistance is None or distance < bestDistance):
+                bestDistance = distance
+                bestTagId = tagId
+        return bestTagId
+
+
+    def isTagVisibleFromHere(self, front, tagPose, fieldOfViewDegrees):
+        directionToTag = Transform2d(front, tagPose)
+        vectorToTag = directionToTag.translation()
+
+        distance = vectorToTag.norm()
+        if distance > self.MAX_DISTANCE_TO_TAG:
+            return False, None  # too far
+
+        direction = vectorToTag.angle().degrees()
+        if abs(direction) > fieldOfViewDegrees / 2:
+            return False, None  # won't fit into our imaginary 50 degree field of view
+
+        orientation = directionToTag.rotation().rotateBy(Rotation2d.fromDegrees(180) - vectorToTag.angle())
+        if abs(orientation.degrees()) > 45:
+            return False, None  # tag tilted too far to the side, not oriented towards us
+
+        return True, distance
+
+
+    def drawArrow(self, name: str, pose: Pose2d, flip):
+        if self.field2d is None:
+            return
+        if pose is None:
+            poses = []
+        else:
+            poses = [
+                pose,
+                pose.transformBy(Transform2d(0.03, 0, 0)),
+                pose.transformBy(Transform2d(0.06, 0, 0)),
+                pose.transformBy(Transform2d(0.09, 0, 0)),
+                pose.transformBy(Transform2d(0.12, 0, 0)),
+                pose.transformBy(Transform2d(0.15, 0, 0)),
+                pose.transformBy(Transform2d(0.18, 0, 0)),
+                pose.transformBy(Transform2d(0.21, 0, 0)),
+                pose.transformBy(Transform2d(0.24, 0, 0)),
+                pose.transformBy(Transform2d(0.27, 0, 0)),
+                pose.transformBy(Transform2d(0.30, 0, 0)),
+            ]
+            if flip:
+                poses += [
+                    pose,
+                    pose.transformBy(Transform2d(0.1, 0.1, 0)),
+                    pose,
+                    pose.transformBy(Transform2d(0.1, -0.1, 0)),
+                ]
+            else:
+                poses += [
+                    pose.transformBy(Transform2d(0.3, 0, 0)),
+                    pose.transformBy(Transform2d(0.2, 0.1, 0)),
+                    pose.transformBy(Transform2d(0.3, 0, 0)),
+                    pose.transformBy(Transform2d(0.2, -0.1, 0)),
+                ]
+        self.field2d.getObject(name).setPoses(poses)
 
 ```
 </details>
