@@ -14,7 +14,18 @@
       "/SmartDashboard/Chosen Auto": "String Chooser",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/Localizer": "String Chooser",
-      "/SmartDashboard/LoclzrLearnRate": "String Chooser"
+      "/SmartDashboard/LoclzLearnRate": "String Chooser",
+      "/SmartDashboard/LoclzrLearnRate": "String Chooser",
+      "/SmartDashboard/auto1StartPos": "String Chooser",
+      "/SmartDashboard/auto2Paths": "String Chooser",
+      "/SmartDashboard/auto3Branch": "String Chooser",
+      "/SmartDashboard/auto4Scoring1": "String Chooser",
+      "/SmartDashboard/auto5Scoring2": "String Chooser",
+      "/SmartDashboard/auto6TrjStyle": "String Chooser",
+      "/SmartDashboard/auto7Reloadng": "String Chooser",
+      "/SmartDashboard/auto8Reload": "String Chooser",
+      "/SmartDashboard/auto9DriveSpd": "String Chooser",
+      "/SmartDashboard/autoAprochSpd": "String Chooser"
     }
   },
   "NetworkTables": {

@@ -61,6 +61,9 @@ class RobotContainer:
         self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
         self.rearCamera = PhotonTagCamera("Arducam_Rear")
 
+        # camera to use for aligning with april tag
+        self.camera = self.frontRightCamera
+
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
@@ -314,9 +317,10 @@ class RobotContainer:
         # trajectory picker will only run when these subsystems are not busy with other commands
         requirements = [self.robotDrive, self.intake, self.arm, self.elevator]
 
-        # POV up: run the trajectory while button pushed
+        # POV up: align with april tag
         self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
-        self.driverController.povUp().whileTrue(self.trajectoryPicker)
+        # self.driverController.povUp().whileTrue(self.trajectoryPicker)
+        self.driverController.povUp().whileTrue(self.makeAlignWithAprilTagCommand)
 
         # POV left+right: pick trajectory
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
@@ -660,6 +664,27 @@ class RobotContainer:
         vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(alignWBackCam)
         return movement.andThen(vision)
 
+    def makeAlignWithAprilTagCommand(self):
+        from commands.setcamerapipeline import SetCameraPipeline
+        from commands.followobject import FollowObject, StopWhen
+        from commands.approach import ApproachTag
+        from commands.swervetopoint import SwerveToSide
+
+        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
+        lookForTheseTags = SetCameraPipeline(self.camera, 3)
+        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4),
+                                      speed=0.3)  # stop when tag size=4 (4% of the frame pixels)
+        alignAndPush = ApproachTag(self.camera, self.robotDrive, None, speed=1.0,
+                                   pushForwardSeconds=None)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
+
+        # connect them together
+        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+
+        # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
+        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
+        # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
+
+        return alignToScore
 
     def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=1.0, pushForwardSpeed=0.2):
         from commands.setcamerapipeline import SetCameraPipeline
