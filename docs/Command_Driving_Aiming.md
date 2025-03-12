@@ -830,7 +830,7 @@ class SetCameraPipeline(commands2.Command):
 </details>
 
 <details>
-    <summary>Setting the camera pipeline to the tag in front of the robot</summary>
+    <summary>Setting the camera pipeline to the AprilTag in front of the robot</summary>
 
 First you need to add `"apriltag"` into `robotpy_extras` in `pyproject.toml` file and run `sync` to get the AprilTag layouts installed.
 
