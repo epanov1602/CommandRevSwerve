@@ -1384,7 +1384,6 @@ This code works with Limelight or PhotonVision cameras from [here](Adding_Camera
 The command code can go to `commands/approach.py` :
 
 ```python
-
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -1498,6 +1497,7 @@ class ApproachTag(commands2.Command):
         self.finished = ""
 
         # debugging
+        self.tStart = 0
         self.lastState = self.getState()
         self.lastWarnings = None
 
@@ -1557,6 +1557,7 @@ class ApproachTag(commands2.Command):
             self.finalApproachSpeed = self.computeProportionalSpeed(self.tagToFinalApproachPt)
 
         # debugging info
+        self.tStart = Timer.getFPGATimestamp()
         self.lastState = -1
         self.lastWarnings = None
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
@@ -1582,7 +1583,6 @@ class ApproachTag(commands2.Command):
         if not self.finished:
             return False
 
-        SmartDashboard.putString("command/c" + self.__class__.__name__, self.finished)
         return True
 
 
@@ -1590,7 +1590,9 @@ class ApproachTag(commands2.Command):
         self.drivetrain.arcadeDrive(0, 0)
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
-
+        else:
+            elapsed = Timer.getFPGATimestamp() - self.tStart
+            SmartDashboard.putString("command/c" + self.__class__.__name__, f"{int(1000 * elapsed)}ms: {self.finished}")
 
     def execute(self):
         # 0. look at the camera
@@ -1712,7 +1714,7 @@ class ApproachTag(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, "reached final approach")
             self.tReachedFinalApproach = now
 
-        # if we already reached the glide path and we want nonzero final approach (after reaching desired size)
+        # if we already reached the glide path, and we want nonzero final approach (after reaching desired size)
         # ... then go directly towards the tag (x, y = tagX, 0) instead of going towards 0, 0
         if self.tReachedGlidePath != 0 and self.finalApproachSeconds > 0:
             direction = Translation2d(x=tagX - robotX, y=0.0 - robotY)
