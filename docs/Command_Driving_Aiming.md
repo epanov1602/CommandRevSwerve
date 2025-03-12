@@ -787,7 +787,6 @@ This code works with Limelight or PhotonVision cameras from [here](Adding_Camera
 The code below should go to `commands/setcamerapipeline.py` .
 
 ```python
-
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -795,12 +794,6 @@ The code below should go to `commands/setcamerapipeline.py` .
 #
 
 import commands2
-import wpimath.geometry
-from wpilib import Field2d
-from wpimath.geometry import Rotation2d, Transform2d, Pose2d
-
-from os.path import isfile, join
-
 
 class SetCameraPipeline(commands2.Command):
 
@@ -833,8 +826,32 @@ class SetCameraPipeline(commands2.Command):
         print("SetCameraPipeline: not yet finished, because camera pipeline = {} and we want {}".format(
             self.camera.getPipeline(), self.pipelineIndex)
         )
+```
+</details>
+
+<details>
+    <summary>Setting the camera pipeline to the tag in front of the robot</summary>
+
+First you need to add `"apriltag"` into `robotpy_extras` in `pyproject.toml` file and run `sync` to get the AprilTag layouts installed.
+
+Then, the code below should go to `commands/setcameratotaginfront.py` .
+
+```python
+#
+# Copyright (c) FIRST and other WPILib contributors.
+# Open Source Software; you can modify and/or share it under the terms of
+# the WPILib BSD license file in the root directory of this project.
+#
+
+import commands2
+import wpimath.geometry
+from wpilib import Field2d
+from wpimath.geometry import Rotation2d, Transform2d, Pose2d
+from os.path import isfile, join
 
 
+# if you are using Limelight, probably need to set up the pipelines to match this
+# (or you can provide your own `pipeline2TagGroup` that matches your Limelight, when constructing the command)
 DEFAULT_PIPELINE_TO_TAGS = {
     0: (),  # all tags
     6: (6, 19),
@@ -846,7 +863,7 @@ DEFAULT_PIPELINE_TO_TAGS = {
 }
 
 
-class SetCameraToTagAhead(commands2.Command):
+class SetCameraToTagInFront(commands2.Command):
     MAX_DISTANCE_TO_TAG = 3  # meters (10 feet)
 
     def __init__(self, fieldLayoutFile, camera, drivetrain, robotLengthMeters, reverse=False, pipeline2TagGroup=None):
