@@ -867,6 +867,10 @@ class SetCameraToTagInFront(commands2.Command):
     MAX_DISTANCE_TO_TAG = 3  # meters (10 feet)
 
     def __init__(self, fieldLayoutFile, camera, drivetrain, robotLengthMeters, reverse=False, pipeline2TagGroup=None):
+        """
+        :param fieldLayoutFile: something like "2025-reefscape.json" or "2024-crescendo.json", you can download them at
+         https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
+        """
         super().__init__()
         assert camera is not None
 
