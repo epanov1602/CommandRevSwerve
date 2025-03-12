@@ -726,13 +726,12 @@ class RobotContainer:
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
 
-        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         if desiredHeading is None:
             approachTheTag = commands2.WaitCommand(0)
         else:
             approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
-        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=0.4, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
+        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=1.0, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
 
         # connect them together
         alignToScore = approachTheTag.andThen(alignAndPush)
