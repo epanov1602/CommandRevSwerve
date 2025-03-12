@@ -128,14 +128,25 @@ class RobotContainer:
     def addIntakeBasedLocalizer(self):
         def onIntakeSensingGamepiece(sensing):
             if sensing:
-                heading = self.robotDrive.getHeading().degrees()
+                pose: Pose2d = self.robotDrive.getPose()
+                heading = pose.rotation().degrees()
                 print(f"intake is sensing a new gamepiece, heading={heading}")
+
                 if -10 > heading > -90 and self.robot.isTeleop():
-                    print(f"resetting odometry to match the left feeder, heading={heading}")
-                    self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
+                    distance = constants.LeftFeeder.pose.translation().distance(pose.translation())
+                    if distance < 2.0:
+                        print(f"resetting odometry to match the left feeder: heading={heading}, distance={distance}")
+                        self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)
+                    else:
+                        print(f"not resetting odometry to match the left feeder: distance={distance} meters (high!)")
+
                 if 10 < heading < 90 and self.robot.isTeleop():
-                    print(f"resetting odometry to match the right feeder, heading={heading}")
-                    self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
+                    distance = constants.RightFeeder.pose.translation().distance(pose.translation())
+                    if distance < 2.0:
+                        print(f"resetting odometry to match the right feeder: heading={heading}, distance={distance}")
+                        self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)
+                    else:
+                        print(f"not resetting odometry to match right left feeder: distance={distance} meters (high!)")
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
 
