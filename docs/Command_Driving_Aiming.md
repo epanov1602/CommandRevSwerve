@@ -4,7 +4,7 @@
 ## 1. Pre-requisites
 Does your robot already have a drivetrain with odometry? (tank or swerve)
 
-If not, why not copy (or fork) of one of these templates (they are public, with WPI license):
+If not, why not copy (or fork) of one of our templates (they are public, with WPI license):
 
 * Swerve drivetrain example: https://www.youtube.com/watch?v=44iMiQXQH5U
 * Tank/Arcade drivetrain example: https://www.youtube.com/watch?v=DhYMjLz0ync
