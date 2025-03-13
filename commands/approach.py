@@ -209,9 +209,11 @@ class ApproachTag(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, f"{int(1000 * elapsed)}ms: {self.finished}")
 
     def execute(self):
-        # 0. look at the camera
         now = Timer.getFPGATimestamp()
+
+        # 0. look at the camera
         self.updateVision(now)
+        visionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
         if self.lostTag:
             self.drivetrain.stop()
             return
@@ -235,17 +237,17 @@ class ApproachTag(commands2.Command):
             if self.finalApproachSeconds > 0:
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
+            leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
             # - otherwise slow down if the visual estimate is old or if heading is not right yet
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS.value
             if farFromDesiredHeading >= 1:
                 warnings = "large heading error"
-            detectionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
-            if detectionOld >= 1:
+            if visionOld >= 1:
                 warnings = "temporarily out of sight"
             # any other reason to slow down? put it above
 
-            problems = max((detectionOld, farFromDesiredHeading))
+            problems = max((visionOld, farFromDesiredHeading))
             fwdSpeed *= max((0.0, 1.0 - problems * problems))
 
         # 5. drive!
