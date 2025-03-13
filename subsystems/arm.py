@@ -36,7 +36,7 @@ class ArmConstants:
     initialMinOutput = -0.3
     additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
 
-    kArmIntakeAngle = 56.0 # spare has 42
+    kArmIntakeAngle = 55.5 # spare has 42
     kArmSafeTravelAngle = 73.8  # spare has 71.4
     kArmLevel4ReleaseAngle = 137.4  # spare has 135
     kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
