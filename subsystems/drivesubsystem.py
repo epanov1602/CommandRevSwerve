@@ -151,9 +151,6 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
 
-        self.field = Field2d()
-        SmartDashboard.putData("Field", self.field)
-
 
     def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
         pose = self.getPose()
