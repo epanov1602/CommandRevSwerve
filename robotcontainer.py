@@ -318,10 +318,10 @@ class RobotContainer:
                 return rounded
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
-               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.0)
+               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.3)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.0)
+                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.3)
             )
             self.driverController.povDown().whileTrue(
                 SetCameraPipeline(self.rearCamera, 0, (1, 2, 12, 13)).andThen(
