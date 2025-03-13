@@ -47,7 +47,7 @@ class ApproachTag(commands2.Command):
         speed=0.2,
         reverse=False,
         pushForwardSeconds=0.0,  # length of final approach
-        pushForwardSpeed="unused",
+        finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
         dashboardName="apch"
@@ -76,6 +76,7 @@ class ApproachTag(commands2.Command):
 
         self.reverse = reverse
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
+        self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
             self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.0, (0.0, 10.0))
@@ -125,9 +126,6 @@ class ApproachTag(commands2.Command):
         # acceptable width of glide path, in inches
         self.GLIDE_PATH_WIDTH_INCHES = Tunable(prefix + "Tolernce", 2.0, (0.5, 4.0))
 
-        # at the final approach point, object size on camera should be 10% of frame
-        self.OBJ_SIZE_AT_FINAL_APPROACH_PT = Tunable(prefix + "ObjSize", 10.0, (1.0, 15.0))
-
         # if plus minus 30 degrees from desired heading, forward motion is allowed before final approach
         self.DESIRED_HEADING_RADIUS = Tunable(prefix + "Headng+-", 30, (5, 45))
 
@@ -136,7 +134,6 @@ class ApproachTag(commands2.Command):
 
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT,
             self.DESIRED_HEADING_RADIUS,
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
@@ -163,9 +160,7 @@ class ApproachTag(commands2.Command):
         self.finished = ""
 
         # final approach parameters
-        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT.value
-        )
+        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(self.finalApproachObjSize)
         self.finalApproachSpeed = 0
         self.finalApproachSeconds = max([0, self.pushForwardSeconds()])
         if self.finalApproachSeconds > 0:
