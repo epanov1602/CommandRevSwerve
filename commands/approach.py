@@ -78,7 +78,7 @@ class ApproachTag(commands2.Command):
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 0.4, (0.0, 2.0))
+            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.0, (0.0, 10.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
@@ -149,6 +149,7 @@ class ApproachTag(commands2.Command):
     def initialize(self):
         for t in self.tunables:
             t.fetch()
+        print(f"translaation gain value {self.KPMULT_TRANSLATION.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.tReachedGlidePath = 0.0  # time when reached the glide path
@@ -319,7 +320,6 @@ class ApproachTag(commands2.Command):
     def getVisionBasedSwerveDirection(self, now):
         # can we trust the last seen object?
         if not (self.lastSeenObjectSize > 0):
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "never seen")
             return None  # the object is not yet there, hoping that this is temporary
 
         # where are we?
@@ -329,6 +329,7 @@ class ApproachTag(commands2.Command):
         if self.tReachedGlidePath != 0 and self.tReachedFinalApproach == 0 and robotX > 0:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "reached final approach")
             self.tReachedFinalApproach = now
+            print("final approach starting")
 
         # if we already reached the glide path, and we want nonzero final approach (after reaching desired size)
         # ... then go directly towards the tag (x, y = tagX, 0) instead of going towards 0, 0

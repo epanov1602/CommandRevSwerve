@@ -19,6 +19,7 @@ from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
+from commands.approach import ApproachTag
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
@@ -308,12 +309,24 @@ class RobotContainer:
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
+
+            def roundToMultipleOf60():
+                # angles like 110 will be rounded to nearest multiple of 60, in this case 120
+                angle = self.robotDrive.getHeading().degrees()
+                rounded = 60 * round(angle / 60)
+                print(f"robot angle {angle} rounded to {rounded} degrees")
+                return rounded
+
             self.driverController.button(XboxController.Button.kX).whileTrue(
-                self.alignToTagCmd(self.frontRightCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
+               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=None, pushForwardSpeed=0.3)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.alignToTagCmd(self.frontLeftCamera, None, allTags=True, pushForwardSeconds=10, pushForwardSpeed=0.3)
+                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=None, pushForwardSpeed=0.3)
             )
+            #self.driverController.povDown(XboxController.Button.kB).whileTrue(
+            #    self.alignToTagCmd(self.rearCamera, None, allTags=True, pushForwardSeconds=None,
+            #                       pushForwardSpeed=0.3, reverse=True)
+            #)
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -735,7 +748,7 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, pushForwardSpeed=0.2):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, pushForwardSpeed=0.2, reverse=False):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
@@ -745,7 +758,7 @@ class RobotContainer:
         else:
             approachTheTag = commands2.WaitCommand(0)  # FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
-        alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=1.0, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
+        alignAndPush = ApproachTag(camera, self.robotDrive, desiredHeading, speed=1.0, reverse=reverse, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
 
         # connect them together
         alignToScore = approachTheTag.andThen(alignAndPush)
