@@ -302,6 +302,9 @@ class RobotContainer:
         ejectBackwards = IntakeEjectGamepieceBackward(self.intake, speed=0.3).withTimeout(0.3)
         ejectBackwardsButton.whileTrue(ejectBackwards)
 
+        # elevator buttons
+        self.configureElevatorButtons()
+
         # X and B buttons of driver controller allow to approach reef AprilTags for scoring
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
