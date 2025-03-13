@@ -318,15 +318,17 @@ class RobotContainer:
                 return rounded
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
-               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=None, pushForwardSpeed=0.3)
+               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.0)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=None, pushForwardSpeed=0.3)
+                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.0)
             )
-            #self.driverController.povDown(XboxController.Button.kB).whileTrue(
-            #    self.alignToTagCmd(self.rearCamera, None, allTags=True, pushForwardSeconds=None,
-            #                       pushForwardSpeed=0.3, reverse=True)
-            #)
+            self.driverController.povDown().whileTrue(
+                SetCameraPipeline(self.rearCamera, 0, (1, 2, 12, 13)).andThen(
+                    self.alignToTagCmd(self.rearCamera, desiredHeading=-54, pushForwardSeconds=1.5,
+                                       finalApproachObjSize=1.7, reverse=True)
+                )
+            )
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -414,12 +416,12 @@ class RobotContainer:
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.5)
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
-        # POV down: run the reverse trajectory while pushed
-        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
-        # (may as well bring that arm down along with driving in reverse)
-        reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
-        # (when button is pushed, first back up safely and then drive the reverse trajectory)
-        self.driverController.povDown().whileTrue(backUp.andThen(reverseTrajectoryWithArmGoingDown))
+        ## POV down: run the reverse trajectory while pushed
+        #self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
+        ## (may as well bring that arm down along with driving in reverse)
+        #reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
+        ## (when button is pushed, first back up safely and then drive the reverse trajectory)
+        #self.driverController.povDown().whileTrue(backUp.andThen(reverseTrajectoryWithArmGoingDown))
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
         def chooseTrajectory(letter=None, side=None):
@@ -748,26 +750,21 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, pushForwardSpeed=0.2, reverse=False):
+    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, finalApproachObjSize=10, reverse=False):
         from commands.setcamerapipeline import SetCameraPipeline
-        from commands.followobject import FollowObject, StopWhen
         from commands.alignwithtag import AlignWithTag
 
-        if desiredHeading is None:
-            approachTheTag = commands2.WaitCommand(0)
-        else:
-            approachTheTag = commands2.WaitCommand(0)  # FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
+        approach = ApproachTag(
+            camera,
+            self.robotDrive,
+            desiredHeading,
+            speed=1.0,
+            reverse=reverse,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ).withTimeout(8)
 
-        alignAndPush = ApproachTag(camera, self.robotDrive, desiredHeading, speed=1.0, reverse=reverse, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
-
-        # connect them together
-        alignToScore = approachTheTag.andThen(alignAndPush)
         if allTags:
-            alignToScore = SetCameraPipeline(camera, 0, onlyTagIds=None).andThen(alignToScore)
+            approach = SetCameraPipeline(camera, 0, onlyTagIds=None).andThen(approach)
 
-        # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
-        # from commands.swervetopoint import SwerveToSide
-        # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
-        # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
-
-        return alignToScore
+        return approach
