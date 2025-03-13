@@ -740,7 +740,7 @@ class RobotContainer:
         if desiredHeading is None:
             approachTheTag = commands2.WaitCommand(0)
         else:
-            approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
+            approachTheTag = commands2.WaitCommand(0)  # FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=10), speed=0.3)  # stop when tag size=10 (10% of the frame pixels)
 
         alignAndPush = AlignWithTag(camera, self.robotDrive, desiredHeading, speed=1.0, pushForwardSeconds=pushForwardSeconds, pushForwardSpeed=pushForwardSpeed).withTimeout(8)
 

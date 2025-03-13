@@ -5,7 +5,7 @@ from commands.jerky_trajectory import mirror
 class SideE:
     kEndpoint = {
         "right": (5.155, 5.899, -120),
-        "left": (5.706, 5.619, -120),
+        "left": (5.906, 5.919, -120),
     }
 
     kApproach = [
