@@ -317,10 +317,11 @@ class RobotContainer:
         # trajectory picker will only run when these subsystems are not busy with other commands
         requirements = [self.robotDrive, self.intake, self.arm, self.elevator]
 
-        # POV up: align with april tag
         self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
         # self.driverController.povUp().whileTrue(self.trajectoryPicker)
-        self.driverController.povUp().whileTrue(self.makeAlignWithAprilTagCommand)
+
+        # POV up: align with april tag
+        self.driverController.povUp().whileTrue(self.makeAlignWithAprilTagCommand())
 
         # POV left+right: pick trajectory
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
