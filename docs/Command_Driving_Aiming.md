@@ -1358,24 +1358,16 @@ class FindObject(commands2.Command):
 This should go as a function in `robotcontainer.py`, and you can either bind it to a button or make an auto out of it:
 ```python3
    def makeAlignWithAprilTagCommand(self):
-        from commands.setcamerapipeline import SetCameraPipeline
-        from commands.followobject import FollowObject, StopWhen
         from commands.approach import ApproachTag
         from commands.swervetopoint import SwerveToSide
 
-        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(self.camera, 3)
-        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4), speed=0.3)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = ApproachTag(self.camera, self.robotDrive, None, speed=0.5, pushForwardSeconds=1.0)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
-
-        # connect them together
-        alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush)
+        approach = ApproachTag(self.camera, self.robotDrive, None, speed=1.0, pushForwardSeconds=None)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
-        # alignToScore = lookForTheseTags.andThen(approachTheTag).andThen(alignAndPush).andThen(stepToSide)
+        # alignToScore = approach.andThen(stepToSide)
 
-        return alignToScore
+        return approach
 
 ```
 
