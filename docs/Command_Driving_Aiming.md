@@ -1425,7 +1425,7 @@ class ApproachTag(commands2.Command):
         speed=0.2,
         reverse=False,
         pushForwardSeconds=0.0,  # length of final approach
-        pushForwardSpeed="unused",
+        finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
         dashboardName="apch"
@@ -1454,9 +1454,10 @@ class ApproachTag(commands2.Command):
 
         self.reverse = reverse
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
+        self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 0.4, (0.0, 2.0))
+            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.0, (0.0, 10.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
@@ -1497,14 +1498,11 @@ class ApproachTag(commands2.Command):
 
 
     def initTunables(self, prefix):
-        self.KPMULT_TRANSLATION = Tunable(prefix + "GainTran", 0.5, (0.1, 8.0))  # gain for how quickly to move
+        self.KPMULT_TRANSLATION = Tunable(prefix + "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
         self.KPMULT_ROTATION = Tunable(prefix + "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
 
         # acceptable width of glide path, in inches
         self.GLIDE_PATH_WIDTH_INCHES = Tunable(prefix + "Tolernce", 2.0, (0.5, 4.0))
-
-        # at the final approach point, object size on camera should be 10% of frame
-        self.OBJ_SIZE_AT_FINAL_APPROACH_PT = Tunable(prefix + "ObjSize", 10.0, (1.0, 15.0))
 
         # if plus minus 30 degrees from desired heading, forward motion is allowed before final approach
         self.DESIRED_HEADING_RADIUS = Tunable(prefix + "Headng+-", 30, (5, 45))
@@ -1514,7 +1512,6 @@ class ApproachTag(commands2.Command):
 
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT,
             self.DESIRED_HEADING_RADIUS,
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
@@ -1527,6 +1524,7 @@ class ApproachTag(commands2.Command):
     def initialize(self):
         for t in self.tunables:
             t.fetch()
+        print(f"translaation gain value {self.KPMULT_TRANSLATION.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.tReachedGlidePath = 0.0  # time when reached the glide path
@@ -1540,9 +1538,7 @@ class ApproachTag(commands2.Command):
         self.finished = ""
 
         # final approach parameters
-        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT.value
-        )
+        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(self.finalApproachObjSize)
         self.finalApproachSpeed = 0
         self.finalApproachSeconds = max([0, self.pushForwardSeconds()])
         if self.finalApproachSeconds > 0:
@@ -1587,9 +1583,11 @@ class ApproachTag(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, f"{int(1000 * elapsed)}ms: {self.finished}")
 
     def execute(self):
-        # 0. look at the camera
         now = Timer.getFPGATimestamp()
+
+        # 0. look at the camera
         self.updateVision(now)
+        visionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
         if self.lostTag:
             self.drivetrain.stop()
             return
@@ -1613,17 +1611,17 @@ class ApproachTag(commands2.Command):
             if self.finalApproachSeconds > 0:
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
+            leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
             # - otherwise slow down if the visual estimate is old or if heading is not right yet
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS.value
             if farFromDesiredHeading >= 1:
                 warnings = "large heading error"
-            detectionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
-            if detectionOld >= 1:
+            if visionOld >= 1:
                 warnings = "temporarily out of sight"
             # any other reason to slow down? put it above
 
-            problems = max((detectionOld, farFromDesiredHeading))
+            problems = max((visionOld, farFromDesiredHeading))
             fwdSpeed *= max((0.0, 1.0 - problems * problems))
 
         # 5. drive!
@@ -1695,7 +1693,6 @@ class ApproachTag(commands2.Command):
     def getVisionBasedSwerveDirection(self, now):
         # can we trust the last seen object?
         if not (self.lastSeenObjectSize > 0):
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "never seen")
             return None  # the object is not yet there, hoping that this is temporary
 
         # where are we?
@@ -1705,6 +1702,7 @@ class ApproachTag(commands2.Command):
         if self.tReachedGlidePath != 0 and self.tReachedFinalApproach == 0 and robotX > 0:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "reached final approach")
             self.tReachedFinalApproach = now
+            print("final approach starting")
 
         # if we already reached the glide path, and we want nonzero final approach (after reaching desired size)
         # ... then go directly towards the tag (x, y = tagX, 0) instead of going towards 0, 0
