@@ -318,18 +318,14 @@ class RobotContainer:
                 return rounded
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
-               self.alignToTagCmd(self.frontRightCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.2)
+               self.approachReef(self.frontRightCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=1.2)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.2)
+                self.approachReef(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=1.2)
             )
-            if False:
-                self.driverController.povDown().whileTrue(
-                    SetCameraPipeline(self.rearCamera, 0, (1, 2, 12, 13)).andThen(
-                        self.alignToTagCmd(self.rearCamera, desiredHeading=-54, pushForwardSeconds=1.1,
-                                           finalApproachObjSize=1.7, reverse=True)
-                    )
-                )
+            self.driverController.button(XboxController.Button.kLeftBumper).whileTrue(
+                self.approachFeeder()
+            )
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -414,26 +410,15 @@ class RobotContainer:
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
+        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5)
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
-        ## POV down: run the reverse trajqectory while pushed
-        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
-        # (may as well bring that arm down along with driving in reverse)
         reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
-        def desiredHeadingBackingToFeeder():
-            angle = self.robotDrive.getHeading().degrees()
-            return -54 if angle < 0 else +54
-
         self.driverController.povDown().whileTrue(
-            backUp.andThen(reverseTrajectoryWithArmGoingDown).andThen(
-                self.alignToTagCmd(
-                    self.rearCamera, desiredHeadingBackingToFeeder, False,
-                    pushForwardSeconds=1.1, finalApproachObjSize=1.7, reverse=True
-                )
-            )
+            backUp.andThen(reverseTrajectoryWithArmGoingDown).andThen(self.approachFeeder())
         )
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
@@ -491,7 +476,7 @@ class RobotContainer:
             "E-left",  # needs more work!
             SetCameraPipeline(self.frontRightCamera, 5, onlyTagIds=(11, 20)),
             goSideELeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+240)
+            self.approachReef(self.frontRightCamera, desiredHeading=+240)
         )
 
         goSideERightBranch = TrajectoryCommand(
@@ -510,7 +495,7 @@ class RobotContainer:
             "E-right",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(11, 20)),
             goSideERightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+240)
+            self.approachReef(self.frontLeftCamera, desiredHeading=+240)
         )
 
         #  - go to right branch of reef side B
@@ -531,7 +516,7 @@ class RobotContainer:
             "C-left",
             SetCameraPipeline(self.frontRightCamera, 9, onlyTagIds=(9, 22)),
             goSideCLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+120)
+            self.approachReef(self.frontRightCamera, desiredHeading=+120)
         )
 
         goSideCRightBranch = TrajectoryCommand(
@@ -551,7 +536,7 @@ class RobotContainer:
             "C-right",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(9, 22)),
             goSideCRightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+120)
+            self.approachReef(self.frontLeftCamera, desiredHeading=+120)
         )
 
         goSideALeftBranch = TrajectoryCommand(
@@ -569,7 +554,7 @@ class RobotContainer:
             "A-left",
             SetCameraPipeline(self.frontRightCamera, 7, onlyTagIds=(7, 18)),
             goSideALeftBranch,
-           self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
+           self.approachReef(self.frontRightCamera, desiredHeading=0)
         )
 
         goSideARightBranch = TrajectoryCommand(
@@ -587,7 +572,7 @@ class RobotContainer:
             "A-right",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(7, 18)),
             goSideARightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=0)
+            self.approachReef(self.frontLeftCamera, desiredHeading=0)
         )
 
         goSideBLeftBranch = TrajectoryCommand(
@@ -605,7 +590,7 @@ class RobotContainer:
             "B-left",
             SetCameraPipeline(self.frontRightCamera, 8, onlyTagIds=(8, 17)),
             goSideBLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+60)
+            self.approachReef(self.frontRightCamera, desiredHeading=+60)
         )
 
         goSideBRightBranch = TrajectoryCommand(
@@ -623,7 +608,7 @@ class RobotContainer:
             "B-right",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(8, 17)),
             goSideBRightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+60)
+            self.approachReef(self.frontLeftCamera, desiredHeading=+60)
         )
 
         goSideDRightBranch = TrajectoryCommand(
@@ -644,7 +629,7 @@ class RobotContainer:
             "D-right",
             SetCameraPipeline(self.frontRightCamera, 4, onlyTagIds=(10, 21)),
             goSideDRightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+180)
+            self.approachReef(self.frontLeftCamera, desiredHeading=+180)
         )
 
         goSideDLeftBranch = TrajectoryCommand(
@@ -665,7 +650,7 @@ class RobotContainer:
             "D-left",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(10, 21)),
             goSideDLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
+            self.approachReef(self.frontRightCamera, desiredHeading=+180)
         )
 
         goSideFLeftBranch = TrajectoryCommand(
@@ -683,7 +668,7 @@ class RobotContainer:
             "F-left",  # was too far to the left :(
             SetCameraPipeline(self.frontRightCamera, 6, onlyTagIds=(6, 19)),
             goSideFLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
+            self.approachReef(self.frontRightCamera, desiredHeading=+300)
         )
         goSideFRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
@@ -700,7 +685,7 @@ class RobotContainer:
             "F-right",
             SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(6, 19)),
             goSideFRightBranch,
-            self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+300)
+            self.approachReef(self.frontLeftCamera, desiredHeading=+300)
         )
 
     def disablePIDSubsystems(self) -> None:
@@ -745,9 +730,9 @@ class RobotContainer:
         rotations = rotation1.andThen(rotation2)
 
         # 4. vision: kiss an AprilTag in front with the right camera, and then with the left camera
-        alignWRightCam = self.alignToTagCmd(self.frontRightCamera, allTags=True, desiredHeading=None)
+        alignWRightCam = self.approachReef(self.frontRightCamera, allTags=True, desiredHeading=None)
         moveBack = SwerveMove(metersBackwards=0.5, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2)
-        alignWLeftCam = self.alignToTagCmd(self.frontLeftCamera, allTags=True, desiredHeading=None)
+        alignWLeftCam = self.approachReef(self.frontLeftCamera, allTags=True, desiredHeading=None)
         # and the complicated part: turn around and kiss same AprilTag with the back camera
         turnAround = SwerveMove(metersBackwards=0.3, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2,
                                 heading=lambda: self.robotDrive.getHeading().rotateBy(Rotation2d.fromDegrees(180)))
@@ -765,21 +750,36 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def alignToTagCmd(self, camera, desiredHeading, allTags=False, pushForwardSeconds=None, finalApproachObjSize=10, reverse=False):
-        from commands.setcamerapipeline import SetCameraPipeline
-        from commands.alignwithtag import AlignWithTag
+    def approachReef(self, camera, desiredHeading, pushForwardSeconds=None, finalApproachObjSize=10):
 
-        approach = ApproachTag(
+        command = ApproachTag(
             camera,
             self.robotDrive,
             desiredHeading,
             speed=1.0,
-            reverse=reverse,
             pushForwardSeconds=pushForwardSeconds,
             finalApproachObjSize=finalApproachObjSize
-        ).withTimeout(8)
+        )
 
-        if allTags:
-            approach = SetCameraPipeline(camera, 0, onlyTagIds=None).andThen(approach)
+        return command.withTimeout(6)
 
-        return approach
+
+    def approachFeeder(self):
+
+        def desiredHeadingBackingToFeeder():
+            angle = self.robotDrive.getHeading().degrees()
+            return -54 if angle < 0 else +54  # are we facing the right feeder?
+
+        pipeline = SetCameraPipeline(self.rearCamera, 0, onlyTagIds=(1, 2, 12, 13))
+
+        command = ApproachTag(
+            self.rearCamera,
+            self.robotDrive,
+            desiredHeadingBackingToFeeder,
+            speed=1.0,
+            reverse=True,
+            pushForwardSeconds=1.1,  # calirated with Eric, Enrique and Davi
+            finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
+        )
+
+        return pipeline.andThen(command).withTimeout(10)
