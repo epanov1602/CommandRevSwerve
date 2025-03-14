@@ -414,10 +414,10 @@ class RobotContainer:
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
-        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.25)
+        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5)
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
-        ## POV down: run the reverse trajectory while pushed
+        ## POV down: run the reverse trajqectory while pushed
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
         # (may as well bring that arm down along with driving in reverse)
         reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
