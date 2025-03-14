@@ -22,7 +22,7 @@ import constants
 from commands.approach import ApproachTag
 from commands.elevatorcommands import MoveElevatorAndArm
 
-from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory
+from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveToSide, SwerveMove
 from constants import DriveConstants, OIConstants
@@ -65,7 +65,7 @@ class RobotContainer:
         # ^^ sometimes gamepiece is ingested already while driving, so intake-based localizer is not a great idea
 
         # Configure the button bindings and autos
-        self.configureTrajectoryPicker(speed=0.5, TrajectoryCommand=JerkyTrajectory)  # SwerveTrajectory is gentle on wheel modules
+        self.configureTrajectoryPicker(speed=1.0, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
         self.configureButtonBindings()
         self.configureAutos()
 
@@ -414,7 +414,7 @@ class RobotContainer:
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
-        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.5)
+        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.3, drivetrain=self.robotDrive, speed=0.25)
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
         ## POV down: run the reverse trajectory while pushed
@@ -480,7 +480,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.594, 5.635, -120),
             waypoints=[
-                (1.285, 6.915, -54.0),
+                (1.435, 6.765, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
             ],
@@ -488,7 +488,7 @@ class RobotContainer:
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
-            "E-left",
+            "E-left",  # needs more work!
             SetCameraPipeline(self.frontRightCamera, 5, onlyTagIds=(11, 20)),
             goSideELeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+240)
@@ -499,7 +499,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.165, 5.606, -120),
             waypoints=[
-                (1.285, 6.915, -54.0),
+                (1.435, 6.765, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
             ],
@@ -557,10 +557,10 @@ class RobotContainer:
         goSideALeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(2.47, 4.250, 0),
+            endpoint=(2.07, 4.250, 0),
             waypoints=[
-                (1.285, 6.915, -54),
-                (1.641, 5.922, -54),
+                (1.435, 6.765, -54),
+                (1.641, 5.622, -54),
             ],
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
@@ -571,13 +571,14 @@ class RobotContainer:
             goSideALeftBranch,
            self.alignToTagCmd(self.frontRightCamera, desiredHeading=0)
         )
+
         goSideARightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(2.472, 3.501, 0),
+            endpoint=(2.072, 3.571, 0),
             waypoints=[
-                (1.285, 6.915, -54),
-                (1.641, 5.922, -54),
+                (1.435, 6.765, -54),
+                (1.641, 5.622, -54),
             ],
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
@@ -625,60 +626,61 @@ class RobotContainer:
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+60)
         )
 
-        goSideDLeftBranch = TrajectoryCommand(
-            drivetrain=self.robotDrive,
-            swerve=swerve,
-            endpoint=(6.202, 3.791, 180),
-            waypoints=[
-                (1.285, 1.135, 54.0),
-                (2.201, 1.986, 54.0),
-                (5.155, 1.516, 90),
-                (6.402, 2.694, 135),
-            ],
-            speed=speed,
-            setup=prepareToBackIntoRightFeeder,
-        )
-        self.trajectoryPicker.addCommands(
-            "D-left",
-            SetCameraPipeline(self.frontRightCamera, 4, onlyTagIds=(10, 21)),
-            goSideDLeftBranch,
-            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
-        )
-
         goSideDRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(6.252, 4.180, 180),
+            endpoint=mirror((6.50, 3.85, 180)),
             waypoints=[
-                (1.285, 1.135, 54.0),
+                (1.435, 6.765, -54),
+            ] + mirror([
                 (2.201, 1.986, 54.0),
-                (4.477, 1.306, 90),
-                (6.482, 2.824, 135),
-            ],
+                (5.155, 1.916, 90),
+                (6.342, 2.694, 135),
+            ]),
             speed=speed,
-            setup=prepareToBackIntoRightFeeder,
+            setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
             "D-right",
-            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(10, 21)),
+            SetCameraPipeline(self.frontRightCamera, 4, onlyTagIds=(10, 21)),
             goSideDRightBranch,
             self.alignToTagCmd(self.frontLeftCamera, desiredHeading=+180)
+        )
+
+        goSideDLeftBranch = TrajectoryCommand(
+            drivetrain=self.robotDrive,
+            swerve=swerve,
+            endpoint=mirror((6.50, 4.20, 180)),
+            waypoints=[
+                (1.435, 6.765, -54),
+            ] + mirror([
+                (2.201, 1.986, 54.0),
+                (4.477, 1.906, 90),
+                (6.482, 2.824, 135),
+            ]),
+            speed=speed,
+            setup=prepareToBackIntoLeftFeeder,
+        )
+        self.trajectoryPicker.addCommands(
+            "D-left",
+            SetCameraPipeline(self.frontRightCamera, 0, onlyTagIds=(10, 21)),
+            goSideDLeftBranch,
+            self.alignToTagCmd(self.frontRightCamera, desiredHeading=+180)
         )
 
         goSideFLeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.600, 5.546, -60.0),
+            endpoint=(3.400, 5.546, -60.0),
             waypoints=[
-                (1.285, 6.915, -54),
+                (1.435, 6.765, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
         )
-
         self.trajectoryPicker.addCommands(
-            "F-left",
+            "F-left",  # was too far to the left :(
             SetCameraPipeline(self.frontRightCamera, 6, onlyTagIds=(6, 19)),
             goSideFLeftBranch,
             self.alignToTagCmd(self.frontRightCamera, desiredHeading=+300)
@@ -686,9 +688,9 @@ class RobotContainer:
         goSideFRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.470, 5.446, -60.0),
+            endpoint=(3.270, 5.446, -60.0),
             waypoints=[
-                (1.285, 6.915, -54),
+                (1.435, 6.765, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
