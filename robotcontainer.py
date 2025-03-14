@@ -65,7 +65,7 @@ class RobotContainer:
         # ^^ sometimes gamepiece is ingested already while driving, so intake-based localizer is not a great idea
 
         # Configure the button bindings and autos
-        self.configureTrajectoryPicker(speed=0.4)  #, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
+        self.configureTrajectoryPicker(speed=0.5, TrajectoryCommand=JerkyTrajectory)  # SwerveTrajectory is gentle on wheel modules
         self.configureButtonBindings()
         self.configureAutos()
 
@@ -323,12 +323,13 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.alignToTagCmd(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, allTags=True, pushForwardSeconds=1.2)
             )
-            self.driverController.povDown().whileTrue(
-                SetCameraPipeline(self.rearCamera, 0, (1, 2, 12, 13)).andThen(
-                    self.alignToTagCmd(self.rearCamera, desiredHeading=-54, pushForwardSeconds=1.1,
-                                       finalApproachObjSize=1.7, reverse=True)
+            if False:
+                self.driverController.povDown().whileTrue(
+                    SetCameraPipeline(self.rearCamera, 0, (1, 2, 12, 13)).andThen(
+                        self.alignToTagCmd(self.rearCamera, desiredHeading=-54, pushForwardSeconds=1.1,
+                                           finalApproachObjSize=1.7, reverse=True)
+                    )
                 )
-            )
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -417,11 +418,23 @@ class RobotContainer:
         armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
         ## POV down: run the reverse trajectory while pushed
-        #self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
-        ## (may as well bring that arm down along with driving in reverse)
-        #reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
-        ## (when button is pushed, first back up safely and then drive the reverse trajectory)
-        #self.driverController.povDown().whileTrue(backUp.andThen(reverseTrajectoryWithArmGoingDown))
+        self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
+        # (may as well bring that arm down along with driving in reverse)
+        reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
+        # (when button is pushed, first back up safely and then drive the reverse trajectory)
+
+        def desiredHeadingBackingToFeeder():
+            angle = self.robotDrive.getHeading().degrees()
+            return -54 if angle < 0 else +54
+
+        self.driverController.povDown().whileTrue(
+            backUp.andThen(reverseTrajectoryWithArmGoingDown).andThen(
+                self.alignToTagCmd(
+                    self.rearCamera, desiredHeadingBackingToFeeder, False,
+                    pushForwardSeconds=1.1, finalApproachObjSize=1.7, reverse=True
+                )
+            )
+        )
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
         def chooseTrajectory(letter=None, side=None):
@@ -469,7 +482,7 @@ class RobotContainer:
             waypoints=[
                 (1.285, 6.915, -54.0),
                 (2.641, 5.922, -40),
-                (4.806, 6.943, -90),
+                (4.806, 6.243, -90),
             ],
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
@@ -488,7 +501,7 @@ class RobotContainer:
             waypoints=[
                 (1.285, 6.915, -54.0),
                 (2.641, 5.922, -40),
-                (4.306, 6.643, -75),
+                (4.306, 6.243, -75),
             ],
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
