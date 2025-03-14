@@ -38,7 +38,7 @@ class ArmConstants:
 
     kArmIntakeAngle = 55.0 # spare has 53.0
     kArmSafeTravelAngle = 73.8  # spare has 71.4
-    kArmLevel4ReleaseAngle = 132.4  # spare has 135
+    kArmLevel4ReleaseAngle = 125  # was 132
     kArmMaxWeightAngle = 86.6  # spare has 84.2 - 90
     kArmAlgaeIntakeAngle = 230  # spare arm does not support this
     # ^^ warning: you are not done if you are changing these constants, look at the function below too
