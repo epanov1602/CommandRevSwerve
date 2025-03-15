@@ -150,7 +150,7 @@ class ApproachTag(commands2.Command):
     def initialize(self):
         for t in self.tunables:
             t.fetch()
-        print(f"translaation gain value {self.KPMULT_TRANSLATION.value}")
+        print(f"ApproachTag: translation gain value {self.KPMULT_TRANSLATION.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.tReachedGlidePath = 0.0  # time when reached the glide path
@@ -389,7 +389,7 @@ class ApproachTag(commands2.Command):
         reachedNow = (
             distanceToGlidePath is not None and
             abs(distanceToGlidePath) < self.GLIDE_PATH_WIDTH_INCHES.value * 0.0254 * 0.5 and
-            abs(degreesLeftToRotate) < 2 * AimToDirectionConstants.kAngleToleranceDegrees
+            abs(degreesLeftToRotate) < 4 * AimToDirectionConstants.kAngleToleranceDegrees
         )
         if self.tReachedGlidePath and not reachedNow:
             print(f"WARNING: not on glide path anymore (distance={distanceToGlidePath}, degrees={degreesLeftToRotate}")
