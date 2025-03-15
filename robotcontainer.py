@@ -171,16 +171,16 @@ class RobotContainer:
             directionDegrees=RobotCameraLocations.kFrontLeft.rotation().degrees(),
             positionFromRobotCenter=RobotCameraLocations.kFrontLeft.translation(),
         )
-        self.localizer.addPhotonCamera(
-            "ELP_RightSide",
-            directionDegrees=RobotCameraLocations.kRight.rotation().degrees(),
-            positionFromRobotCenter=RobotCameraLocations.kRight.translation(),
-        )
-        self.localizer.addPhotonCamera(
-        "Arducam_Rear",
-              directionDegrees=RobotCameraLocations.kRear.rotation().degrees(),
-              positionFromRobotCenter=RobotCameraLocations.kRear.translation(),
-        )
+        #self.localizer.addPhotonCamera(
+        #    "ELP_RightSide",
+        #    directionDegrees=RobotCameraLocations.kRight.rotation().degrees(),
+        #    positionFromRobotCenter=RobotCameraLocations.kRight.translation(),
+        #)
+        #self.localizer.addPhotonCamera(
+        #      "Arducam_Rear",
+        #      directionDegrees=RobotCameraLocations.kRear.rotation().degrees(),
+        #      positionFromRobotCenter=RobotCameraLocations.kRear.translation(),
+        #)
 
 
     def addArmSubsystems(self):

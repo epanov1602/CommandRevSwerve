@@ -381,7 +381,7 @@ class ApproachTag(commands2.Command):
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
-        return math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
+        return math.sqrt(0.2 * 0.2 / (1.70 * 0.01 * objectSizePercent))
         # note: Arducam w OV9281 (and Limelight 3 / 4) is 0.57 sq radians (not 1.33)
 
 

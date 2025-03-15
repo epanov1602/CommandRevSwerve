@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import math
 import typing
 
 import commands2
@@ -16,6 +18,7 @@ from collections import deque
 class CameraState:
     name: str
     cameraPoseOnRobot: Pose2d
+    fovRatio: float
     photonCamera: PhotonCamera
     lastProcessedCameraTime: float
     lastDrawnTags: list
@@ -86,14 +89,14 @@ class Localizer(commands2.Subsystem):
 
     def initEnabledChooser(self):
         flipped = None
-        if self.username == "admin" and self.flippedFromAllianceColor is not None:
+        if self.username == "lvuser" and self.flippedFromAllianceColor is not None:
             # if we are running on RoboRIO, wait until driver station gives us alliance color
             color = DriverStation.getAlliance()
             if color is None:
                 return  # we cannot yet decide on whether the field should be flipped
             flipped = self.flippedFromAllianceColor(color)
             print("Localizer: color={}, flippedFromAllianceColor={}".format(color, flipped))
-        print("Localizer will assume flipped={}".format(flipped))
+        print("Localizer will assume flipped={} (username={}, rule={})".format(flipped, self.username, self.flippedFromAllianceColor))
 
         self.enabled = SendableChooser()
         self.enabled.setDefaultOption("off", (None, False))
@@ -106,16 +109,18 @@ class Localizer(commands2.Subsystem):
         SmartDashboard.putData("Localizer", self.enabled)
 
 
-    def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0)):
+    def addPhotonCamera(self, name, directionDegrees, positionFromRobotCenter=Translation2d(0, 0), fov=70):
         """
         :param name: name of the camera in PhotonVision
         :param directionDegrees: how many degrees to the left (front camera = 0, left camera = 90, right cam = -90 etc.)
+        :param fov: field-of-view in degrees (70 is default)
         :return: None
         """
         assert name not in self.cameras, f"camera '{name}' was already added"
         photonCamera = PhotonCamera(name)
+        fovRatio = fov / 70  # 70 is the value for Arducam OV9281
         cameraPose = Pose2d(positionFromRobotCenter, Rotation2d.fromDegrees(directionDegrees))
-        self.cameras[name] = CameraState(name, cameraPose, photonCamera, 0, [], 0, deque())
+        self.cameras[name] = CameraState(name, cameraPose, fovRatio, photonCamera, 0, [], 0, deque())
 
 
     def recentlySawMoreThanOneTag(self, horizonTime):
@@ -172,7 +177,7 @@ class Localizer(commands2.Subsystem):
                 redrawing = True
 
             # 3. find where the robot was at the time of this camera's last frame
-            recentRobotPose = robotPose
+            recentRobotPose: Pose2d = robotPose
             recentRobotLocations.append((now, robotPose))
             while len(recentRobotLocations) > Localizer.MAX_LOCATION_HISTORY_SIZE:
                 recentRobotLocations.popleft()
@@ -197,8 +202,11 @@ class Localizer(commands2.Subsystem):
                     continue  # our field map does not know this tag
                 self.recentlySeenTags.append((now, tagId))
 
-                odometryAdjustment = self.calculateOdometryAdjustment(
+                odometryAdjustment = self.calculateMegaTag2_OdometryAdjustment(
                     camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
+
+                #odometryAdjustment = self.calculateOdometryAdjustment(
+                #    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
                 if enabled and ready and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
@@ -223,13 +231,84 @@ class Localizer(commands2.Subsystem):
                 self.fieldDrawing.getObject(lineToTag).setPoses([])
                 self.fieldDrawing.getObject(lineFromTag).setPoses([])
 
+
+    def calculateMegaTag2_OdometryAdjustment(
+        self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
+    ):
+        ta = tag.getArea()
+        if ta < 0.5:
+            return None
+
+        tagId = tag.getFiducialId()
+        tagPose = tagFieldPosition.toPose2d()
+        tagLocation2d, tagDirection = tagPose.translation(), tagPose.rotation()
+        if flipped:
+            tagLocation2d = Translation2d(x=self.fieldLength, y=self.fieldWidth) - tagLocation2d
+        else:
+            tagDirection = tagDirection.rotateBy(Rotation2d.fromDegrees(180))
+
+        # camera pose
+        cameraPoseOnRobot: Pose2d = camera.cameraPoseOnRobot
+        fovRatio = camera.fovRatio
+
+        # localize robot camera in the frame of tag
+        cameraDirection2d: Rotation2d = robotDirection2d.rotateBy(cameraPoseOnRobot.rotation())
+
+        # cosine between camera and tag
+        tagSeenSideways = (tagDirection - cameraDirection2d).cos()
+        if tagSeenSideways > 0.67:
+            #print(f"tag {tagId} is supposed to be facing camera {camera.name} with cos={tagSeenSideways}")
+            pass
+        else:
+            #print(f"WARNING: tag {tagId} is not supposed to be facing camera well {camera.name}: cos={tagSeenSideways} ( tagDir={tagDirection.degrees()}, cameraDir={cameraDirection2d.degrees()} )")
+            return None
+
+        # now localize
+        objectArea = ta / tagSeenSideways
+        distance = math.sqrt(0.2 * 0.2 / (1.70 * 0.01 * objectArea * fovRatio * fovRatio))
+        # ^^ Arducam OV9281 is 1.70 square radians
+        angle = Rotation2d.fromDegrees(-tag.getYaw())
+
+        # X and Y of tag in camera's frame
+        tagInCameraFrame = Translation2d(distance * angle.cos(), distance * angle.sin())
+        tagInRobotFrame = tagInCameraFrame.rotateBy(cameraPoseOnRobot.rotation()) + cameraPoseOnRobot.translation()
+        tagLocationIfOdometryCorrect = robotLocation2d + tagInRobotFrame.rotateBy(robotDirection2d)
+
+        # debug
+        #print(f"tag {tagId}: yaw={tag.getYaw()}, distanceInch={distance/0.0254}, posInCamFrame={tagInCameraFrame.x},{tagInCameraFrame.y}, posInRobotFrame={tagInRobotFrame.x},{tagInRobotFrame.y}")
+        #self.fieldDrawing.getObject("tag-seen").setPose(Pose2d(tagLocationIfOdometryCorrect, tagDirection))
+
+        shiftMeters = tagLocation2d - tagLocationIfOdometryCorrect
+        if redrawing:
+            lineToTag, lineFromTag = self.tagLineNames(camera.name, tagId)
+
+            #  - a line going from odometry position to the tag
+            lineFromOdometryPositionToTag = drawLine(40, robotLocation2d, tagLocation2d)
+            self.fieldDrawing.getObject(lineToTag).setPoses(lineFromOdometryPositionToTag)
+            #  - and a line going back from the tag to robot's real position, using observed tag direction from camera
+            lineFromTagToRealPosition = drawLine(40, tagLocation2d, robotLocation2d + shiftMeters)
+            self.fieldDrawing.getObject(lineFromTag).setPoses(lineFromTagToRealPosition)
+
+        # if too far, trust less (maybe not necessary, but let's keep for now)
+        if distance > Localizer.TAG_TOO_CLOSE_METERS:
+            factor = Localizer.TAG_TOO_CLOSE_METERS / distance
+            learningRate *= factor
+            # ^^ power 1, because the biggest cause will be systematic errors (uncalibrated camera angle or location)
+
+        shift = shiftMeters * learningRate
+        return shift, Rotation2d()
+
+
     def calculateOdometryAdjustment(
         self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
     ):
         tagId = tag.getFiducialId()
-        tagLocation2d = tagFieldPosition.toPose2d().translation()
+        tagPose = tagFieldPosition.toPose2d()
+
+        tagLocation2d, tagDirection = tagPose.translation(), tagPose.rotation()
         if flipped:
             tagLocation2d = Translation2d(x=self.fieldLength, y=self.fieldWidth) - tagLocation2d
+            tagDirection = tagDirection.rotateBy(Rotation2d.fromDegrees(180))
 
         cameraPoseOnRobot: Pose2d = camera.cameraPoseOnRobot
         cameraLocation2d = robotLocation2d + cameraPoseOnRobot.translation().rotateBy(robotDirection2d)
@@ -299,6 +378,7 @@ class Localizer(commands2.Subsystem):
         shift = shiftMeters * learningRate
         turn = Rotation2d(0.0) if Localizer.TRUST_GYRO_COMPLETELY else turnDegrees * learningRate * 0.25  # 0.25 because we still kind of trust the gyro
         return shift, turn
+
 
     def tagLineNames(self, cameraName, tagId):
         toTag = f"{cameraName}-fromtag{tagId}"
