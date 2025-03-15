@@ -29,9 +29,9 @@ class ArmConstants:
     kAngleTolerance = 1.0  # keep tolerance high for now, to avoid arm stuck in never getting within tolerance from goal
 
     # PID controller settings
-    initialStaticGainTimesP = 1.0  # we are normally this many degrees off because of static forces
+    initialStaticGainTimesP = 0.85  # we are normally this many degrees off because of static forces
     initialD = 0  # 25e-2 * 0.2
-    initialP = 0.0128 * 1.5  # 0.0128 was very strong, 0.05 of that is safe starting value
+    initialP = 0.0128 * 1.0  # 0.0128 was very strong, 0.05 of that is safe starting value
     initialMaxOutput = 0.3
     initialMinOutput = -0.3
     additionalPMult = 3.0  # unused, but we might want to use it when close to target angle?
