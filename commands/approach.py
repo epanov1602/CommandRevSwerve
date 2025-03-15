@@ -119,6 +119,10 @@ class ApproachTag(commands2.Command):
         self.initTunables(dashboardName)
 
 
+    def isReady(self):
+        return self.camera.hasDetection() and self.camera.getA() > 0.3
+
+
     def initTunables(self, prefix):
         self.KPMULT_TRANSLATION = Tunable(prefix + "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
         self.KPMULT_ROTATION = Tunable(prefix + "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
@@ -203,6 +207,7 @@ class ApproachTag(commands2.Command):
         else:
             elapsed = Timer.getFPGATimestamp() - self.tStart
             SmartDashboard.putString("command/c" + self.__class__.__name__, f"{int(1000 * elapsed)}ms: {self.finished}")
+
 
     def execute(self):
         now = Timer.getFPGATimestamp()
@@ -377,6 +382,7 @@ class ApproachTag(commands2.Command):
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
         return math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
+        # note: Arducam w OV9281 (and Limelight 3 / 4) is 0.57 sq radians (not 1.33)
 
 
     def hasReachedGlidePath(self, degreesLeftToRotate: float, distanceToGlidePath: float) -> bool:
