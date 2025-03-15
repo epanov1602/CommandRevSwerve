@@ -50,8 +50,8 @@ class PhotonTagCamera(Subsystem):
         else:
             print(f"camera {self.cameraName} looking at ALL tags")
 
-    def setPipeline(self, index: int):
-        self.camera.setPipelineIndex(index)
+#    def setPipeline(self, index: int):
+#        self.camera.setPipelineIndex(index)
 
     def getPipeline(self) -> int:
         return self.camera.getPipelineIndex()
