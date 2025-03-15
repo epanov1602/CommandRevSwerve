@@ -29,6 +29,7 @@ class JerkyTrajectory(commands2.Command):
         swerve: bool | str = False,
         speed=1.0,
         setup: typing.Optional[typing.Callable[[], None]] = None,
+        stopAtEnd=True,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
@@ -50,6 +51,7 @@ class JerkyTrajectory(commands2.Command):
         self.drivetrain = drivetrain
         self.speed = speed
         self.swerve = swerve
+        self.stopAtEnd = stopAtEnd
         self.setup = setup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints]
         if endpoint is not None:
@@ -168,14 +170,15 @@ class JerkyTrajectory(commands2.Command):
         return point, heading
 
     def _makeWaypointCommand(self, point, heading, last):
+        slowdown = last and self.stopAtEnd
         if not self.swerve or (not last and self.swerve == "last-point"):
             # use arcade drive, if we aren't allowed to use swerve (or not allowed to use swerve for non-end points)
             command = GoToPoint(
-                point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
+                point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=slowdown
             )
         else:
             command = SwerveToPoint(
-                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last, rateLimit=not last
+                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=slowdown, rateLimit=not last
             )
 
         log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"next: {point.x}, {point.y}")

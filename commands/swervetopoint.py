@@ -136,7 +136,8 @@ class SwerveMove(commands2.Command):
         metersBackwards: float,
         drivetrain: DriveSubsystem,
         speed=1.0,
-        heading=None
+        heading=None,
+        slowDownAtFinish=True,
     ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
@@ -144,6 +145,7 @@ class SwerveMove(commands2.Command):
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
         self.metersBackwards = metersBackwards
+        self.slowdownAtFinish = slowDownAtFinish
 
         self.desiredHeading = heading
         if heading is not None and not callable(heading):
@@ -156,7 +158,7 @@ class SwerveMove(commands2.Command):
         heading = self.desiredHeading() if self.desiredHeading is not None else position.rotation()
         tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
-            x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
+            x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=self.slowdownAtFinish
         )
         self.subcommand.initialize()
 
