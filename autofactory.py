@@ -60,10 +60,9 @@ class AutoFactory(object):
 
         shootCmd = AutoFactory.moveArm(self, height=goal1height, final=True).andThen(
             AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.0)
+        ).andThen(
+            AutoFactory.moveArm(self, height=goal1height, final=False)
         )
-        #.andThen(
-        #    AutoFactory.moveArm(self, height=goal1height, final=False)
-        #)
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive, slowDownAtFinish=False)
         dropArmCmd = AutoFactory.moveArm(self, height="intake").andThen(
             AutoFactory.moveArm(self, height="intake")  # belt-and-suspenders hack
