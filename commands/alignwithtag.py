@@ -242,7 +242,9 @@ class AlignWithTag(commands2.Command):
         # ... then it must be 1.0 meters away!
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
-        distanceMeters = math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
+
+        # further calibration revealed that the answer is 1.70 (not 1.33)
+        distanceMeters = math.sqrt(0.2 * 0.2 / (1.70 * 0.01 * objectSizePercent))
 
         # trigonometry: how many meters on the left is our object? (if negative, then it's on the right)
         objectXMeters = -distanceMeters * Rotation2d.fromDegrees(objectXDegrees).sin()
