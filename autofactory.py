@@ -22,7 +22,7 @@ from commands.swervetopoint import SwerveMove
 from commands.reset_xy import ResetXY
 
 # which trajectory to use
-BACKUP_METERS = 0.7
+BACKUP_METERS = 0.2
 
 class AutoFactory(object):
 
@@ -44,7 +44,7 @@ class AutoFactory(object):
         drivingSpeed = self.autoDrvSpeed.getSelected()  # 0.2 default
 
         # commands for approaching and retreating from goal 1 scoring location
-        heading1, approachCmd, retreatCmd, take2Cmd, heading2, feeder = goal1traj(
+        headingTags1, approachCmd, retreatCmd, take2Cmd, headingTags2, feeder = goal1traj(
             self, startPos, speed=drivingSpeed, branch=goal1branch, swerve=swerve, TrajectoryCommand=trajectoryClass
         )
 
@@ -54,8 +54,8 @@ class AutoFactory(object):
         )
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
-        alignWithTagCmd = AutoFactory.alignToTag(
-            self, headingDegrees=heading1, branch=goal1branch, speed=1.0,
+        approachCmd = AutoFactory.approachReef(
+            self, traj=approachCmd, headingTags=headingTags1, branch=goal1branch, speed=1.0,
         )
 
         # commands for raising the arm and firing that gamepiece for goal 1
@@ -74,8 +74,8 @@ class AutoFactory(object):
         reloadCmd = armToIntakePositionCmd.andThen(intakeCmd)
 
         # commands for aligning with the second tag
-        alignWithTag2Cmd = AutoFactory.alignToTag(
-            self, headingDegrees=heading2, branch=goal1branch, speed=1.0
+        take2Cmd = AutoFactory.approachReef(
+            self, traj=take2Cmd, headingTags=headingTags2, branch=goal1branch, speed=1.0
         )
 
         # commands for scoring that second gamepiece
@@ -92,8 +92,6 @@ class AutoFactory(object):
         ).andThen(
             runCmd("approach...", approachCmd)
         ).andThen(
-            runCmd("align+raise...", alignWithTagCmd.alongWith(raiseArmCmd))
-        ).andThen(
             runCmd("shoot...", shootCmd)
         ).andThen(
             runCmd("backup...", backupCmd)
@@ -103,8 +101,6 @@ class AutoFactory(object):
             runCmd("reload...", reloadCmd)
         ).andThen(
             runCmd("take2...", take2Cmd)
-        ).andThen(
-            runCmd("align+raise2...", alignWithTag2Cmd.alongWith(raiseArm2Cmd))
         ).andThen(
             runCmd("shoot2...", shoot2Cmd)
         ).andThen(
@@ -191,8 +187,8 @@ class AutoFactory(object):
         assert branch in ("right", "left")
 
         endpoint = autowaypoints.SideDLeft.kEndpoint[branch]
+        headingTags = endpoint[2], autowaypoints.SideDLeft.tags
         feeder = constants.LeftFeeder
-        heading = endpoint[2]
 
         approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
@@ -200,6 +196,7 @@ class AutoFactory(object):
             speed=speed,
             waypoints=[start] + autowaypoints.SideDLeft.kApproach,
             endpoint=endpoint,
+            stopAtEnd=False,
         )
 
         retreat = TrajectoryCommand(
@@ -210,9 +207,9 @@ class AutoFactory(object):
             endpoint=None, #feeder.location,
         )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
+        take2, headingTags2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
-        return heading, approach, retreat, take2, heading2, feeder
+        return headingTags, approach, retreat, take2, headingTags2, feeder
 
 
 
@@ -222,14 +219,15 @@ class AutoFactory(object):
 
         endpoint = autowaypoints.SideDRight.kEndpoint[branch]
         feeder = constants.RightFeeder
-        heading = endpoint[2]
+        headingTags = endpoint[2], autowaypoints.SideDRight.tags
 
-        approach = TrajectoryCommand(
+        approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[start] + autowaypoints.SideDRight.kApproach,
             endpoint=endpoint,
+            stopAtEnd=False,
         )
 
         retreat = TrajectoryCommand(
@@ -240,9 +238,9 @@ class AutoFactory(object):
             endpoint=None, #feeder.location
         )
 
-        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
+        take2, headingTags2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
 
-        return heading, approach, retreat, take2, heading2, feeder
+        return headingTags, approach, retreat, take2, headingTags2, feeder
 
 
     @staticmethod
@@ -253,14 +251,15 @@ class AutoFactory(object):
 
         endpoint = autowaypoints.SideC.kEndpoint[branch]
         feeder = constants.RightFeeder
-        heading = endpoint[2]
+        headingTags = endpoint[2], autowaypoints.SideC.tags
 
-        approach = TrajectoryCommand(
+        approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[start] + autowaypoints.SideC.kApproach,
             endpoint=endpoint,
+            stopAtEnd=False,
         )
 
         retreat = TrajectoryCommand(
@@ -271,9 +270,9 @@ class AutoFactory(object):
             endpoint=None, #feeder.location
         )
 
-        take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
+        take2, headingTags2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
 
-        return heading, approach, retreat, take2, heading2, feeder
+        return headingTags, approach, retreat, take2, headingTags2, feeder
 
 
     @staticmethod
@@ -282,14 +281,15 @@ class AutoFactory(object):
 
         endpoint = autowaypoints.SideE.kEndpoint[branch]
         feeder = constants.LeftFeeder
-        heading = endpoint[2]
+        headingTags = endpoint[2], autowaypoints.SideE.tags
 
-        approach = TrajectoryCommand(
+        approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
             waypoints=[start] + autowaypoints.SideE.kApproach,
             endpoint=endpoint,
+            stopAtEnd=False,
         )
 
         retreat = TrajectoryCommand(
@@ -300,9 +300,9 @@ class AutoFactory(object):
             endpoint=None, #feeder.location
         )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
+        take2, headingTags2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
-        return heading, approach, retreat, take2, heading2, feeder
+        return headingTags, approach, retreat, take2, headingTags2, feeder
 
 
 
@@ -310,7 +310,7 @@ class AutoFactory(object):
     def trajectoriesToSideF(self, start, branch="right", speed=0.2, swerve="last-point", TrajectoryCommand=JerkyTrajectory):
         assert branch in ("right", "left")
 
-        heading = -60
+        headingTags = -60, (6, 19)
         endpoint = (3.070, 6.146, -60.0) if branch == "right" else (3.050, 6.306, -60.0)
         feeder = constants.LeftFeeder
 
@@ -337,14 +337,15 @@ class AutoFactory(object):
             endpoint=None, #feeder.location
         )
 
-        take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
+        take2, headingTags2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
 
-        return heading, approach, retreat, take2, heading2, feeder
+        return headingTags, approach, retreat, take2, headingTags2, feeder
 
 
     @staticmethod
     def goToSideB(self, branch, speed, swerve, TrajectoryCommand):
         heading = +60  # side B endpoint is at +60 degrees (West)
+        tags = (8, 17)  # side B has AprilTags 8 and 17
         trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
@@ -354,12 +355,13 @@ class AutoFactory(object):
             ],
             speed=speed
         )
-        return trajectory, heading
+        return trajectory, (heading, tags)
 
 
     @staticmethod
     def goToSideF(self, branch, speed, swerve, TrajectoryCommand):
         heading = -60  # side F endpoint is at -60 degrees (East)
+        tags = (6, 19)  # side F has AprilTags 6 and 19
         trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
@@ -369,36 +371,20 @@ class AutoFactory(object):
             ],
             speed=speed
         )
-        return trajectory, heading
+        return trajectory, (heading, tags)
 
 
     @staticmethod
-    def alignToTag(self, headingDegrees, branch="right", pipeline=0, tags=None, speed=1.0, pushFwdSeconds=1.5):
-        assert branch in ("right", "left")
+    def approachReef(self, headingTags, branch="right", speed=1.0, pushFwdSeconds=1.5, traj=None):
+        headingDegrees, tags = headingTags
+        assert len(tags) > 0
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
+        assert branch in ("right", "left")
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
-
-        if TimedCommandRobot.isSimulation():
-            return AutoFactory.alignToTagSim(self, headingDegrees, branch, speed, pushFwdSeconds)
 
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.approach import ApproachTag
-
-        # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForWhichTags = SetCameraPipeline(camera, pipelineIndex=pipeline, onlyTagIds=tags)
-
-        # if tag is not seen, wiggle right and left until it is maybe seen
-        wiggle = AimToDirection(headingDegrees + 30, self.robotDrive).andThen(
-            WaitCommand(seconds=0.1)
-        ).andThen(
-            AimToDirection(headingDegrees - 30, self.robotDrive)
-        ).andThen(
-            WaitCommand(seconds=0.1)
-        ).andThen(
-            AimToDirection(headingDegrees, self.robotDrive)
-        )
-        findTheTag = wiggle.until(camera.hasDetection)
 
         approach = ApproachTag(
             camera,
@@ -409,21 +395,30 @@ class AutoFactory(object):
             dashboardName="auto",
         )
 
-        # connect them together
-        alignToScore = (
-            runCmd("align: setpipe...", lookForWhichTags)
-        ).andThen(
-            runCmd("align: find...", findTheTag)
-        ).andThen(
-            runCmd(f"align: approach @ {speed}...", approach)
+        result = approach.beforeStarting(
+            lambda: SmartDashboard.putString("autoStatus", f"apching reef: tags={tags}, h={headingDegrees}")
         )
-        return alignToScore
+
+        # if we have an interruptable trajectory, only run it until `approach` is ready to take over and run
+        if traj is not None:
+            result = traj.until(approach.isReady).andThen(result)
+
+        # if we have specific tags to watch, prepare to watch them
+        if tags:
+            result = SetCameraPipeline(camera, 0, tags).andThen(result)
+
+        return result
 
 
     @staticmethod
     def backIntoFeeder(self, camera, headingDegrees, speed=1.0, traj=None, tags=None):
-        from commands.followobject import FollowObject, StopWhen
+        """
+        :param traj: trajectory that can be interrupted whenever we can back into the feeder
+        :return: a command to back the robot into the feeder
+        """
         from commands.approach import ApproachTag
+
+        assert tags, "tags must be specified if you want to back into feeder autonomously"
 
         if abs(speed) > 1:
             speed = math.copysign(1.0, speed)
@@ -437,17 +432,18 @@ class AutoFactory(object):
             pushForwardSeconds=0.6,  # 0.6 was good
             finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
-        ).beforeStarting(lambda: SmartDashboard.putString("autoStatus", f"approaching: heading={headingDegrees}"))
+        )
 
         # 1. the command
-        result = approach
+        result = approach.beforeStarting(
+            lambda: SmartDashboard.putString("autoStatus", f"apching reef: tags={tags}, h={headingDegrees}")
+        )
 
         # 2. do we have an existing trajectory to terminate when feeder is visible?
         if traj is not None:
             def feederVisible():
                 if (
-                    camera.hasDetection()
-                    and camera.getA() > 0.25
+                    approach.isReady()
                     and abs(self.robotDrive.getHeading().degrees()) < 90  # robot is looking at our side of field
                     and self.robotDrive.getPose().x < 4.5  # robot is located between reef and feeder
                 ):
@@ -464,6 +460,7 @@ class AutoFactory(object):
             result = pipeline.andThen(result)
 
         return result
+
 
     @staticmethod
     def moveArm(self, height, final=True):
@@ -487,7 +484,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def ejectGamepiece(self, calmdownSecondsBeforeFiring=0.5, speed=0.3, timeoutSeconds=0.3):
+    def ejectGamepiece(self, calmdownSecondsBeforeFiring=0.0, speed=0.3, timeoutSeconds=0.3):
         from commands.intakecommands import IntakeFeedGamepieceForward
         calmdown = WaitCommand(seconds=calmdownSecondsBeforeFiring)
         shoot = IntakeFeedGamepieceForward(self.intake, speed=speed).withTimeout(timeoutSeconds)
@@ -500,15 +497,6 @@ class AutoFactory(object):
             return WaitCommand(seconds=0.5)  # play pretend, in simulation
 
         return IntakeGamepiece(self.intake, speed=speed)
-
-
-    @staticmethod
-    def alignToTagSim(self, headingDegrees, branch, speed, pushFwdSeconds):
-        # no camera use in simulation
-        fwd = SwerveMove(metersToTheLeft=0, metersBackwards=-0.4, speed=speed, drivetrain=self.robotDrive)
-        align = AimToDirection(headingDegrees, drivetrain=self.robotDrive)
-        push = SwerveMove(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=0.2)
-        return fwd.andThen(align).andThen(push.withTimeout(pushFwdSeconds))
 
 
     @staticmethod
@@ -534,7 +522,10 @@ class AutoFactory(object):
             goal1branch = self.goal1branch.getSelected()
             goal1traj = self.goal1traj.getSelected()
 
-            heading, approach, retreat, take2, heading2, feeder = goal1traj(self, start=start, branch=goal1branch)
+            headingTags, approach, retreat, take2, headingTags2, feeder = goal1traj(self, start=start, branch=goal1branch)
+
+            heading, tags = headingTags
+            heading2, tags2 = headingTags2
 
             display = lambda t: t.trajectoryToDisplay() if hasattr(t, "trajectoryToDisplay") else []
             approach, retreat, take2 = display(approach), display(retreat), display(take2)
