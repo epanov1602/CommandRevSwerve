@@ -268,12 +268,6 @@ class RobotContainer:
         from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
 
-        # pov down = approach the feeder using camera
-        if self.scoringController != self.driverController:
-            self.scoringController.povDown().whileTrue(AutoFactory.backIntoFeeder(
-                self, camera=self.rearCamera, headingDegrees=-54, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=15
-            ))
-
         # right bumper = intake new gamepiece
         intakingPosButton = self.scoringController.button(XboxController.Button.kRightBumper)
         goToIntakePositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
@@ -323,7 +317,7 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.approachReef(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=1.2)
             )
-            self.driverController.button(XboxController.Button.kLeftBumper).whileTrue(
+            self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
                 self.approachFeeder()
             )
 
@@ -465,7 +459,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.594, 5.635, -120),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
             ],
@@ -484,7 +478,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.165, 5.606, -120),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
             ],
@@ -616,7 +610,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.50, 3.85, 180)),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (5.155, 1.916, 90),
@@ -637,7 +631,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.50, 4.20, 180)),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (4.477, 1.906, 90),
@@ -658,7 +652,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.400, 5.546, -60.0),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -670,12 +664,13 @@ class RobotContainer:
             goSideFLeftBranch,
             self.approachReef(self.frontRightCamera, desiredHeading=+300)
         )
+
         goSideFRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             endpoint=(3.270, 5.446, -60.0),
             waypoints=[
-                (1.435, 6.765, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -778,8 +773,13 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
-            pushForwardSeconds=1.1,  # calirated with Eric, Enrique and Davi
+            pushForwardSeconds=0.6,  # 0.6 was good, 0.3 too small
             finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
+            dashboardName="back",
         )
 
-        return pipeline.andThen(command).withTimeout(10)
+        moveBackIfNoDetection = SwerveMove(
+            metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=1.0
+        ).until(self.rearCamera.hasDetection)
+
+        return pipeline.andThen(moveBackIfNoDetection).andThen(command).withTimeout(10)
