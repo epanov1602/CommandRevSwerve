@@ -364,7 +364,7 @@ class AutoFactory(object):
         trajectory = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.370, 5.646, -60.0) if branch == "right" else (3.650, 5.806, -60.0),
+            endpoint=(3.370, 5.646, -60.0) if branch == "right" else (3.450, 5.806, -60.0),
             waypoints=[
                 (1.285, 6.915, -54),
             ],
@@ -434,9 +434,10 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            pushForwardSeconds=0.25,  # calibrated for translation gain=0.7
+            kpMultOverride=1.1,
+            pushForwardSeconds=0.01, # 0.25 was calibrated for kpMultOverride=0.7
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
-            dashboardName="back",
+            dashboardName="abck",
         )
 
         # 1. the command
