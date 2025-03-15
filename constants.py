@@ -171,13 +171,13 @@ class AutoConstants:
 
     # below are really trajectory constants
     kMaxSpeedMetersPerSecond = DriveConstants.kMaxSpeedMetersPerSecond * 0.9
-    kMaxAccelerationMetersPerSecondSquared = 3
-    kMaxAngularSpeedRadiansPerSecond = math.pi
-    kMaxAngularSpeedRadiansPerSecondSquared = math.pi
+    kMaxAccelerationMetersPerSecondSquared = 4
+    kMaxAngularSpeedRadiansPerSecond = 2 * math.pi
+    kMaxAngularSpeedRadiansPerSecondSquared = 2 * math.pi
 
     kPXController = 1
     kPYController = 1
-    kPThetaController = 1
+    kPThetaController = 2
 
     # Constraint for the motion profiled robot angle controller
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(

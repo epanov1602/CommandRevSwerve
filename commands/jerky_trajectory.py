@@ -16,7 +16,7 @@ from commands.aimtodirection import AimToDirection
 from commands.swervetopoint import SwerveToPoint
 from commands.gotopoint import GoToPoint
 
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Transform2d
 from wpilib import SmartDashboard
 
 
@@ -215,14 +215,25 @@ class SwerveTrajectory(JerkyTrajectory):
         # Add kinematics to ensure max speed is actually obeyed
         config.setKinematics(DriveConstants.kDriveKinematics)
 
+        currentPose = self.drivetrain.getPose()
+        currentPoint, currentHeading = currentPose.translation(), currentPose.rotation()
+        if endHeading is None: endHeading = currentHeading
+
+        def makeTrajectoryPose(translation, rotation):
+            if rotation is None:
+                rotation = currentHeading
+            if self.speed < 0:
+                rotation += Rotation2d.fromDegrees(180)
+            return Pose2d(translation, rotation)
+
         # An example trajectory to follow. All units in meters.
         trajectory = TrajectoryGenerator.generateTrajectory(
             # Start at the current point
-            self.drivetrain.getPose(),
+            makeTrajectoryPose(currentPoint, currentHeading),
             # Pass through these interior waypoints
             [w[0] for w in waypoints[0:-1]],
             # End 1.5 meters straight ahead of where we started, facing forward
-            Pose2d(endPt, endHeading),
+            makeTrajectoryPose(endPt, endHeading),
             config,
         )
 
@@ -247,6 +258,7 @@ class SwerveTrajectory(JerkyTrajectory):
             driveController,
             self.drivetrain.setModuleStates,
             (self.drivetrain,),
+            desiredRotation=lambda: endHeading
         )
 
         # If the robot fell behind the trajectory (trajectory speed too high in optimizer), brute-force catch up @ end
