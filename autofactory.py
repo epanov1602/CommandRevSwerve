@@ -406,7 +406,7 @@ class AutoFactory(object):
 
         # if we have an interruptable trajectory, only run it until `approach` is ready to take over and run
         if traj is not None:
-            result = traj.until(lambda: approach.isReady(minRequiredObjectSize=0.8)).andThen(result)
+            result = traj.until(lambda: approach.isReady(minRequiredObjectSize=1.2)).andThen(result)
 
         # if we have specific tags to watch, prepare to watch them
         if tags:
