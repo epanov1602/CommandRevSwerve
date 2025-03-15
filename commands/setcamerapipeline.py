@@ -62,6 +62,6 @@ class SetCameraPipeline(commands2.Command):
         if commands2.TimedCommandRobot.isSimulation():
             return True
         # otherwise, print that we aren't finished
-        print("SetCameraPipeline: not yet finished, because camera pipeline = {} and we want {}".format(
-            self.camera.getPipeline(), self.pipelineIndex)
+        print("SetCameraPipeline({}): not yet finished, because camera pipeline = {} and we want {}".format(
+            self.camera.cameraName, self.camera.getPipeline(), self.pipelineIndex)
         )
