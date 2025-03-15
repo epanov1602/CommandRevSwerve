@@ -725,9 +725,9 @@ class RobotContainer:
         rotations = rotation1.andThen(rotation2)
 
         # 4. vision: kiss an AprilTag in front with the right camera, and then with the left camera
-        alignWRightCam = self.approachReef(self.frontRightCamera, allTags=True, desiredHeading=None)
+        alignWRightCam = self.approachReef(self.frontRightCamera, desiredHeading=None)
         moveBack = SwerveMove(metersBackwards=0.5, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2)
-        alignWLeftCam = self.approachReef(self.frontLeftCamera, allTags=True, desiredHeading=None)
+        alignWLeftCam = self.approachReef(self.frontLeftCamera, desiredHeading=None)
         # and the complicated part: turn around and kiss same AprilTag with the back camera
         turnAround = SwerveMove(metersBackwards=0.3, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2,
                                 heading=lambda: self.robotDrive.getHeading().rotateBy(Rotation2d.fromDegrees(180)))
@@ -735,7 +735,7 @@ class RobotContainer:
             SetCameraPipeline(self.rearCamera, 0, None)
         ).andThen(
             AutoFactory.backIntoFeeder(
-                self, camera=self.rearCamera, headingDegrees=None, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=1.0
+                self, camera=self.rearCamera, headingDegrees=None, speed=0.15
             )
         )
 
