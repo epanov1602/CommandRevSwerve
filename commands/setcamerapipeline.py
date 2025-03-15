@@ -13,11 +13,31 @@ from subsystems.drivesubsystem import DriveSubsystem
 from wpimath.geometry import Rotation2d
 from wpilib import Timer
 
+# if you are using Limelight, probably need to set up the pipelines to match this
+DEFAULT_PIPELINE_TO_TAGS = {
+    0: (),  # all tags
+    6: (6, 19),
+    7: (7, 18),
+    8: (8, 17),
+    9: (9, 22),
+    4: (10, 21),
+    5: (11, 20),
+}
+
 
 class SetCameraPipeline(commands2.Command):
 
     def __init__(self, camera, pipelineIndex=0, onlyTagIds=()):
         super().__init__()
+
+        # can we imply a pipeline index from tags that we were given?
+        if pipelineIndex in (None, 0) and onlyTagIds:
+            onlyTagIds = set(onlyTagIds)
+            candidates = [p for p, tags in DEFAULT_PIPELINE_TO_TAGS.items() if onlyTagIds.intersection(tags)]
+            if len(candidates) == 1:
+                pipelineIndex = candidates[0]
+            assert pipelineIndex is not None, f"failed to imply pipelineIndex from tags {onlyTagIds} (index was =None)"
+
         self.pipelineIndex = pipelineIndex
         self.onlyTagIds = onlyTagIds
         self.camera = camera
