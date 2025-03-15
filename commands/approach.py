@@ -46,6 +46,7 @@ class ApproachTag(commands2.Command):
         specificHeadingDegrees=None,
         speed=0.2,
         reverse=False,
+        kpMultOverride=None,
         pushForwardSeconds=0.0,  # length of final approach
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
@@ -75,6 +76,7 @@ class ApproachTag(commands2.Command):
         self.addRequirements(camera)
 
         self.reverse = reverse
+        self.kpMultOverride = kpMultOverride
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
@@ -150,7 +152,9 @@ class ApproachTag(commands2.Command):
     def initialize(self):
         for t in self.tunables:
             t.fetch()
-        print(f"ApproachTag: translation gain value {self.KPMULT_TRANSLATION.value}, power={self.APPROACH_SHAPE.value}")
+
+        kpMultTran = self.kpMultOverride if self.kpMultOverride is not None else self.KPMULT_TRANSLATION.value
+        print(f"ApproachTag: translation gain value {kpMultTran}, power={self.APPROACH_SHAPE.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.tReachedGlidePath = 0.0  # time when reached the glide path
@@ -361,9 +365,10 @@ class ApproachTag(commands2.Command):
 
 
     def computeProportionalSpeed(self, distance) -> float:
-        velocity = distance * GoToPointConstants.kPTranslate * self.KPMULT_TRANSLATION.value
+        kpMultTran = self.kpMultOverride if self.kpMultOverride is not None else self.KPMULT_TRANSLATION.value
+        velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
         if GoToPointConstants.kUseSqrtControl:
-            velocity = math.sqrt(0.5 * velocity * self.KPMULT_TRANSLATION.value)
+            velocity = math.sqrt(0.5 * velocity * kpMultTran)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
