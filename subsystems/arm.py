@@ -1,5 +1,5 @@
 import rev
-from rev import SparkMax, SparkBase, SparkBaseConfig, LimitSwitchConfig, ClosedLoopConfig
+from rev import SparkMax, SparkFlex, SparkBase, SparkBaseConfig, LimitSwitchConfig, ClosedLoopConfig
 from wpimath.geometry import Rotation2d
 from commands2 import Subsystem
 from wpilib import SmartDashboard
@@ -57,7 +57,7 @@ def safeArmAngleRange(elevatorPosition: float):
 
     if elevatorPosition < 0.5:
         return 32 + offset, 160 + offset
-    elif elevatorPosition < 28:
+    elif elevatorPosition < 29:
         return 65 + offset, 75 + offset
     else:
         return 35 + offset, 160 + offset
@@ -88,7 +88,7 @@ class Arm(Subsystem):
             ArmConstants.initialP * ArmConstants.additionalPMult
         )
 
-        self.leadMotor = SparkMax(leadMotorCANId, SparkMax.MotorType.kBrushless)
+        self.leadMotor = SparkFlex(leadMotorCANId, SparkBase.MotorType.kBrushless)
         self.leadMotor.configure(
             self.defaultLeadMotorConfig,
             SparkBase.ResetMode.kResetSafeParameters,
@@ -132,12 +132,12 @@ class Arm(Subsystem):
             if angle < minSafeAngle:
                 return "arm angle too low"
             if angle > maxSafeAngle:
-                return "arm angle too high"
+                return f"arm angle too high: {angle} vs {maxSafeAngle}"
             angleGoal = self.getAngleGoal()
             if angleGoal < minSafeAngle:
                 return "arm anglegoal too low"
             if angleGoal > maxSafeAngle:
-                return "arm anglegoal too high"
+                return f"arm anglegoal too high: {angleGoal} vs {maxSafeAngle}"
 
 
     def periodic(self) -> None:

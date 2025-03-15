@@ -1,7 +1,7 @@
 import typing
 
 from commands2 import Subsystem
-from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
+from rev import SparkMax, SparkFlex, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard, Timer
 
 EMA_RATE = 0.05
@@ -53,7 +53,7 @@ class Intake(Subsystem):
         motorConfig.limitSwitch.forwardLimitSwitchEnabled(limitSwitchEnabled)
 
         # 1. setup the leader motor
-        self.motor = SparkMax(leaderCanID, SparkLowLevel.MotorType.kBrushless)
+        self.motor = SparkFlex(leaderCanID, SparkLowLevel.MotorType.kBrushless)
         self.motor.configure(motorConfig,
                              SparkBase.ResetMode.kResetSafeParameters,
                              SparkBase.PersistMode.kPersistParameters)
@@ -66,7 +66,7 @@ class Intake(Subsystem):
         self.followerMotor = None
         if followerCanID is not None:
             motorConfig.inverted(followerInverted)
-            self.followerMotor = SparkMax(followerCanID, SparkLowLevel.MotorType.kBrushless)
+            self.followerMotor = SparkFlex(followerCanID, SparkLowLevel.MotorType.kBrushless)
             self.followerMotor.configure(motorConfig,
                                          SparkBase.ResetMode.kResetSafeParameters,
                                          SparkBase.PersistMode.kPersistParameters)
