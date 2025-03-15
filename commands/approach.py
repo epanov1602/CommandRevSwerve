@@ -134,7 +134,7 @@ class ApproachTag(commands2.Command):
         self.DESIRED_HEADING_RADIUS = Tunable(prefix + "Headng+-", 30, (5, 45))
 
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
-        self.APPROACH_SHAPE = Tunable(prefix + "TrjShape", 4.0, (2.0, 8.0))
+        self.APPROACH_SHAPE = Tunable(prefix + "TrjShape", 3.0, (2.0, 8.0))
 
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
@@ -150,7 +150,7 @@ class ApproachTag(commands2.Command):
     def initialize(self):
         for t in self.tunables:
             t.fetch()
-        print(f"ApproachTag: translation gain value {self.KPMULT_TRANSLATION.value}")
+        print(f"ApproachTag: translation gain value {self.KPMULT_TRANSLATION.value}, power={self.APPROACH_SHAPE.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
         self.tReachedGlidePath = 0.0  # time when reached the glide path

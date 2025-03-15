@@ -313,10 +313,10 @@ class RobotContainer:
                 return rounded
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
-               self.approachReef(self.frontRightCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=1.2)
+               self.approachReef(self.frontRightCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=0.8)
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.approachReef(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=1.2)
+                self.approachReef(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=0.6)
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
                 self.approachFeeder()
@@ -760,7 +760,7 @@ class RobotContainer:
         return command.withTimeout(6)
 
 
-    def approachFeeder(self):
+    def approachFeeder(self, pushForwardSeconds=0.25):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -774,13 +774,17 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
-            pushForwardSeconds=0.6,  # 0.6 was good, 0.3 too small
-            finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
 
-        moveBackIfNoDetection = SwerveMove(
-            metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=1.0
-        ).until(self.rearCamera.hasDetection)
+        moveBack = SwerveMove(
+            metersToTheLeft=0, metersBackwards=0.125, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
+        ).andThen(
+            SwerveMove(
+                metersToTheLeft=0, metersBackwards=0.125, drivetrain=self.robotDrive, speed=1.0
+            ).until(self.rearCamera.hasDetection)
+        )
 
-        return pipeline.andThen(moveBackIfNoDetection).andThen(command).withTimeout(10)
+        return pipeline.andThen(moveBack).andThen(command).withTimeout(10)

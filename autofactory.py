@@ -55,7 +55,7 @@ class AutoFactory(object):
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         approachCmd = AutoFactory.approachReef(
-            self, traj=approachCmd, headingTags=headingTags1, branch=goal1branch, speed=1.0,
+            self, traj=approachCmd, headingTags=headingTags1, branch=goal1branch,
         )
 
         # commands for raising the arm and firing that gamepiece for goal 1
@@ -375,7 +375,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def approachReef(self, headingTags, branch="right", speed=1.0, pushFwdSeconds=1.5, traj=None):
+    def approachReef(self, headingTags, branch="right", pushFwdSeconds=0.8, speed=1.0, traj=None):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
 
@@ -390,7 +390,7 @@ class AutoFactory(object):
             camera,
             self.robotDrive,
             headingDegrees,
-            speed=1.0,
+            speed=speed,
             pushForwardSeconds=pushFwdSeconds,
             dashboardName="auto",
         )
@@ -429,14 +429,14 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            pushForwardSeconds=0.6,  # 0.6 was good
-            finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
+            pushForwardSeconds=0.25,  # calibrated for translation gain=0.7
+            finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
 
         # 1. the command
         result = approach.beforeStarting(
-            lambda: SmartDashboard.putString("autoStatus", f"apching reef: tags={tags}, h={headingDegrees}")
+            lambda: SmartDashboard.putString("autoStatus", f"apching feeder: tags={tags}, h={headingDegrees}")
         )
 
         # 2. do we have an existing trajectory to terminate when feeder is visible?
