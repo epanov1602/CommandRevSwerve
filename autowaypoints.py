@@ -8,6 +8,8 @@ class SideE:
         "left": (5.906, 5.919, -120),
     }
 
+    tags = (11, 20)  # tags of side E
+
     kApproach = [
         (6.491, 5.846, -170.0),
     ]
@@ -21,16 +23,19 @@ class SideE:
 
 class SideDLeft:
     kEndpoint = {
-        "left": (6.89, 3.80, 180),
-        "right": (6.89, 4.25, 180),
+        "left": (6.69, 3.84, 180),
+        "right": (6.69, 4.21, 180),
     }
+
+    tags = (10, 21)  # tags of side D
 
     kApproach = []
 
     kReload = [
         (6.791, 4.832, -180.0),
+        (6.991, 5.432, -180.0),
         (5.291, 6.632, -180.0),
-        (2.685, 5.515, -54.0),
+        (3.185, 5.615, -54.0),
         (2.385, 5.815, -54.0),
     ]
 
@@ -38,6 +43,7 @@ class SideDLeft:
 class SideDRight:
     kApproach = mirror(SideDLeft.kApproach)
     kReload = mirror(SideDLeft.kReload)
+    tags = SideDLeft.tags  # tags of side D
     kEndpoint = {
         "right": mirror(SideDLeft.kEndpoint["left"]),
         "left": mirror(SideDLeft.kEndpoint["right"]),
@@ -46,6 +52,7 @@ class SideDRight:
 
 class SideC:
     kApproach = mirror(SideE.kApproach)
+    tags = (9, 22)  # tags of side C
     kReload = mirror(SideE.kReload)
     kEndpoint = {
         "right": mirror(SideE.kEndpoint["left"]),
