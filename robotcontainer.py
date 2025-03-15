@@ -760,7 +760,7 @@ class RobotContainer:
         return command.withTimeout(6)
 
 
-    def approachFeeder(self, pushForwardSeconds=0.25):
+    def approachFeeder(self, pushForwardSeconds=0.1):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -774,17 +774,14 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
+            kpMultOverride=1.0,
             pushForwardSeconds=pushForwardSeconds,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
 
         moveBack = SwerveMove(
-            metersToTheLeft=0, metersBackwards=0.125, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
-        ).andThen(
-            SwerveMove(
-                metersToTheLeft=0, metersBackwards=0.125, drivetrain=self.robotDrive, speed=1.0
-            ).until(self.rearCamera.hasDetection)
+            metersToTheLeft=0, metersBackwards=0.2, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
         )
 
         return pipeline.andThen(moveBack).andThen(command).withTimeout(10)
