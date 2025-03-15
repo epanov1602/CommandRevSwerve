@@ -119,8 +119,8 @@ class ApproachTag(commands2.Command):
         self.initTunables(dashboardName)
 
 
-    def isReady(self):
-        return self.camera.hasDetection() and self.camera.getA() > 0.3
+    def isReady(self, minRequiredObjectSize=0.3):
+        return self.camera.hasDetection() and self.camera.getA() > minRequiredObjectSize
 
 
     def initTunables(self, prefix):

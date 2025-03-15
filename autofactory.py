@@ -49,24 +49,24 @@ class AutoFactory(object):
         )
 
         # if we are allowed to use rearview camera, can the `retreatCmd` be smarter?
-        retreatCmd = AutoFactory.backIntoFeeder(
+        retreatCmd = AutoFactory.approachFeeder(
             self, self.rearCamera, feeder.location[2], traj=retreatCmd, tags=feeder.tags, speed=drivingSpeed
         )
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         approachCmd = AutoFactory.approachReef(
-            self, traj=approachCmd, headingTags=headingTags1, branch=goal1branch,
+            self, traj=approachCmd, headingTags=headingTags1, branch=goal1branch, height=goal1height
         )
 
-        # commands for raising the arm and firing that gamepiece for goal 1
-        raiseArmCmd = AutoFactory.moveArm(self, height=goal1height, final=False)
         shootCmd = AutoFactory.moveArm(self, height=goal1height, final=True).andThen(
             AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.0)
         ).andThen(
             AutoFactory.moveArm(self, height=goal1height, final=False)
         )
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive, slowDownAtFinish=False)
-        dropArmCmd = AutoFactory.moveArm(self, height="intake")
+        dropArmCmd = AutoFactory.moveArm(self, height="intake").andThen(
+            AutoFactory.moveArm(self, height="intake")  # belt-and-suspenders hack
+        )
 
         # commands for reloading a new gamepiece from the feeding station
         armToIntakePositionCmd = AutoFactory.moveArm(self, height="intake")
@@ -75,11 +75,10 @@ class AutoFactory(object):
 
         # commands for aligning with the second tag
         take2Cmd = AutoFactory.approachReef(
-            self, traj=take2Cmd, headingTags=headingTags2, branch=goal1branch, speed=1.0
+            self, traj=take2Cmd, headingTags=headingTags2, branch=goal1branch, height=goal2height, speed=1.0
         )
 
         # commands for scoring that second gamepiece
-        raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height, final=False)
         shoot2Cmd = AutoFactory.moveArm(self, height=goal2height, final=True).andThen(
             AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0)
         )
@@ -117,12 +116,12 @@ class AutoFactory(object):
 
         # 0. starting position for all autos
         self.startPos = SendableChooser()
-        self.startPos.addOption("1: L+", (7.189, 7.75, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("2: L", (7.189, 6.177, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("1: L+", (7.189, 7.75, -180))  # (x, y, headingDegrees)
+        self.startPos.addOption("2: L", (6.98, 6.177, -142))  # (x, y, headingDegrees)
         self.startPos.setDefaultOption("3: ML", (7.189, 4.40, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("4: MID", (7.189, 4.025, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("5: MR", (7.189, 3.65, 180))  # (x, y, headingDegrees)
-        self.startPos.addOption("6: R", (7.189, 1.897, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("6: R", (6.98, 1.897, 142))  # (x, y, headingDegrees)
         self.startPos.addOption("7: R+", (7.189, 0.4, 180))  # (x, y, headingDegrees)
 
         # goal 1
@@ -375,13 +374,17 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def approachReef(self, headingTags, branch="right", pushFwdSeconds=0.8, speed=1.0, traj=None):
+    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.8, speed=1.0, traj=None):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
         assert branch in ("right", "left")
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
+
+        # limelight is slower
+        if branch == "left":
+            pushFwdSeconds *= 1.3
 
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.approach import ApproachTag
@@ -399,9 +402,11 @@ class AutoFactory(object):
             lambda: SmartDashboard.putString("autoStatus", f"apching reef: tags={tags}, h={headingDegrees}")
         )
 
+        result = result.alongWith(AutoFactory.moveArm(self, height=height, final=False))
+
         # if we have an interruptable trajectory, only run it until `approach` is ready to take over and run
         if traj is not None:
-            result = traj.until(approach.isReady).andThen(result)
+            result = traj.until(lambda: approach.isReady(minRequiredObjectSize=0.8)).andThen(result)
 
         # if we have specific tags to watch, prepare to watch them
         if tags:
@@ -411,7 +416,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def backIntoFeeder(self, camera, headingDegrees, speed=1.0, traj=None, tags=None):
+    def approachFeeder(self, camera, headingDegrees, speed=1.0, traj=None, tags=None):
         """
         :param traj: trajectory that can be interrupted whenever we can back into the feeder
         :return: a command to back the robot into the feeder

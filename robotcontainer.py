@@ -117,8 +117,8 @@ class RobotContainer:
             if not self.elevator.zeroFound and not commands2.TimedCommandRobot.isSimulation():
                 return 0.25  # if elevator does not know its zero, max speed = 25%
             elevatorPosition = self.elevator.getPosition()
-            if elevatorPosition > 7.0:
-                return 0.1  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
+            if elevatorPosition > 10.0:
+                return 0.2  # if elevator position is above 7 inches, max speed = 10% (maybe needs to be much lower?)
             # otherwise, full 100%
             return 1.0
 
@@ -735,7 +735,7 @@ class RobotContainer:
         alignWBackCam = turnAround.andThen(
             SetCameraPipeline(self.rearCamera, 0, None)
         ).andThen(
-            AutoFactory.backIntoFeeder(
+            AutoFactory.approachFeeder(
                 self, camera=self.rearCamera, headingDegrees=None, speed=0.15
             )
         )
