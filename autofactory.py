@@ -40,10 +40,7 @@ class AutoFactory(object):
         if goal2height == "same": goal2height = goal1height
 
         trajectoryClass, swerve = self.autoTrajStyle.getSelected()
-        reloadSpeed = self.autoReloadSpeed.getSelected()
 
-        reloadDistance = self.autoReloadDistance.getSelected()  # 1.0 default
-        approachSpeed = self.autoTagApproachSpeed.getSelected()  # 0.25 default
         drivingSpeed = self.autoDrvSpeed.getSelected()  # 0.2 default
 
         # commands for approaching and retreating from goal 1 scoring location
@@ -52,42 +49,40 @@ class AutoFactory(object):
         )
 
         # if we are allowed to use rearview camera, can the `retreatCmd` be smarter?
-        if reloadSpeed and reloadSpeed > 0:
-            retreatCmd = AutoFactory.backIntoFeeder(
-                self, self.rearCamera, feeder.location[2], traj=retreatCmd, tags=feeder.tags, speed=0.3,
-                pushFwdSpeed=0.1 * reloadSpeed, pushFwdSeconds=2.0 / reloadSpeed * reloadDistance
-            )
-
-        # ^^ `heading1` and `heading2` are numbers (in degrees), for example heading1=180 means "South"
-        approachCmd = approachCmd
+        retreatCmd = AutoFactory.backIntoFeeder(
+            self, self.rearCamera, feeder.location[2], traj=retreatCmd, tags=feeder.tags, speed=drivingSpeed
+        )
 
         # command do we use for aligning the robot to AprilTag after approaching goal 1
         alignWithTagCmd = AutoFactory.alignToTag(
-            self, headingDegrees=heading1, branch=goal1branch, speed=approachSpeed
+            self, headingDegrees=heading1, branch=goal1branch, speed=1.0,
         )
 
         # commands for raising the arm and firing that gamepiece for goal 1
         raiseArmCmd = AutoFactory.moveArm(self, height=goal1height, final=False)
         shootCmd = AutoFactory.moveArm(self, height=goal1height, final=True).andThen(
-            AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
+            AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0.0)
+        ).andThen(
+            AutoFactory.moveArm(self, height=goal1height, final=False)
         )
-        backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
+        backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive, slowDownAtFinish=False)
         dropArmCmd = AutoFactory.moveArm(self, height="intake")
 
         # commands for reloading a new gamepiece from the feeding station
-        pushIntoFeedingStationCmd = SwerveMove(0, metersBackwards=0.3, speed=0.1, drivetrain=self.robotDrive)
         armToIntakePositionCmd = AutoFactory.moveArm(self, height="intake")
         intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(armToIntakePositionCmd.succeeded)
-        reloadCmd = pushIntoFeedingStationCmd.alongWith(armToIntakePositionCmd).andThen(intakeCmd)
+        reloadCmd = armToIntakePositionCmd.andThen(intakeCmd)
 
         # commands for aligning with the second tag
         alignWithTag2Cmd = AutoFactory.alignToTag(
-            self, headingDegrees=heading2, branch=goal1branch, speed=approachSpeed
+            self, headingDegrees=heading2, branch=goal1branch, speed=1.0
         )
 
         # commands for scoring that second gamepiece
-        raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height)
-        shoot2Cmd = AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=1.5)
+        raiseArm2Cmd = AutoFactory.moveArm(self, height=goal2height, final=False)
+        shoot2Cmd = AutoFactory.moveArm(self, height=goal2height, final=True).andThen(
+            AutoFactory.ejectGamepiece(self, calmdownSecondsBeforeFiring=0)
+        )
         backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
         dropArm2Cmd = AutoFactory.moveArm(self, height="intake")
 
@@ -164,46 +159,19 @@ class AutoFactory(object):
         self.goal2height.addOption("level 3", "level 3")
         self.goal2height.addOption("level 4", "level 4")
 
-        # do we use rearview to approach the reload feeder?
-        self.autoReloadSpeed = SendableChooser()
-        self.autoReloadSpeed.setDefaultOption("blind", None)
-        self.autoReloadSpeed.addOption("1x", 1.0)
-        self.autoReloadSpeed.addOption("2x faster", 2.0)
-        self.autoReloadSpeed.addOption("3x faster", 3.0)
-        self.autoReloadSpeed.addOption("5x faster", 5.0)
-
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
         self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
         self.autoTrajStyle.setDefaultOption("rabbit", (JerkyTrajectory, True))
         self.autoTrajStyle.addOption("snowboard", (SwerveTrajectory, True))
 
-        # reload distance
-        self.autoReloadDistance = SendableChooser()
-        self.autoReloadDistance.addOption("0.5 distance", 0.5)
-        self.autoReloadDistance.addOption("0.67 distance", 0.67)
-        self.autoReloadDistance.addOption("0.8 distance", 0.8)
-        self.autoReloadDistance.setDefaultOption("1.0 distance", 1.0)
-        self.autoReloadDistance.addOption("1.25 distance", 1.25)
-        self.autoReloadDistance.addOption("1.6 distance", 1.6)
-        self.autoReloadDistance.addOption("2.0 distance", 2.0)
-
         # driving speed
         self.autoDrvSpeed = SendableChooser()
-        self.autoDrvSpeed.setDefaultOption("0.2", 0.2)
+        self.autoDrvSpeed.addOption("0.2", 0.2)
         self.autoDrvSpeed.addOption("0.3", 0.3)
         self.autoDrvSpeed.addOption("0.45", 0.45)
         self.autoDrvSpeed.addOption("0.7", 0.7)
-        self.autoDrvSpeed.addOption("0.9", 0.9)
-
-        # approach speed
-        self.autoTagApproachSpeed = SendableChooser()
-        self.autoTagApproachSpeed.addOption("0.17 speed", 0.17)
-        self.autoTagApproachSpeed.setDefaultOption("0.25 speed*", 0.25)
-        self.autoTagApproachSpeed.addOption("0.4 speed", 0.4)
-        self.autoTagApproachSpeed.addOption("0.6 speed", 0.6)
-        self.autoTagApproachSpeed.addOption("0.9 speed", 0.9)
-
+        self.autoDrvSpeed.setDefaultOption("1.0", 1.0)
 
         SmartDashboard.putData("auto1StartPos", self.startPos)
         SmartDashboard.putData("auto2Paths", self.goal1traj)
@@ -211,10 +179,7 @@ class AutoFactory(object):
         SmartDashboard.putData("auto4Scoring1", self.goal1height)
         SmartDashboard.putData("auto5Scoring2", self.goal2height)
         SmartDashboard.putData("auto6TrjStyle", self.autoTrajStyle)
-        SmartDashboard.putData("auto7Reloadng", self.autoReloadSpeed)
-        SmartDashboard.putData("auto8Reload", self.autoReloadDistance)
         SmartDashboard.putData("auto9DriveSpd", self.autoDrvSpeed)
-        SmartDashboard.putData("autoAprochSpd", self.autoTagApproachSpeed)
 
         self.startPos.onChange(lambda _: AutoFactory.updateDashboard(self))
         self.goal1traj.onChange(lambda _: AutoFactory.updateDashboard(self))
@@ -229,7 +194,7 @@ class AutoFactory(object):
         feeder = constants.LeftFeeder
         heading = endpoint[2]
 
-        approach = TrajectoryCommand(
+        approach = JerkyTrajectory(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -242,7 +207,7 @@ class AutoFactory(object):
             swerve=swerve,
             speed=-speed,
             waypoints=[endpoint] + autowaypoints.SideDLeft.kReload,
-            endpoint=feeder.location,
+            endpoint=None, #feeder.location,
         )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
@@ -272,7 +237,7 @@ class AutoFactory(object):
             swerve=swerve,
             speed=-speed,
             waypoints=[endpoint] + autowaypoints.SideDRight.kReload,
-            endpoint=feeder.location,
+            endpoint=None, #feeder.location
         )
 
         take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
@@ -303,7 +268,7 @@ class AutoFactory(object):
             swerve=swerve,
             speed=-speed,
             waypoints=[endpoint] + autowaypoints.SideC.kReload,
-            endpoint=feeder.location,
+            endpoint=None, #feeder.location
         )
 
         take2, heading2 = AutoFactory.goToSideB(self, branch, speed, swerve, TrajectoryCommand)
@@ -332,7 +297,7 @@ class AutoFactory(object):
             swerve=swerve,
             speed=-speed,
             waypoints=[endpoint] + autowaypoints.SideE.kReload,
-            endpoint=feeder.location,
+            endpoint=None, #feeder.location
         )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
@@ -369,7 +334,7 @@ class AutoFactory(object):
                 endpoint,
                 (2.085, 6.215, -54.0),
             ],
-            endpoint=feeder.location,
+            endpoint=None, #feeder.location
         )
 
         take2, heading2 = AutoFactory.goToSideF(self, branch, speed, swerve, TrajectoryCommand)
@@ -408,17 +373,17 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def alignToTag(self, headingDegrees, branch="right", pipeline=0, tags=None, speed=0.15, pushFwdSpeed=0.07, pushFwdSeconds=1.5):
+    def alignToTag(self, headingDegrees, branch="right", pipeline=0, tags=None, speed=1.0, pushFwdSeconds=1.5):
         assert branch in ("right", "left")
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
 
         if TimedCommandRobot.isSimulation():
-            return AutoFactory.alignToTagSim(self, headingDegrees, branch, speed, pushFwdSpeed, pushFwdSeconds)
+            return AutoFactory.alignToTagSim(self, headingDegrees, branch, speed, pushFwdSeconds)
+
         from commands.setcamerapipeline import SetCameraPipeline
-        from commands.followobject import FollowObject, StopWhen
-        from commands.alignwithtag import AlignWithTag
+        from commands.approach import ApproachTag
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
         lookForWhichTags = SetCameraPipeline(camera, pipelineIndex=pipeline, onlyTagIds=tags)
@@ -435,64 +400,60 @@ class AutoFactory(object):
         )
         findTheTag = wiggle.until(camera.hasDetection)
 
-        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=8), speed=speed)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = AlignWithTag(camera, self.robotDrive, headingDegrees, speed=speed, pushForwardSeconds=pushFwdSeconds, pushForwardSpeed=pushFwdSpeed)
+        approach = ApproachTag(
+            camera,
+            self.robotDrive,
+            headingDegrees,
+            speed=1.0,
+            pushForwardSeconds=pushFwdSeconds,
+            dashboardName="auto",
+        )
 
         # connect them together
         alignToScore = (
             runCmd("align: setpipe...", lookForWhichTags)
-        #).andThen(
-        #    runCmd("align: find...", findTheTag)
         ).andThen(
-            runCmd(f"align: approach @ {speed}...", approachTheTag)
+            runCmd("align: find...", findTheTag)
         ).andThen(
-            runCmd("align: algn+push...", alignAndPush)
+            runCmd(f"align: approach @ {speed}...", approach)
         )
         return alignToScore
 
 
     @staticmethod
-    def backIntoFeeder(self, camera, headingDegrees, speed=0.15, pushFwdSpeed=0.10, pushFwdSeconds=2.0, traj=None, tags=None):
+    def backIntoFeeder(self, camera, headingDegrees, speed=1.0, traj=None, tags=None):
         from commands.followobject import FollowObject, StopWhen
-        from commands.alignwithtag import AlignWithTag
+        from commands.approach import ApproachTag
 
         if abs(speed) > 1:
             speed = math.copysign(1.0, speed)
-        if abs(pushFwdSpeed) > 1:
-            pushFwdSpeed = math.copysign(1.0, pushFwdSpeed)
 
-        approachTheTag = FollowObject(
-            camera,
-            self.robotDrive,
-            stopWhen=StopWhen(maxY=13), # stop when tag is 13 degrees above horizon (or higher)
-            speed=-speed
-        ).beforeStarting(lambda: SmartDashboard.putString("autoStatus", f"backing towards feeder: speed={speed}"))
-
-        alignAndPush = AlignWithTag(
-            camera,
+        approach = ApproachTag(
+            self.rearCamera,
             self.robotDrive,
             headingDegrees,
-            reverse=True,
             speed=speed,
-            pushForwardSeconds=pushFwdSeconds,
-            pushForwardSpeed=pushFwdSpeed
-        ).beforeStarting(lambda: SmartDashboard.putString("autoStatus", f"aligning: speed={speed}, push={pushFwdSeconds}s@speed={pushFwdSpeed}"))
+            reverse=True,
+            pushForwardSeconds=0.6,  # 0.6 was good
+            finalApproachObjSize=1.7,  # calibrated with Eric, Enrique and Davi
+            dashboardName="back",
+        ).beforeStarting(lambda: SmartDashboard.putString("autoStatus", f"approaching: heading={headingDegrees}"))
 
-        # 1. connect approach+align together
-        result = approachTheTag.andThen(alignAndPush)
+        # 1. the command
+        result = approach
 
         # 2. do we have an existing trajectory to terminate when feeder is visible?
         if traj is not None:
             def feederVisible():
                 if (
                     camera.hasDetection()
-                    and camera.getA() > 0.3
+                    and camera.getA() > 0.25
                     and abs(self.robotDrive.getHeading().degrees()) < 90  # robot is looking at our side of field
                     and self.robotDrive.getPose().x < 4.5  # robot is located between reef and feeder
                 ):
                     SmartDashboard.putString(
                         "autoFeederVisible",
-                        f"x={camera.getX()}, y={camera.getY()}, a={camera.getA()}, delay={camera.getSecondsSinceLastHeartbeat()}"
+                        f"det={camera.hasDetection()}, deg={self.robotDrive.getHeading().degrees()}, x={self.robotDrive.getPose().x}, a={camera.getA()}, delay={camera.getSecondsSinceLastHeartbeat()}"
                     )
                     return True
             result = traj.until(feederVisible).andThen(result)
@@ -542,11 +503,11 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def alignToTagSim(self, headingDegrees, branch, speed, pushFwdSpeed, pushFwdSeconds):
+    def alignToTagSim(self, headingDegrees, branch, speed, pushFwdSeconds):
         # no camera use in simulation
         fwd = SwerveMove(metersToTheLeft=0, metersBackwards=-0.4, speed=speed, drivetrain=self.robotDrive)
         align = AimToDirection(headingDegrees, drivetrain=self.robotDrive)
-        push = SwerveMove(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=pushFwdSpeed)
+        push = SwerveMove(metersToTheLeft=0, metersBackwards=-99, drivetrain=self.robotDrive, speed=0.2)
         return fwd.andThen(align).andThen(push.withTimeout(pushFwdSeconds))
 
 
