@@ -16,7 +16,7 @@ import typing
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
 from robotpy_apriltag import AprilTagFieldLayout
-from wpilib import XboxController
+from wpilib import XboxController, SendableChooser, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
 from commands.approach import ApproachTag
@@ -25,7 +25,7 @@ from commands.elevatorcommands import MoveElevatorAndArm
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveToSide, SwerveMove
-from constants import DriveConstants, OIConstants
+from constants import DriveConstants, OIConstants, RobotCameraLocations
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.arm import Arm, ArmConstants, safeArmAngleRange
 
@@ -42,6 +42,7 @@ class RobotContainer:
     periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
     subsystems, commands, and button mappings) should be declared here.
     """
+    FIELD_LAYOUT_FILE = "2025-reefscape.json"
 
     def __init__(self, robot) -> None:
         wpilib.DriverStation.silenceJoystickConnectionWarning(True)
@@ -54,15 +55,16 @@ class RobotContainer:
         self.trajectorySide = "left"  # some kind of initial value
         self.trajectoryLetter = "A"  # we need some kind of initial value
 
-        fieldLayoutFile = "2025-reefscape.json"
-
         # The robot's subsystems
         self.addArmSubsystems()
         self.addRobotDrivetrain(robot)
-        self.addCameras(fieldLayoutFile)
-        self.addCameraBasedLocalizer(fieldLayoutFile)
+        self.addCameras(self.FIELD_LAYOUT_FILE)
+        self.addCameraBasedLocalizer(self.FIELD_LAYOUT_FILE)
         # self.addIntakeBasedLocalizer()
         # ^^ sometimes gamepiece is ingested already while driving, so intake-based localizer is not a great idea
+
+        # Configure the tag approach styles
+        self.configureReefApproachStyles()
 
         # Configure the button bindings and autos
         self.configureTrajectoryPicker(speed=1.0, TrajectoryCommand=SwerveTrajectory)  # SwerveTrajectory is gentle on wheel modules
@@ -102,13 +104,13 @@ class RobotContainer:
             fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
             from subsystems.photon_tag_camera import PhotonTagCameraSim
             self.frontRightCamera = PhotonTagCameraSim(
-                "Sim_FrontRight", fieldLayout, constants.RobotCameraLocations.kFrontRight, self.robotDrive
+                "Sim_FrontRight", fieldLayout, RobotCameraLocations.kFrontRight, self.robotDrive
             )  # name of your camera goes in parentheses
             self.frontLeftCamera = PhotonTagCameraSim(
-                "Sim_FrontLeft", fieldLayout, constants.RobotCameraLocations.kFrontLeft, self.robotDrive
+                "Sim_FrontLeft", fieldLayout, RobotCameraLocations.kFrontLeft, self.robotDrive
             )
             self.rearCamera = PhotonTagCameraSim(
-                "Sim_Rear", fieldLayout, constants.RobotCameraLocations.kRear, self.robotDrive
+                "Sim_Rear", fieldLayout, RobotCameraLocations.kRear, self.robotDrive
             )
 
 
@@ -305,18 +307,15 @@ class RobotContainer:
         # ("POV up" button too, but only if trajectory picker trajectory was set)
         if self.scoringController != self.driverController:
 
-            def roundToMultipleOf60():
-                # angles like 110 will be rounded to nearest multiple of 60, in this case 120
-                angle = self.robotDrive.getHeading().degrees()
-                rounded = 60 * round(angle / 60)
-                print(f"robot angle {angle} rounded to {rounded} degrees")
-                return rounded
-
             self.driverController.button(XboxController.Button.kX).whileTrue(
-               self.approachReef(self.frontRightCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=0.8)
+               self.approachReef(
+                   self.frontRightCamera, pushForwardSeconds=0.8, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+               )
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
-                self.approachReef(self.frontLeftCamera, desiredHeading=roundToMultipleOf60, pushForwardSeconds=0.6)
+                self.approachReef(
+                    self.frontLeftCamera, pushForwardSeconds=0.6, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                )
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
                 self.approachFeeder()
@@ -746,18 +745,73 @@ class RobotContainer:
         return movement.andThen(vision)
 
 
-    def approachReef(self, camera, desiredHeading, pushForwardSeconds=None, finalApproachObjSize=10):
+    def configureReefApproachStyles(self):
+        self.reefApproachStyle = SendableChooser()
+        self.reefApproachStyle.setDefaultOption("1811 style", 1811)
+        self.reefApproachStyle.addOption("5895 style", 5895)
+        self.reefApproachStyle.addOption("any tag in sight", 0)
+        SmartDashboard.putData("reefAprch", self.reefApproachStyle)
 
-        command = ApproachTag(
+
+    def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+        def roundToMultipleOf60():
+            # angles like 110 will be rounded to nearest multiple of 60, in this case 120
+            angle = self.robotDrive.getHeading().degrees()
+            rounded = 60 * round(angle / 60)
+            print(f"robot angle {angle} rounded to {rounded} degrees")
+            return rounded
+
+        # if we already know the robot heading, not need to do any guess work
+        if desiredHeading is not None:
+            return ApproachTag(
+                camera,
+                self.robotDrive,
+                specificHeadingDegrees=desiredHeading,
+                pushForwardSeconds=pushForwardSeconds,
+                finalApproachObjSize=finalApproachObjSize
+            )
+
+        # otherwise, we need to guess the tag and the heading: there are two ways to do it
+        from commands.pick_tag import AimLike5895, AimLike1811
+
+        # option 1
+        aimLike5895 = AimLike5895(self.FIELD_LAYOUT_FILE, camera, self.robotDrive, cameraPoseOnRobot)
+        approachLike5895 = aimLike5895.andThen(ApproachTag(
             camera,
             self.robotDrive,
-            desiredHeading,
-            speed=1.0,
+            specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
             finalApproachObjSize=finalApproachObjSize
-        )
+        ))
 
-        return command.withTimeout(6)
+        # option 2
+        aimLike1811 = AimLike1811(self.FIELD_LAYOUT_FILE, camera, self.robotDrive, cameraPoseOnRobot, forceBlue=True)
+        approachLike1811 = aimLike1811.andThen(ApproachTag(
+            camera,
+            self.robotDrive,
+            specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ))
+
+        # option 3
+        pickAnyTag = SetCameraPipeline(camera, 0, ())
+        approachAnyTag = pickAnyTag.andThen(ApproachTag(camera,
+            self.robotDrive,
+            specificHeadingDegrees=roundToMultipleOf60,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ))
+
+        command = commands2.SelectCommand(
+            {
+                0: approachAnyTag,
+                1811: approachLike1811,
+                5895: approachLike5895,
+            },
+            self.reefApproachStyle.getSelected)
+
+        return command
 
 
     def approachFeeder(self, pushForwardSeconds=0.1):

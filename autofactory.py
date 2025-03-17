@@ -423,8 +423,6 @@ class AutoFactory(object):
         """
         from commands.approach import ApproachTag
 
-        assert tags, "tags must be specified if you want to back into feeder autonomously"
-
         if abs(speed) > 1:
             speed = math.copysign(1.0, speed)
 
@@ -462,6 +460,7 @@ class AutoFactory(object):
 
         # 3. do we have specific tags to watch?
         if tags is not None:
+            assert tags, "tags must be specified and not empty if you want to back into feeder autonomously"
             pipeline = SetCameraPipeline(camera, 0, tags)
             result = pipeline.andThen(result)
 

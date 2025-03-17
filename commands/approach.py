@@ -60,7 +60,7 @@ class ApproachTag(commands2.Command):
         camera,
         drivetrain,
         specificHeadingDegrees=None,
-        speed=0.2,
+        speed=1.0,
         reverse=False,
         settings: dict | None=None,
         pushForwardSeconds=0.0,  # length of final approach
@@ -171,7 +171,11 @@ class ApproachTag(commands2.Command):
         kpMultTran = self.KPMULT_TRANSLATION.value
         print(f"ApproachTag: translation gain value {kpMultTran}, power={self.APPROACH_SHAPE.value}")
 
-        self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
+        targetDegrees = self.targetDegrees()
+        if targetDegrees is None:
+            targetDegrees = self.drivetrain.getHeading().degrees()
+
+        self.targetDirection = Rotation2d.fromDegrees(targetDegrees)
         self.tReachedGlidePath = 0.0  # time when reached the glide path
         self.tReachedFinalApproach = 0.0  # time when reached the final approach
         self.lostTag = False
