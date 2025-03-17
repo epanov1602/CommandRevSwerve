@@ -48,11 +48,13 @@ class AutoFactory(object):
             self, startPos, speed=drivingSpeed, branch=goal1branch, swerve=swerve, TrajectoryCommand=trajectoryClass
         )
 
-        if startX > 7.5:  # a special tug boat auto
-            push = SwerveMove(metersToTheLeft=0, metersBackwards=-0.5, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False).withTimeout(0.5)
+        if startX > 7.5:  # a special tugboat auto
+            push = SwerveMove(metersToTheLeft=0, metersBackwards=-1.0, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False).withTimeout(1.0)
             comeBack = SwerveToPoint(startX, startY, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
-            stepToSide = SwerveToPoint(startX, startY - 2.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
-            comeForward = SwerveToPoint(startX - 0.5, startY - 2.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False)
+            stepToSide = SwerveToPoint(startX, startY - 1.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
+            #stepToSide = SwerveToPoint(startX, 4.0, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
+            comeForward = SwerveToPoint(startX - 0.6, startY - 1.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False)
+            #comeForward = WaitCommand(0)
             approachCmd = push.andThen(comeBack).andThen(stepToSide).andThen(comeForward).andThen(approachCmd)
 
         # if we are allowed to use rearview camera, can the `retreatCmd` be smarter?

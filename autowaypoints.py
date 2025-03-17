@@ -11,7 +11,7 @@ class SideE:
     tags = (11, 20)  # tags of side E
 
     kApproach = [
-#        (6.491, 5.846, -150.0),
+        (6.305, 6.499, -120),
     ]
 
     kReload = [
