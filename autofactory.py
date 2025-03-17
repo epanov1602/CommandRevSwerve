@@ -18,7 +18,7 @@ from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
 from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
 from commands.setcamerapipeline import SetCameraPipeline
-from commands.swervetopoint import SwerveMove
+from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
 
 # which trajectory to use
@@ -47,6 +47,13 @@ class AutoFactory(object):
         headingTags1, approachCmd, retreatCmd, take2Cmd, headingTags2, feeder = goal1traj(
             self, startPos, speed=drivingSpeed, branch=goal1branch, swerve=swerve, TrajectoryCommand=trajectoryClass
         )
+
+        if startX > 7.5:  # a special tug boat auto
+            push = SwerveMove(metersToTheLeft=0, metersBackwards=-0.5, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False).withTimeout(0.5)
+            comeBack = SwerveToPoint(startX, startY, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
+            stepToSide = SwerveToPoint(startX, startY - 2.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0)
+            comeForward = SwerveToPoint(startX - 0.5, startY - 2.5, headingDegrees=startHeading, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False)
+            approachCmd = push.andThen(comeBack).andThen(stepToSide).andThen(comeForward).andThen(approachCmd)
 
         # if we are allowed to use rearview camera, can the `retreatCmd` be smarter?
         retreatCmd = AutoFactory.approachFeeder(
@@ -116,6 +123,7 @@ class AutoFactory(object):
 
         # 0. starting position for all autos
         self.startPos = SendableChooser()
+        self.startPos.addOption("0: tug", (7.989, 7.75, -180))  # (x, y, headingDegrees)
         self.startPos.addOption("1: L+", (7.189, 7.75, -180))  # (x, y, headingDegrees)
         self.startPos.addOption("2: L", (6.98, 6.177, -142))  # (x, y, headingDegrees)
         self.startPos.setDefaultOption("3: ML", (7.189, 4.40, 180))  # (x, y, headingDegrees)
