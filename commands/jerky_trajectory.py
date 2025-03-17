@@ -227,16 +227,16 @@ class SwerveTrajectory(JerkyTrajectory):
             return Pose2d(translation, rotation)
 
         # An example trajectory to follow. All units in meters.
+
         trajectory = TrajectoryGenerator.generateTrajectory(
             # Start at the current point
-            makeTrajectoryPose(currentPoint, currentHeading),
+            makeTrajectoryPose(currentPoint, currentHeading if not waypoints else waypoints[0][1]),
             # Pass through these interior waypoints
             [w[0] for w in waypoints[0:-1]],
             # End 1.5 meters straight ahead of where we started, facing forward
             makeTrajectoryPose(endPt, endHeading),
             config,
         )
-
         thetaController = ProfiledPIDControllerRadians(
             AutoConstants.kPThetaController,
             0,
