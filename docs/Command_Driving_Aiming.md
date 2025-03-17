@@ -834,7 +834,7 @@ class SetCameraPipeline(commands2.Command):
 
 First you need to add `"apriltag"` into `robotpy_extras` in `pyproject.toml` file and run `sync` to get the AprilTag layouts installed.
 
-Then, the code below should go to `commands/setcameratotaginfront.py` .
+Then, the code below should go to `commands/setcameragoal.py` .
 
 ```python
 #
