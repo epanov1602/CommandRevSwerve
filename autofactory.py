@@ -16,7 +16,7 @@ import constants
 import autowaypoints
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
-from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded
+from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded, StartIntakingGamepiece
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
@@ -81,12 +81,17 @@ class AutoFactory(object):
         # commands for reloading a new gamepiece from the feeding station
         armToIntakePositionCmd = AutoFactory.moveArm(self, height="intake")
         intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(armToIntakePositionCmd.succeeded)
+
+        # this is a riskier and faster way to do it
+        #intakeCmd = AutoFactory.startIntakingGamepiece(self, speed=0.114)
+
         reloadCmd = armToIntakePositionCmd.andThen(intakeCmd)
+        finishIntakingCmd = AutoFactory.intakeGamepiece(self, speed=0.115)
 
         # commands for aligning with the second tag
         take2Cmd = AutoFactory.approachReef(
             self, traj=take2Cmd, headingTags=headingTags2, branch=goal1branch, height=goal2height, speed=1.0
-        )
+        ).alongWith(finishIntakingCmd)
 
         # commands for scoring that second gamepiece
         shoot2Cmd = AutoFactory.moveArm(self, height=goal2height, final=True).andThen(
@@ -513,6 +518,14 @@ class AutoFactory(object):
             return WaitCommand(seconds=0.5)  # play pretend, in simulation
 
         return IntakeGamepiece(self.intake, speed=speed)
+
+
+    @staticmethod
+    def startIntakingGamepiece(self, speed):
+        if TimedCommandRobot.isSimulation():
+            return WaitCommand(seconds=0.5)  # play pretend, in simulation
+
+        return StartIntakingGamepiece(self.intake, speed=speed)
 
 
     @staticmethod

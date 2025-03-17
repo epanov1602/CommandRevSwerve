@@ -24,6 +24,26 @@ class IntakeGamepiece(commands2.Command):
         pass
 
 
+class StartIntakingGamepiece(commands2.Command):
+    def __init__(self, intake: Intake, speed=0.115):
+        super().__init__()
+        self.intake = intake
+        self.speed = speed
+        self.addRequirements(intake)
+
+    def end(self, interrupted: bool):
+        self.intake.stop()  # stop at the end
+
+    def initialize(self):
+        self.intake.intakeGamepiece(self.speed)
+
+    def isFinished(self) -> bool:
+        return self.intake.isGamepiecePartlyInside()
+
+    def execute(self):
+        pass
+
+
 class IntakeFeedGamepieceForward(commands2.Command):
     def __init__(self, intake: Intake, speed=0.25, speed2=None):
         super().__init__()
