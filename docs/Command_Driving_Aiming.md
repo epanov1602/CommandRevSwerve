@@ -834,9 +834,61 @@ class SetCameraPipeline(commands2.Command):
 
 First you need to add `"apriltag"` into `robotpy_extras` in `pyproject.toml` file and run `sync` to get the AprilTag layouts installed.
 
-Then, the code below should go to `commands/setcameragoal.py` .
+With that, you can add a command that guesses which reef tag you want to approach ... and then approaches it.
+
+```
+    # option 1
+    def approachReefLike1811(self, camera, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+        from commands.pick_tag import AimLike1811
+
+        aimLike1811 = AimLike1811(self.FIELD_LAYOUT_FILE, camera, self.robotDrive, cameraPoseOnRobot)
+        approachLike1811 = aimLike1811.andThen(ApproachTag(
+            camera,
+            self.robotDrive,
+            specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ))
+        return approachLike1811
+
+
+    # option 2
+    def approachReefLike5895(self, camera, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+        from commands.pick_tag import AimLike5895
+
+        aimLike5895 = AimLike5895(self.FIELD_LAYOUT_FILE, camera, self.robotDrive, cameraPoseOnRobot)
+        approachLike5895 = aimLike5895.andThen(ApproachTag(
+            camera,
+            self.robotDrive,
+            specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ))
+        return approachLike5895
+
+
+    # option 3
+    def approachReefLike714(self, camera, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+
+        # (angles like 110 will be rounded to nearest multiple of 60, in this case 120)
+        def roundToMultipleOf60():
+            return 60 * round(self.robotDrive.getHeading().degrees() / 60)
+
+        pickAnyTag = SetCameraPipeline(camera, 0, ())
+        approachAnyTag = pickAnyTag.andThen(ApproachTag(camera,
+            self.robotDrive,
+            specificHeadingDegrees=roundToMultipleOf60,
+            pushForwardSeconds=pushForwardSeconds,
+            finalApproachObjSize=finalApproachObjSize
+        ))
+
+```
+
+
+But for any of this to work, the code below should go to `commands/pick_tag.py` .
 
 ```python
+
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -844,14 +896,13 @@ Then, the code below should go to `commands/setcameragoal.py` .
 #
 
 import commands2
-import wpimath.geometry
 from wpilib import Field2d
 from wpimath.geometry import Rotation2d, Transform2d, Pose2d
 from os.path import isfile, join
 
 
-# if you are using Limelight, probably need to set up the pipelines to match this
-# (or you can provide your own `pipeline2TagGroup` that matches your Limelight, when constructing the command)
+# if you are using Limelight, please set up the pipelines to match this
+# (or you can provide your own `pipeline2TagGroup` that matches your Limelight, when constructing these command)
 DEFAULT_PIPELINE_TO_TAGS = {
     0: (),  # all tags
     6: (6, 19),
@@ -863,10 +914,15 @@ DEFAULT_PIPELINE_TO_TAGS = {
 }
 
 
-class SetCameraToTagInFront(commands2.Command):
-    MAX_DISTANCE_TO_TAG = 3  # meters (10 feet)
+class AimLike1811(commands2.Command):
+    """
+    Simply find the AprilTag that's facing the camera most directly
+    (really amounts to taking robot heading and finding the nearest multiple of 60 degrees)
+    """
 
-    def __init__(self, fieldLayoutFile, camera, drivetrain, robotLengthMeters, reverse=False, pipeline2TagGroup=None):
+    _fields = dict()
+
+    def __init__(self, fieldLayoutFile, camera, drivetrain, cameraLocationOnRobot: Pose2d, reverse=False, pipeline2TagGroup=None, forceBlue=False):
         """
         :param fieldLayoutFile: something like "2025-reefscape.json" or "2024-crescendo.json", you can download them at
          https://github.com/wpilibsuite/allwpilib/blob/main/apriltag/src/main/native/resources/edu/wpi/first/apriltag/
@@ -881,24 +937,18 @@ class SetCameraToTagInFront(commands2.Command):
         self.field2d: Field2d = getattr(self.drivetrain, "field", None)
 
         self.reverse = reverse
-        if not reverse:
-            self.toRobotFront = Transform2d(0.5 * robotLengthMeters, 0.0, Rotation2d.fromDegrees(0))
-        else:
-            self.toRobotFront = Transform2d(-0.5 * robotLengthMeters, 0.0, Rotation2d.fromDegrees(180))
+        if cameraLocationOnRobot is None:
+            cameraLocationOnRobot = Pose2d(0, 0, 0)
+        self.toCameraLocation = Transform2d(Pose2d(0, 0, 0), cameraLocationOnRobot)
+        self.forceBlue = forceBlue
 
-        from robotpy_apriltag import AprilTagFieldLayout
+        if fieldLayoutFile not in self._fields:
+            self._fields[fieldLayoutFile] = loadFieldLayout(fieldLayoutFile)
+        self.fieldLayout = self._fields[fieldLayoutFile]
 
-        self.fieldLayout = None
-        for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
-            candidate = join(prefix, fieldLayoutFile)
-            print(f"Localizer: trying field layout from {candidate}")
-            if isfile(candidate):
-                self.fieldLayout = AprilTagFieldLayout(candidate)
-                self.fieldLength = self.fieldLayout.getFieldLength()
-                self.fieldWidth = self.fieldLayout.getFieldWidth()
-                break
-        assert self.fieldLayout is not None, f"file with field layout {fieldLayoutFile} does not exist"
-        print(f"SetCameraToTagAhead: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
+        self.fieldLength = self.fieldLayout.getFieldLength()
+        self.fieldWidth = self.fieldLayout.getFieldWidth()
+        print(f"Field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
 
         # which tag is in which pipeline?
         if pipeline2TagGroup is None:
@@ -981,59 +1031,48 @@ class SetCameraToTagInFront(commands2.Command):
         self.reset()
 
         # 0. where is the front of the robot
-        front: Pose2d = self.drivetrain.getPose().transformBy(self.toRobotFront)
+        front: Pose2d = self.drivetrain.getPose().transformBy(self.toCameraLocation)
         self.drawArrow("front", front, flip=False)
 
         # 1. which of the tags is in front of us?
-        self.chosenTagId = (
-            self.findNearestVisibleTagInFront(front, fieldOfViewDegrees=50) or
-            self.findNearestVisibleTagInFront(front, fieldOfViewDegrees=75)  # if all fails
-        )
+        self.chosenTagId = self.findNearestVisibleTagInFront(front, fieldOfViewDegrees=61)
 
         # 2. decide on chosen pipeline and tags
         if self.chosenTagId is not None:
             self.chosenPipeline = self.tagToPipeline.get(self.chosenTagId)
             self.chosenTagIds = self.pipelineToTags.get(self.chosenPipeline)
-            chosenTagPose = self.fieldLayout.getTagPose(self.chosenTagId)
-            self.chosenTagPose = chosenTagPose.toPose2d() if chosenTagPose is not None else None
+            pose = self.fieldLayout.getTagPose(self.chosenTagId)
+            self.chosenTagPose = pose.toPose2d() if pose is not None else None
 
         if self.chosenPipeline is None:
             self.chosenPipeline = 0  # this is the default pipeline, if nothing is chosen (the camera better have it)
-            print(f"SetCameraToTagAhead: no pipeline chosen => using 0, chosenTagIds={self.chosenTagIds}")
+            print(f"goal: no pipeline chosen => using 0, chosenTagIds={self.chosenTagIds}")
 
         # 3. display the result
         if self.field2d is not None:
             self.drawArrow("tag", self.chosenTagPose, flip=True)
-        print(f"SetCameraToTagAhead: picked tag {self.chosenTagId}, facing {self.getChosenHeadingDegrees()} degrees")
+        print(f"{self.__class__.__name__}: tag {self.chosenTagId} @ {self.getChosenHeadingDegrees()} degrees (tags: {self.chosenTagIds})")
 
 
     def findNearestVisibleTagInFront(self, front, fieldOfViewDegrees):
         bestTagId, bestDistance = None, None
+        flippedFront = front.rotation().rotateBy(Rotation2d.fromDegrees(180))
+        pickBlue = self.forceBlue or self.drivetrain.getPose().x < self.fieldLength / 2
         for tagId, tagPose in self.tagPoses:
-            visible, distance = self.isTagVisibleFromHere(front, tagPose, fieldOfViewDegrees)
-            if visible and (bestDistance is None or distance < bestDistance):
-                bestDistance = distance
-                bestTagId = tagId
+            isBlue = tagPose.x < self.fieldLength / 2
+            if isBlue != pickBlue:
+                continue
+            tagDirection: Rotation2d = tagPose.rotation()
+            distance = abs((tagDirection - flippedFront).degrees())
+            if distance > fieldOfViewDegrees / 2:
+                continue
+            if bestDistance is None or distance < bestDistance:
+                bestTagId, bestDistance = tagId, distance
+        if bestTagId is not None:
+            print(f"goal: nearest tag in front is {bestTagId}, only {bestDistance} degrees away")
+        else:
+            print(f"goal: nearest tag in front is not found")
         return bestTagId
-
-
-    def isTagVisibleFromHere(self, front, tagPose, fieldOfViewDegrees):
-        directionToTag = Transform2d(front, tagPose)
-        vectorToTag = directionToTag.translation()
-
-        distance = vectorToTag.norm()
-        if distance > self.MAX_DISTANCE_TO_TAG:
-            return False, None  # too far
-
-        direction = vectorToTag.angle().degrees()
-        if abs(direction) > fieldOfViewDegrees / 2:
-            return False, None  # won't fit into our imaginary 50 degree field of view
-
-        orientation = directionToTag.rotation().rotateBy(Rotation2d.fromDegrees(180) - vectorToTag.angle())
-        if abs(orientation.degrees()) > 45:
-            return False, None  # tag tilted too far to the side, not oriented towards us
-
-        return True, distance
 
 
     def drawArrow(self, name: str, pose: Pose2d, flip):
@@ -1070,6 +1109,57 @@ class SetCameraToTagInFront(commands2.Command):
                     pose.transformBy(Transform2d(0.2, -0.1, 0)),
                 ]
         self.field2d.getObject(name).setPoses(poses)
+
+
+
+class AimLike5895(AimLike1811):
+    """
+    Picks an AprilTag that we were most likely meaning to approach with this camera
+    (command named this way since we must give credit where it is well deserved).
+    """
+    MAX_DISTANCE_TO_TAG = 3  # meters (10 feet)
+
+
+    def findNearestVisibleTagInFront(self, front, fieldOfViewDegrees):
+        bestTagId, bestDistance = None, None
+        for tagId, tagPose in self.tagPoses:
+            visible, distance = self.isTagVisibleFromHere(front, tagPose, fieldOfViewDegrees)
+            if visible and (bestDistance is None or distance < bestDistance):
+                bestDistance = distance
+                bestTagId = tagId
+        return bestTagId
+
+
+    def isTagVisibleFromHere(self, front, tagPose, fieldOfViewDegrees):
+        directionToTag = Transform2d(front, tagPose)
+        vectorToTag = directionToTag.translation()
+
+        distance = vectorToTag.norm()
+        if distance > self.MAX_DISTANCE_TO_TAG:
+            return False, None  # too far
+
+        direction = vectorToTag.angle().degrees()
+        if abs(direction) > fieldOfViewDegrees / 2:
+            return False, None  # won't fit into our imaginary 50 degree field of view
+
+        orientation = directionToTag.rotation().rotateBy(Rotation2d.fromDegrees(180) - vectorToTag.angle())
+        if abs(orientation.degrees()) > 45:
+            return False, None  # tag tilted too far to the side, not oriented towards us
+
+        return True, distance
+
+
+
+def loadFieldLayout(fieldLayoutFile):
+    from robotpy_apriltag import AprilTagFieldLayout
+
+    for prefix in ['/home/lvuser/py/', '/home/lvuser/py_new/', '']:
+        candidate = join(prefix, fieldLayoutFile)
+        print(f"trying field layout from {candidate}")
+        if isfile(candidate):
+            return AprilTagFieldLayout(candidate)
+
+    assert False, f"file with field layout {fieldLayoutFile} does not exist"
 
 ```
 </details>
