@@ -434,8 +434,8 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            kpMultOverride=1.1,
-            pushForwardSeconds=0.01, # 0.25 was calibrated for kpMultOverride=0.7
+            settings={"GainTran": 1.1},
+            pushForwardSeconds=0.01, # 0.25 was calibrated for GainTran=0.7
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )

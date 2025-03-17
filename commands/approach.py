@@ -17,8 +17,24 @@ from wpilib import Timer, SmartDashboard, SendableChooser
 
 
 class Tunable:
-    def __init__(self, name, default, minMaxRange):
-        self.chooser = SendableChooser()
+    _choosers = {}
+
+    def __init__(self, settings, prefix, name, default, minMaxRange):
+        if settings is not None:
+            if name in settings:
+                self.value = settings[name]
+                self.chooser = None
+                return
+            if (prefix + name) in settings:
+                self.value = settings[prefix + name]
+                self.chooser = None
+                return
+        self.value = None
+        self.chooser = Tunable._choosers.get(prefix + name)
+        if self.chooser is not None:
+            return
+        # if that chooser was not created yet, create it now
+        Tunable._choosers[prefix + name] = self.chooser = SendableChooser()
         for index, factor in enumerate([0, 0.1, 0.17, 0.25, 0.35, 0.5, 0.7, 1.0, 1.4, 2.0, 2.8, 4.0]):
             label, value = f"{factor * default}", factor * default
             if minMaxRange[0] <= value <= minMaxRange[1]:
@@ -27,10 +43,10 @@ class Tunable:
                 else:
                     self.chooser.addOption(label, value)
         SmartDashboard.putData(name, self.chooser)
-        self.value = None
 
     def fetch(self):
-        self.value = self.chooser.getSelected()
+        if self.chooser is not None:
+            self.value = self.chooser.getSelected()
 
     def __call__(self, *args, **kwargs):
         self.fetch()
@@ -46,7 +62,7 @@ class ApproachTag(commands2.Command):
         specificHeadingDegrees=None,
         speed=0.2,
         reverse=False,
-        kpMultOverride=None,
+        settings: dict | None=None,
         pushForwardSeconds=0.0,  # length of final approach
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
@@ -76,12 +92,11 @@ class ApproachTag(commands2.Command):
         self.addRequirements(camera)
 
         self.reverse = reverse
-        self.kpMultOverride = kpMultOverride
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.0, (0.0, 10.0))
+            self.pushForwardSeconds = Tunable(settings, dashboardName, "BrakeDst", 1.0, (0.0, 10.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
@@ -118,25 +133,25 @@ class ApproachTag(commands2.Command):
         self.lastState = self.getState()
         self.lastWarnings = None
 
-        self.initTunables(dashboardName)
+        self.initTunables(settings, dashboardName)
 
 
     def isReady(self, minRequiredObjectSize=0.3):
         return self.camera.hasDetection() and self.camera.getA() > minRequiredObjectSize
 
 
-    def initTunables(self, prefix):
-        self.KPMULT_TRANSLATION = Tunable(prefix + "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
-        self.KPMULT_ROTATION = Tunable(prefix + "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
+    def initTunables(self, settings, prefix):
+        self.KPMULT_TRANSLATION = Tunable(settings, prefix, "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
+        self.KPMULT_ROTATION = Tunable(settings, prefix, "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
 
         # acceptable width of glide path, in inches
-        self.GLIDE_PATH_WIDTH_INCHES = Tunable(prefix + "Tolernce", 2.0, (0.5, 4.0))
+        self.GLIDE_PATH_WIDTH_INCHES = Tunable(settings, prefix, "Tolernce", 2.0, (0.5, 4.0))
 
         # if plus minus 30 degrees from desired heading, forward motion is allowed before final approach
-        self.DESIRED_HEADING_RADIUS = Tunable(prefix + "Headng+-", 30, (5, 45))
+        self.DESIRED_HEADING_RADIUS = Tunable(settings, prefix, "Headng+-", 30, (5, 45))
 
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
-        self.APPROACH_SHAPE = Tunable(prefix + "TrjShape", 3.0, (2.0, 8.0))
+        self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
@@ -153,7 +168,7 @@ class ApproachTag(commands2.Command):
         for t in self.tunables:
             t.fetch()
 
-        kpMultTran = self.kpMultOverride if self.kpMultOverride is not None else self.KPMULT_TRANSLATION.value
+        kpMultTran = self.KPMULT_TRANSLATION.value
         print(f"ApproachTag: translation gain value {kpMultTran}, power={self.APPROACH_SHAPE.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
@@ -365,7 +380,7 @@ class ApproachTag(commands2.Command):
 
 
     def computeProportionalSpeed(self, distance) -> float:
-        kpMultTran = self.kpMultOverride if self.kpMultOverride is not None else self.KPMULT_TRANSLATION.value
+        kpMultTran = self.KPMULT_TRANSLATION.value
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
         if GoToPointConstants.kUseSqrtControl:
             velocity = math.sqrt(0.5 * velocity * kpMultTran)

@@ -774,7 +774,7 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
-            kpMultOverride=1.0,
+            settings={"GainTran": 1.0},
             pushForwardSeconds=pushForwardSeconds,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
