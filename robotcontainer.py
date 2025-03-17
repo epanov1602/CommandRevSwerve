@@ -330,7 +330,6 @@ class RobotContainer:
         level0PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=0.0, arm=self.arm,
                                                angle=ArmConstants.kArmSafeTravelAngle)
         level0PosButton.onTrue(level0PositionCmd)
-        self.trajectoryBoard.button(1).onTrue(level0PositionCmd)
 
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
@@ -394,7 +393,7 @@ class RobotContainer:
 
         # trajectory picker will only run when these subsystems are not busy with other commands
         # (intake not in the list, because sometimes intake needs to finish working while already driving)
-        requirements = [self.robotDrive, self.arm, self.elevator]
+        requirements = [self.robotDrive]
 
         # POV up: run the trajectory while button pushed
         self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
@@ -406,14 +405,15 @@ class RobotContainer:
 
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5)
-        armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
 
-        reverseTrajectoryWithArmGoingDown = self.reversedTrajectoryPicker.alongWith(armDown)
+        #armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
+        #reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker.alongWith(armDown))
+        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker)
+
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
-        self.driverController.povDown().whileTrue(
-            backUp.andThen(reverseTrajectoryWithArmGoingDown).andThen(self.approachFeeder())
-        )
+        self.driverController.povDown().whileTrue(reverseTrajectory)
+        self.trajectoryBoard.button(1).whileTrue(reverseTrajectory)
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
         def chooseTrajectory(letter=None, side=None):
@@ -459,7 +459,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.594, 5.635, -120),
             waypoints=[
-                (1.735, 6.365, -54),
+                (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
             ],
@@ -478,7 +478,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.165, 5.606, -120),
             waypoints=[
-                (1.735, 6.365, -54),
+                (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
             ],
@@ -608,13 +608,13 @@ class RobotContainer:
         goSideDRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=mirror((6.50, 3.85, 180)),
+            endpoint=mirror((6.70, 3.85, 180)),
             waypoints=[
                 (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (5.155, 1.916, 90),
-                (6.342, 2.694, 135),
+                (6.542, 2.694, 135),
             ]),
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
@@ -629,13 +629,13 @@ class RobotContainer:
         goSideDLeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=mirror((6.50, 4.20, 180)),
+            endpoint=mirror((6.70, 4.20, 180)),
             waypoints=[
                 (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (4.477, 1.906, 90),
-                (6.482, 2.824, 135),
+                (6.582, 2.824, 135),
             ]),
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
