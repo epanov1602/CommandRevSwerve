@@ -255,7 +255,7 @@ class AimLike5895(AimLike1811):
         if abs(orientation.degrees()) > 45:
             return False, None  # tag tilted too far to the side, not oriented towards us
 
-        return True, distance
+        return True, distance / orientation.cos()
 
 
 
