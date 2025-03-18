@@ -457,7 +457,7 @@ class RobotContainer:
         goSideELeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(5.594, 5.635, -120),
+            endpoint=(5.394, 5.83, -120),
             waypoints=[
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
@@ -476,7 +476,7 @@ class RobotContainer:
         goSideERightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(5.165, 5.606, -120),
+            endpoint=(4.96, 5.81, -120),
             waypoints=[
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
