@@ -100,8 +100,14 @@ class AutoFactory(object):
         backup2Cmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive)
         dropArm2Cmd = AutoFactory.moveArm(self, height="intake")
 
+        from wpilib import Timer
+
+        rolex = dict()
+        def startTheClock():
+            rolex['t0'] = Timer.getFPGATimestamp()
+
         # connect them all (and report status in "autoStatus" widget at dashboard)
-        result = startPosCmd.andThen(
+        result = startPosCmd.beforeStarting(startTheClock).andThen(
             runCmd("intake loaded...", AssumeIntakeLoaded(self.intake))  # tell the robot to assume intake loaded
         ).andThen(
             runCmd("approach...", approachCmd)
@@ -118,11 +124,10 @@ class AutoFactory(object):
         ).andThen(
             runCmd("shoot2...", shoot2Cmd)
         ).andThen(
-            runCmd("backup2...", backup2Cmd.andThen(dropArm2Cmd))
-        ).andThen(
-            autoStatus("done")
+            backup2Cmd.andThen(dropArm2Cmd).beforeStarting(
+                lambda: SmartDashboard.putString("autoStatus", f"completed in {Timer.getFPGATimestamp() - rolex['t0']}")
+            )
         )
-
         return result
 
     @staticmethod
@@ -173,8 +178,8 @@ class AutoFactory(object):
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
         self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
-        self.autoTrajStyle.setDefaultOption("rabbit", (JerkyTrajectory, True))
-        self.autoTrajStyle.addOption("snowboard", (SwerveTrajectory, True))
+        self.autoTrajStyle.setDefaultOption("dog", (JerkyTrajectory, True))
+        self.autoTrajStyle.addOption("eagle", (SwerveTrajectory, True))
 
         # driving speed
         self.autoDrvSpeed = SendableChooser()
@@ -203,6 +208,7 @@ class AutoFactory(object):
 
         endpoint = autowaypoints.SideDLeft.kEndpoint[branch]
         headingTags = endpoint[2], autowaypoints.SideDLeft.tags
+
         feeder = constants.LeftFeeder
 
         approach = JerkyTrajectory(
@@ -596,6 +602,10 @@ def scorePoint(approachPoses, headingDegrees=None, distance=0.8):
 
 def autoStatus(text) -> Command:
     return InstantCommand(lambda: SmartDashboard.putString("autoStatus", text))
+
+
+def autoStatusExpression(expression) -> Command:
+    return InstantCommand(lambda: SmartDashboard.putString("autoStatus", expression()))
 
 
 def runCmd(text, command):

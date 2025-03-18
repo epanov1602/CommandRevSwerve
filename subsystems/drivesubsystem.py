@@ -215,13 +215,6 @@ class DriveSubsystem(Subsystem):
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
 
-        if (xSpeed != 0 or ySpeed != 0) and self.maxSpeedScaleFactor is not None:
-            norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
-            scale = abs(self.maxSpeedScaleFactor() / norm)
-            if scale < 1:
-                xSpeed = xSpeed * scale
-                ySpeed = ySpeed * scale
-
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed
 
@@ -303,9 +296,10 @@ class DriveSubsystem(Subsystem):
             if fieldRelative
             else ChassisSpeeds(self.xSpeedDelivered, self.ySpeedDelivered, self.rotDelivered)
         )
-        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond
-        )
+        maxSpeed = DriveConstants.kMaxSpeedMetersPerSecond
+        if self.maxSpeedScaleFactor is not None:
+            maxSpeed = maxSpeed * self.maxSpeedScaleFactor()
+        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(swerveModuleStates, maxSpeed)
         self.frontLeft.setDesiredState(fl)
         self.frontRight.setDesiredState(fr)
         self.rearLeft.setDesiredState(rl)
@@ -330,9 +324,10 @@ class DriveSubsystem(Subsystem):
 
         :param desiredStates: The desired SwerveModule states.
         """
-        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            desiredStates, DriveConstants.kMaxSpeedMetersPerSecond
-        )
+        maxSpeed = DriveConstants.kMaxSpeedMetersPerSecond
+        if self.maxSpeedScaleFactor is not None:
+            maxSpeed = maxSpeed * self.maxSpeedScaleFactor()
+        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStates, maxSpeed)
         self.frontLeft.setDesiredState(fl)
         self.frontRight.setDesiredState(fr)
         self.rearLeft.setDesiredState(rl)
