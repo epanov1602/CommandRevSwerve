@@ -211,9 +211,6 @@ class DriveSubsystem(Subsystem):
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
 
-        if (abs(xSpeed) > 0.1 or abs(ySpeed) > 0.1):
-            print("")
-
         if (xSpeed != 0 or ySpeed != 0) and self.maxSpeedScaleFactor is not None:
             norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
             scale = abs(self.maxSpeedScaleFactor() / norm)
