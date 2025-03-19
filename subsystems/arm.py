@@ -44,7 +44,7 @@ class ArmConstants:
     # ^^ warning: you are not done if you are changing these constants, look at the function below too
 
     kArmAlgaeElevatorPosition1 = 14.0
-    kArmAlgaeElevatorPosition2 = 18.5
+    kArmAlgaeElevatorPosition2 = 19.5
 
 
 def safeArmAngleRange(elevatorPosition: float):
