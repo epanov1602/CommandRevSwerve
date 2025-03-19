@@ -205,8 +205,9 @@ class Localizer(commands2.Subsystem):
                 odometryAdjustment = self.calculateMegaTag2_OdometryAdjustment(
                     camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
-                #odometryAdjustment = self.calculateOdometryAdjustment(
-                #    camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
+                if odometryAdjustment is not None:
+                    odometryAdjustment = self.calculateIntersectionOdometryAdjustment(
+                        camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
                 if enabled and ready and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
@@ -299,7 +300,7 @@ class Localizer(commands2.Subsystem):
         return shift, Rotation2d()
 
 
-    def calculateOdometryAdjustment(
+    def calculateIntersectionOdometryAdjustment(
         self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
     ):
         tagId = tag.getFiducialId()
@@ -373,6 +374,9 @@ class Localizer(commands2.Subsystem):
             factor = Localizer.TAG_TOO_CLOSE_METERS / distanceToTag
             learningRate *= factor
             # ^^ power 1, because the biggest cause will be systematic errors (uncalibrated camera angle or location)
+
+        # for intersection localization, use lower learning rate
+        learningRate *= 0.05
 
         # adjust the (X, Y) in the drivetrain odometry
         shift = shiftMeters * learningRate
