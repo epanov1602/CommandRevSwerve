@@ -19,6 +19,40 @@ from wpimath.trajectory import TrapezoidProfileRadians
 from rev import SparkBase, SparkBaseConfig, ClosedLoopConfig
 
 
+class ApproachReefTeleop:
+    """
+    how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
+    """
+    timeSeconds = 0.7  # increase if failing to approach from far away
+    minDistance = 0.24  # increase if failing to approach from close distance
+    speedGain = 0.6  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+
+class ApproachReefAutonomous:
+    """
+    how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
+    """
+    timeSeconds = 0.95  # increase if failing to approach from far away
+    minDistance = 0.24  # increase if failing to approach from close distance
+    speedGain = 0.6  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+    delayBeforeRaisingElevator = 1.7  # seconds
+
+class ApproachFeederTeleop:
+    """
+    how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
+    """
+    timeSeconds = 0.1  # increase if failing to approach from far away
+    minDistance = 0.4  # increase if failing to approach from close distance
+    speedGain = 1.0  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+
+class ApproachFeederAutonomous:
+    """
+    how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
+    """
+    timeSeconds = 0.085  # increase if failing to approach from far away
+    minDistance = 0.1  # increase if failing to approach from close distance
+    speedGain = 1.0  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+
+
 class NeoMotorConstants:
     kFreeSpeedRpm = 5676
 
