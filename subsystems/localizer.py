@@ -75,8 +75,8 @@ class Localizer(commands2.Subsystem):
         print(f"Localizer: loaded field layout with {len(self.fieldLayout.getTags())} tags, from {fieldLayoutFile}")
 
         self.learningRateMult = SendableChooser()
-        self.learningRateMult.setDefaultOption("100%", 1.0)
-        self.learningRateMult.addOption("10%", 0.1)
+        self.learningRateMult.addOption("100%", 1.0)
+        self.learningRateMult.setDefaultOption("10%", 0.1)
         self.learningRateMult.addOption("1%", 0.01)
         self.learningRateMult.addOption("0.1%", 0.001)
         SmartDashboard.putData("LoclzLearnRate", self.learningRateMult)

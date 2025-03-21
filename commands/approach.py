@@ -64,6 +64,7 @@ class ApproachTag(commands2.Command):
         reverse=False,
         settings: dict | None=None,
         pushForwardSeconds=0.0,  # length of final approach
+        pushForwardMinDistance=0.0,  # length of final approach in minimum distance
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
@@ -94,6 +95,8 @@ class ApproachTag(commands2.Command):
         self.reverse = reverse
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.finalApproachObjSize = finalApproachObjSize
+
+        self.finalApproachMinDistance = pushForwardMinDistance
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
             self.pushForwardSeconds = Tunable(settings, dashboardName, "BrakeDst", 1.0, (0.0, 10.0))
@@ -125,6 +128,7 @@ class ApproachTag(commands2.Command):
         self.everSawObject = False
         self.tReachedGlidePath = 0.0  # time when aligned to the tag and desired direction for the first time
         self.tReachedFinalApproach = 0.0  # time when reached the final approach
+        self.xyReachedFinalApproach = Translation2d(0, 0)
         self.lostTag = ""
         self.finished = ""
 
@@ -142,7 +146,7 @@ class ApproachTag(commands2.Command):
 
     def initTunables(self, settings, prefix):
         self.KPMULT_TRANSLATION = Tunable(settings, prefix, "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
-        self.KPMULT_ROTATION = Tunable(settings, prefix, "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
+        self.KPMULT_ROTATION = Tunable(settings, prefix, "GainRot", 0.8, (0.1, 8.0))  # gail for how quickly to rotate
 
         # acceptable width of glide path, in inches
         self.GLIDE_PATH_WIDTH_INCHES = Tunable(settings, prefix, "Tolernce", 2.0, (0.5, 4.0))
@@ -178,6 +182,7 @@ class ApproachTag(commands2.Command):
         self.targetDirection = Rotation2d.fromDegrees(targetDegrees)
         self.tReachedGlidePath = 0.0  # time when reached the glide path
         self.tReachedFinalApproach = 0.0  # time when reached the final approach
+        self.xyReachedFinalApproach = Translation2d(0, 0)
         self.lostTag = False
         self.lastSeenObjectX = 0.0
         self.lastSeenObjectSize = 0.0
@@ -214,8 +219,10 @@ class ApproachTag(commands2.Command):
             self.finished = f"not seen {int(1000 * delay)}ms"
 
         # good ways to finish
-        elif self.tReachedFinalApproach != 0 and now > self.tReachedFinalApproach + self.finalApproachSeconds:
-            self.finished = "approached" if self.finalApproachSeconds > 0 else "reached approach point"
+        elif self.tReachedFinalApproach != 0:
+            length = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
+            if length > self.finalApproachMinDistance and now > self.tReachedFinalApproach + self.finalApproachSeconds:
+                self.finished = f"approached within {now - self.tReachedFinalApproach}s, drove {length}m"
 
         if not self.finished:
             return False
@@ -255,11 +262,14 @@ class ApproachTag(commands2.Command):
 
         # 4. be careful with forward speed
         warnings = None
-        if self.tReachedFinalApproach:
+        if self.tReachedFinalApproach != 0:
             # - if we are on final approach, completely ignore the fwdSpeed from the visual estimation
             fwdSpeed = 0
             if self.finalApproachSeconds > 0:
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
+                if self.finalApproachMinDistance > 0:
+                    completedDistance = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
+                    completedPercentage = min(completedPercentage, completedDistance / self.finalApproachMinDistance)
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
             leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
@@ -352,7 +362,8 @@ class ApproachTag(commands2.Command):
         if self.tReachedGlidePath != 0 and self.tReachedFinalApproach == 0 and robotX > 0:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "reached final approach")
             self.tReachedFinalApproach = now
-            print("final approach starting")
+            self.xyReachedFinalApproach = self.drivetrain.getPose().translation()
+            print(f"final approach starting from {self.xyReachedFinalApproach}")
 
         # if we already reached the glide path, and we want nonzero final approach (after reaching desired size)
         # ... then go directly towards the tag (x, y = tagX, 0) instead of going towards 0, 0

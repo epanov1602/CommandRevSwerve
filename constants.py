@@ -113,7 +113,7 @@ class ModuleConstants:
     kTurningEncoderInverted = False
     kTurningMotorInverted = True
 
-    kWheelDiameterMeters = units.inchesToMeters(4) * 0.875  # MK4i/MK4n: 4 inches, MAXSwerve: 3 inches
+    kWheelDiameterMeters = units.inchesToMeters(4) * 0.875 * 1.05  # MK4i/MK4n: 4 inches, MAXSwerve: 3 inches
     # ^^ might need to be multiplied by 0.93 instead of 1.00 if we believe Eric's calibration
 
     # Calculations required for driving motor conversion factors and feed forward

@@ -137,13 +137,13 @@ class AutoFactory(object):
         # 0. starting position for all autos
         self.startPos = SendableChooser()
         self.startPos.addOption("0: tug", (7.989, 7.75, -180))  # (x, y, headingDegrees)
-        self.startPos.addOption("1: L+", (7.189, 7.75, -180))  # (x, y, headingDegrees)
+        self.startPos.addOption("1: L+", (7.189, 6.177, -180))  # (x, y, headingDegrees)
         self.startPos.addOption("2: L", (6.98, 6.177, -142))  # (x, y, headingDegrees)
         self.startPos.setDefaultOption("3: ML", (7.189, 4.40, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("4: MID", (7.189, 4.025, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("5: MR", (7.189, 3.65, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("6: R", (6.98, 1.897, 142))  # (x, y, headingDegrees)
-        self.startPos.addOption("7: R+", (7.189, 0.4, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("7: R+", (7.189, 1.897, 180))  # (x, y, headingDegrees)
 
         # goal 1
         #  - which reef to choose for goal 1
@@ -177,9 +177,9 @@ class AutoFactory(object):
 
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
-        self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
-        self.autoTrajStyle.setDefaultOption("dog", (JerkyTrajectory, True))
-        self.autoTrajStyle.addOption("eagle", (SwerveTrajectory, True))
+        #self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
+        self.autoTrajStyle.addOption("dog", (JerkyTrajectory, True))
+        self.autoTrajStyle.setDefaultOption("eagle", (SwerveTrajectory, True))
 
         # driving speed
         self.autoDrvSpeed = SendableChooser()
@@ -304,7 +304,7 @@ class AutoFactory(object):
         feeder = constants.LeftFeeder
         headingTags = endpoint[2], autowaypoints.SideE.tags
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -396,7 +396,7 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.8, speed=1.0, traj=None):
+    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.95, speed=1.0, traj=None):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
 
@@ -407,6 +407,7 @@ class AutoFactory(object):
         # limelight is slower
         if branch == "left":
             pushFwdSeconds *= 1.3
+        settings = {"GainTran": 0.6}
 
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.approach import ApproachTag
@@ -416,7 +417,9 @@ class AutoFactory(object):
             self.robotDrive,
             headingDegrees,
             speed=speed,
+            settings=settings,
             pushForwardSeconds=pushFwdSeconds,
+            pushForwardMinDistance=0.28,
             dashboardName="auto",
         )
 
@@ -424,7 +427,9 @@ class AutoFactory(object):
             lambda: SmartDashboard.putString("autoStatus", f"apching reef: tags={tags}, h={headingDegrees}")
         )
 
-        result = result.alongWith(AutoFactory.moveArm(self, height=height, final=False))
+        result = result.alongWith(
+            WaitCommand(seconds=1.7).andThen(AutoFactory.moveArm(self, height=height, final=False))
+        )
 
         # if we have an interruptable trajectory, only run it until `approach` is ready to take over and run
         if traj is not None:
@@ -454,8 +459,9 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            settings={"GainTran": 1.1},
-            pushForwardSeconds=0.01, # 0.25 was calibrated for GainTran=0.7
+            settings={"GainTran": 1.0},
+            pushForwardMinDistance=0.20,
+            pushForwardSeconds=0.07, # 0.25 was calibrated for GainTran=0.7
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )
