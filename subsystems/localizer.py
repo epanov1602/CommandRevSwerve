@@ -104,13 +104,13 @@ class Localizer(commands2.Subsystem):
         print("Localizer will assume flipped={} (username={}, rule={})".format(flipped, self.username, self.flippedFromAllianceColor))
 
         self.enabled = SendableChooser()
-        self.enabled.setDefaultOption("off", (None, False))
+        self.enabled.addOption("off", (None, False))
         if flipped in (None, False):
             self.enabled.addOption("demo", (False, False))
-            self.enabled.addOption("on", (True, False))
+            self.enabled.setDefaultOption("on", (True, False))
         if flipped in (None, True):
             self.enabled.addOption("demo-red", (False, True))
-            self.enabled.addOption("on-red", (True, True))
+            self.enabled.setDefaultOption("on-red", (True, True))
         SmartDashboard.putData("Localizer", self.enabled)
 
 
@@ -228,6 +228,8 @@ class Localizer(commands2.Subsystem):
         # if waiting for alliance color, then all tags are skipped
         if self.enabled is None:
             SmartDashboard.putString("LocalizerSkipped", "waiting for alliance color")
+        elif not self.allowed:
+            SmartDashboard.putString("LocalizerSkipped", "not allowed at the moment")
         else:
             skipped = ",".join(str(t) for t in self.skippedTags) if self.skippedTags else ""
             SmartDashboard.putString("LocalizerSkipped", skipped)
