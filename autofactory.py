@@ -42,7 +42,7 @@ class AutoFactory(object):
 
         trajectoryClass, swerve = self.autoTrajStyle.getSelected()
 
-        drivingSpeed = self.autoDrvSpeed.getSelected()  # 0.2 default
+        drivingSpeed = self.autoDrvSpeed.getSelected()  # 1.0 default
 
         # commands for approaching and retreating from goal 1 scoring location
         headingTags1, approachCmd, retreatCmd, take2Cmd, headingTags2, feeder = goal1traj(
@@ -190,12 +190,22 @@ class AutoFactory(object):
         self.autoDrvSpeed.addOption("0.7", 0.7)
         self.autoDrvSpeed.setDefaultOption("1.0", 1.0)
 
+        # approach speed
+        self.autoApproachSpeed = SendableChooser()
+        self.autoApproachSpeed.addOption("0.35", 0.35)
+        self.autoApproachSpeed.addOption("0.5", 0.45)
+        self.autoApproachSpeed.addOption("0.7", 0.7)
+        self.autoApproachSpeed.setDefaultOption("1.0", 1.0)
+        self.autoApproachSpeed.addOption("1.15", 1.15)
+        self.autoApproachSpeed.addOption("1.30", 1.30)
+
         SmartDashboard.putData("auto1StartPos", self.startPos)
         SmartDashboard.putData("auto2Paths", self.goal1traj)
         SmartDashboard.putData("auto3Branch", self.goal1branch)
         SmartDashboard.putData("auto4Scoring1", self.goal1height)
         SmartDashboard.putData("auto5Scoring2", self.goal2height)
         SmartDashboard.putData("auto6TrjStyle", self.autoTrajStyle)
+        SmartDashboard.putData("auto8AprchSpd", self.autoApproachSpeed)
         SmartDashboard.putData("auto9DriveSpd", self.autoDrvSpeed)
 
         self.startPos.onChange(lambda _: AutoFactory.updateDashboard(self))
@@ -404,7 +414,7 @@ class AutoFactory(object):
         branch="right",
         pushFwdSeconds=constants.ApproachReefAutonomous.timeSeconds,
         speed=1.0,
-        traj=None
+        traj=None,
     ):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
@@ -412,11 +422,12 @@ class AutoFactory(object):
         # which camera do we use? depends whether we aim for "right" or "left" branch
         assert branch in ("right", "left")
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
+        approachSpeedFactor = self.autoApproachSpeed.getSelected()
 
         # limelight is slower
         if branch == "left":
             pushFwdSeconds *= 1.3
-        settings = {"GainTran": constants.ApproachReefAutonomous.speedGain}
+        settings = {"GainTran": constants.ApproachReefAutonomous.speedGain * approachSpeedFactor}
 
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.approach import ApproachTag
@@ -427,7 +438,7 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             settings=settings,
-            pushForwardSeconds=pushFwdSeconds,
+            pushForwardSeconds=pushFwdSeconds / approachSpeedFactor,
             pushForwardMinDistance=constants.ApproachReefAutonomous.minDistance,
             dashboardName="auto",
         )
@@ -464,15 +475,17 @@ class AutoFactory(object):
         if abs(speed) > 1:
             speed = math.copysign(1.0, speed)
 
+        approachSpeedFactor = self.autoApproachSpeed.getSelected()
+
         approach = ApproachTag(
             self.rearCamera,
             self.robotDrive,
             headingDegrees,
             speed=speed,
             reverse=True,
-            settings={"GainTran": constants.ApproachFeederAutonomous.speedGain},
+            settings={"GainTran": constants.ApproachFeederAutonomous.speedGain * approachSpeedFactor},
             pushForwardMinDistance=constants.ApproachFeederAutonomous.minDistance,
-            pushForwardSeconds=constants.ApproachFeederAutonomous.timeSeconds, # 0.25 was calibrated for GainTran=0.7
+            pushForwardSeconds=constants.ApproachFeederAutonomous.timeSeconds / approachSpeedFactor,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )
