@@ -271,6 +271,8 @@ class ApproachTag(commands2.Command):
                     completedDistance = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
                     completedPercentage = min(completedPercentage, completedDistance / self.finalApproachMinDistance)
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
+                if abs(fwdSpeed) < GoToPointConstants.kMinTranslateSpeed:
+                    fwdSpeed = math.copysign(GoToPointConstants.kMinTranslateSpeed, self.finalApproachSpeed)
             leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
             # - otherwise slow down if the visual estimate is old or if heading is not right yet
