@@ -20,6 +20,7 @@ from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded, StartIn
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
+from subsystems.elevator import ElevatorConstants
 
 # which trajectory to use
 BACKUP_METERS = 0.3
@@ -461,7 +462,7 @@ class AutoFactory(object):
             reverse=True,
             settings={"GainTran": 1.0},
             pushForwardMinDistance=0.20,
-            pushForwardSeconds=0.07, # 0.25 was calibrated for GainTran=0.7
+            pushForwardSeconds=0.085, # 0.25 was calibrated for GainTran=0.7
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )
@@ -504,14 +505,14 @@ class AutoFactory(object):
         from subsystems.arm import ArmConstants
 
         if height == "intake" or height == "base":
-            return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel1, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         if height == "level 2":
-            return MoveElevatorAndArm(self.elevator, 4.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel2, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 3":
-            return MoveElevatorAndArm(self.elevator, 13.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel3, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 4":
             angle = ArmConstants.kArmSafeTravelAngle if not final else ArmConstants.kArmLevel4ReleaseAngle
-            return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=angle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel4, arm=self.arm, angle=angle)
 
         assert False, f"height='{height}' is not supported"
 
