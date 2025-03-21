@@ -33,12 +33,14 @@ class MyRobot(commands2.TimedCommandRobot):
 
     def disabledInit(self) -> None:
         """This function is called once each time the robot enters Disabled mode."""
+        self.robotContainer.disabledInit()
 
     def disabledPeriodic(self) -> None:
         """This function is called periodically when disabled"""
 
     def autonomousInit(self) -> None:
         """This autonomous runs the autonomous command selected by your RobotContainer class."""
+        self.robotContainer.autonomousInit()
         self.autonomousCommand = self.robotContainer.getAutonomousCommand()
 
         # schedule the autonomous command (example)

@@ -55,6 +55,7 @@ class Localizer(commands2.Subsystem):
         # enabled or not? (depends on how we convert alliance color to flipped)
         self.enabled: SendableChooser | None = None
         self.flippedFromAllianceColor = flippedFromAllianceColor
+        self.allowed = True
 
         from os.path import isfile, join
         from getpass import getuser
@@ -85,6 +86,10 @@ class Localizer(commands2.Subsystem):
         self.importantTagIDs = set(importantTagIDs)
         self.recentlySeenTags = deque()
         self.skippedTags = set()
+
+
+    def setAllowed(self, allowed: bool):
+        self.allowed = allowed
 
 
     def initEnabledChooser(self):
@@ -140,6 +145,8 @@ class Localizer(commands2.Subsystem):
             self.initEnabledChooser()
         if self.enabled is not None:
             enabled, flipped = self.enabled.getSelected()
+        if not self.allowed:
+            enabled = False
 
         self.skippedTags.clear()
         now = Timer.getFPGATimestamp()

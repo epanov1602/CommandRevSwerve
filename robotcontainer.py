@@ -231,16 +231,24 @@ class RobotContainer:
         )
 
 
+    def disabledInit(self):
+        AutoFactory.updateDashboard(self)
+        if self.trajectoryPicker is not None:
+            self.trajectoryPicker.clearDashboard()
+
+
     def autonomousInit(self):
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.clearDashboard()
         AutoFactory.updateDashboard(self)
+        self.localizer.setAllowed(False)  # localizer not allowed in auto (untested!)
 
 
     def teleopInit(self):
         AutoFactory.clearDashboard(self)
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.updateDashboard()
+        self.localizer.setAllowed(True)  # localizer allowed in teleop
 
 
     def configureAutos(self) -> None:
@@ -687,6 +695,8 @@ class RobotContainer:
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
         This should be called on robot disable to prevent integral windup."""
+        if self.trajectoryPicker is not None:
+            self.trajectoryPicker.clearDashboard()
 
     def getAutonomousCommand(self) -> commands2.Command:
         """
