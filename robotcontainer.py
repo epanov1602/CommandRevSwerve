@@ -404,11 +404,11 @@ class RobotContainer:
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
-        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5)
+        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5, slowDownAtFinish=False)
 
         #armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         #reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker.alongWith(armDown))
-        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker)
+        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker).andThen(self.approachFeeder())
 
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
@@ -754,6 +754,8 @@ class RobotContainer:
 
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+        pushForwardMinDistance = 0.28
+
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
             angle = self.robotDrive.getHeading().degrees()
@@ -768,6 +770,7 @@ class RobotContainer:
                 self.robotDrive,
                 specificHeadingDegrees=desiredHeading,
                 pushForwardSeconds=pushForwardSeconds,
+                pushForwardMinDistance=pushForwardMinDistance,
                 finalApproachObjSize=finalApproachObjSize
             )
 
@@ -781,6 +784,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
@@ -791,6 +795,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
@@ -800,6 +805,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=roundToMultipleOf60,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
@@ -830,6 +836,7 @@ class RobotContainer:
             reverse=True,
             settings={"GainTran": 1.0},
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=0.4,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
@@ -838,4 +845,4 @@ class RobotContainer:
             metersToTheLeft=0, metersBackwards=0.2, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
         )
 
-        return pipeline.andThen(moveBack).andThen(command).withTimeout(10)
+        return pipeline.andThen(command).withTimeout(10)
