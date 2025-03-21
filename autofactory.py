@@ -397,7 +397,15 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.95, speed=1.0, traj=None):
+    def approachReef(
+        self,
+        headingTags,
+        height,
+        branch="right",
+        pushFwdSeconds=constants.ApproachReefAutonomous.timeSeconds,
+        speed=1.0,
+        traj=None
+    ):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
 
@@ -408,7 +416,7 @@ class AutoFactory(object):
         # limelight is slower
         if branch == "left":
             pushFwdSeconds *= 1.3
-        settings = {"GainTran": 0.6}
+        settings = {"GainTran": constants.ApproachReefAutonomous.speedGain}
 
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.approach import ApproachTag
@@ -420,7 +428,7 @@ class AutoFactory(object):
             speed=speed,
             settings=settings,
             pushForwardSeconds=pushFwdSeconds,
-            pushForwardMinDistance=0.28,
+            pushForwardMinDistance=constants.ApproachReefAutonomous.minDistance,
             dashboardName="auto",
         )
 
@@ -429,7 +437,9 @@ class AutoFactory(object):
         )
 
         result = result.alongWith(
-            WaitCommand(seconds=1.7).andThen(AutoFactory.moveArm(self, height=height, final=False))
+            WaitCommand(seconds=constants.ApproachReefAutonomous.delayBeforeRaisingElevator).andThen(
+                AutoFactory.moveArm(self, height=height, final=False)
+            )
         )
 
         # if we have an interruptable trajectory, only run it until `approach` is ready to take over and run
@@ -460,9 +470,9 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            settings={"GainTran": 1.0},
-            pushForwardMinDistance=0.20,
-            pushForwardSeconds=0.085, # 0.25 was calibrated for GainTran=0.7
+            settings={"GainTran": constants.ApproachFeederAutonomous.speedGain},
+            pushForwardMinDistance=constants.ApproachFeederAutonomous.minDistance,
+            pushForwardSeconds=constants.ApproachFeederAutonomous.timeSeconds, # 0.25 was calibrated for GainTran=0.7
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )

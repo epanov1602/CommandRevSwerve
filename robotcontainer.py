@@ -318,12 +318,16 @@ class RobotContainer:
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
                self.approachReef(
-                   self.frontRightCamera, pushForwardSeconds=0.8, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                   self.frontRightCamera,
+                   pushForwardSeconds=1.17 * constants.ApproachReefTeleop.timeSeconds,
+                   cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                )
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.approachReef(
-                    self.frontLeftCamera, pushForwardSeconds=0.6, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                    self.frontLeftCamera,
+                    pushForwardSeconds=constants.ApproachReefTeleop.timeSeconds,
+                    cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
@@ -765,8 +769,8 @@ class RobotContainer:
 
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
-        pushForwardMinDistance = 0.24
-        settings = {"GainTran": 0.63}
+        pushForwardMinDistance = constants.ApproachReefTeleop.minDistance
+        settings = {"GainTran": constants.ApproachReefTeleop.speedGain}
 
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
@@ -836,7 +840,7 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=0.1):
+    def approachFeeder(self, pushForwardSeconds=constants.ApproachFeederTeleop.timeSeconds):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -850,15 +854,11 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
-            settings={"GainTran": 1.0},
+            settings={"GainTran": constants.ApproachFeederTeleop.speedGain},
             pushForwardSeconds=pushForwardSeconds,
-            pushForwardMinDistance=0.4,
+            pushForwardMinDistance=constants.ApproachFeederTeleop.minDistance,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
-        )
-
-        moveBack = SwerveMove(
-            metersToTheLeft=0, metersBackwards=0.2, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
         )
 
         return pipeline.andThen(command).withTimeout(10)
