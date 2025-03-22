@@ -769,7 +769,6 @@ class RobotContainer:
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
         pushForwardMinDistance = constants.ApproachReefTeleop.minDistance
-        settings = {"GainTran": constants.ApproachReefTeleop.speedGain}
 
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
@@ -784,7 +783,6 @@ class RobotContainer:
                 camera,
                 self.robotDrive,
                 specificHeadingDegrees=desiredHeading,
-                settings=settings,
                 pushForwardSeconds=pushForwardSeconds,
                 pushForwardMinDistance=pushForwardMinDistance,
                 finalApproachObjSize=finalApproachObjSize
@@ -798,7 +796,6 @@ class RobotContainer:
         approachLike5895 = aimLike5895.andThen(ApproachTag(
             camera,
             self.robotDrive,
-            settings=settings,
             specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
@@ -810,7 +807,6 @@ class RobotContainer:
         approachLike1811 = aimLike1811.andThen(ApproachTag(
             camera,
             self.robotDrive,
-            settings=settings,
             specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
@@ -821,7 +817,6 @@ class RobotContainer:
         pickAnyTag = SetCameraPipeline(camera, 0, ())
         approachAnyTag = pickAnyTag.andThen(ApproachTag(camera,
             self.robotDrive,
-            settings=settings,
             specificHeadingDegrees=roundToMultipleOf60,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,

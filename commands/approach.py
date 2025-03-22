@@ -145,7 +145,7 @@ class ApproachTag(commands2.Command):
 
 
     def initTunables(self, settings, prefix):
-        self.KPMULT_TRANSLATION = Tunable(settings, prefix, "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
+        self.KPMULT_TRANSLATION = Tunable(settings, prefix, "GainTran", 0.6, (0.1, 8.0))  # gain for how quickly to move
         self.KPMULT_ROTATION = Tunable(settings, prefix, "GainRot", 0.8, (0.1, 8.0))  # gail for how quickly to rotate
 
         # acceptable width of glide path, in inches
