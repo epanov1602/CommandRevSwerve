@@ -1,1 +1,2 @@
 robotpy==2025.2.1.3
+certifi
