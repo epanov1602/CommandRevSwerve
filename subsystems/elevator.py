@@ -13,7 +13,7 @@ import constants
 class ElevatorConstants:
     heightOfLevel1 = 0.0
     heightOfLevel2 = 5.0
-    heightOfLevel3 = 13.0
+    heightOfLevel3 = 14.0
     heightOfLevel4 = 30.0
 
     # very scary setting! (if set wrong, the arm will escape equilibrium and break something)

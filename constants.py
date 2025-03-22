@@ -23,7 +23,7 @@ class ApproachReefTeleop:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 0.7  # increase if failing to approach from far away
+    timeSeconds = 0.85  # increase if failing to approach from far away
     minDistance = 0.24  # increase if failing to approach from close distance
 
 class ApproachReefAutonomous:
