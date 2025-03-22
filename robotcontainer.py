@@ -625,8 +625,8 @@ class RobotContainer:
                 (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
-                (5.155, 1.916, 90),
-                (6.542, 2.694, 135),
+                (5.355, 1.716, 90),
+                (6.742, 2.494, 135),
             ]),
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,
@@ -646,8 +646,8 @@ class RobotContainer:
                 (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
-                (4.477, 1.906, 90),
-                (6.582, 2.824, 135),
+                (5.355, 1.716, 90),
+                (6.742, 2.494, 135),
             ]),
             speed=speed,
             setup=prepareToBackIntoLeftFeeder,

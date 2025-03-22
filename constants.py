@@ -42,7 +42,7 @@ class ApproachFeederTeleop:
     """
     timeSeconds = 0.1  # increase if failing to approach from far away
     minDistance = 0.4  # increase if failing to approach from close distance
-    speedGain = 1.0  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+    speedGain = 0.95  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
 
 class ApproachFeederAutonomous:
     """
@@ -204,7 +204,7 @@ class AutoConstants:
     kUseSqrtControl = True  # improves arrival time and precision for simple driving commands
 
     # below are really trajectory constants
-    kMaxSpeedMetersPerSecond = DriveConstants.kMaxSpeedMetersPerSecond * 0.9
+    kMaxSpeedMetersPerSecond = DriveConstants.kMaxSpeedMetersPerSecond * 0.95
     kMaxAccelerationMetersPerSecondSquared = 4
     kMaxAngularSpeedRadiansPerSecond = 2 * math.pi
     kMaxAngularSpeedRadiansPerSecondSquared = 2 * math.pi
