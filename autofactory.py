@@ -16,7 +16,8 @@ import constants
 import autowaypoints
 from commands.aimtodirection import AimToDirection
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
-from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded, StartIntakingGamepiece
+from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded, StartIntakingGamepiece, \
+    IntakeFeedGamepieceForward
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
@@ -76,15 +77,17 @@ class AutoFactory(object):
         #)
         backupCmd = SwerveMove(metersToTheLeft=0, metersBackwards=BACKUP_METERS, drivetrain=self.robotDrive, slowDownAtFinish=False)
         dropArmCmd = AutoFactory.moveArm(self, height="intake").andThen(
-            AutoFactory.moveArm(self, height="intake")  # belt-and-suspenders hack
+            IntakeFeedGamepieceForward(self.intake).withTimeout(0.5)  # belt-and-suspenders hack
+        ).andThen(
+            AutoFactory.moveArm(self, height="intake")
         )
 
         # commands for reloading a new gamepiece from the feeding station
         armToIntakePositionCmd = AutoFactory.moveArm(self, height="intake")
-        intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(armToIntakePositionCmd.succeeded)
+        #intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(armToIntakePositionCmd.succeeded)
 
         # this is a riskier and faster way to do it
-        #intakeCmd = AutoFactory.startIntakingGamepiece(self, speed=0.114)
+        intakeCmd = AutoFactory.startIntakingGamepiece(self, speed=0.114)
 
         reloadCmd = armToIntakePositionCmd.andThen(intakeCmd)
         finishIntakingCmd = AutoFactory.intakeGamepiece(self, speed=0.115)
@@ -195,6 +198,7 @@ class AutoFactory(object):
         self.autoApproachSpeed.addOption("0.35", 0.35)
         self.autoApproachSpeed.addOption("0.5", 0.45)
         self.autoApproachSpeed.addOption("0.7", 0.7)
+        self.autoApproachSpeed.addOption("0.85", 0.85)
         self.autoApproachSpeed.setDefaultOption("1.0", 1.0)
         self.autoApproachSpeed.addOption("1.15", 1.15)
         self.autoApproachSpeed.addOption("1.30", 1.30)
