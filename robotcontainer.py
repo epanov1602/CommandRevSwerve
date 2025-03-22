@@ -716,6 +716,8 @@ class RobotContainer:
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
         from commands.aimtodirection import AimToDirection
 
+        resetXY = ResetXY(x=0, y=0, headingDegrees=0, drivetrain=self.robotDrive)
+
         # 1. square dance to test the drivetrain (did it drive crooked or made a good square? rezero the wheels!)
         from commands.swervetopoint import SwerveMove
         forward = SwerveMove(metersToTheLeft=0, metersBackwards=-0.5, speed=0.2, drivetrain=self.robotDrive)
@@ -739,7 +741,7 @@ class RobotContainer:
         rotations = rotation1.andThen(rotation2)
 
         # 4. the combination
-        return squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
+        return resetXY.andThen(squareDance).andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
 
 
     def configureReefApproachStyles(self):
