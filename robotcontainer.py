@@ -268,7 +268,14 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
+        # feeder locations:
+        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
+        #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
+        # feeder locations:
+        self.driverController.povRight().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)))
+        self.driverController.povLeft().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)))
+
+        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
         # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose)))
 
         # ^^ this (Y,Y) is the right feeding station for today's practice
@@ -414,8 +421,8 @@ class RobotContainer:
         self.driverController.povUp().whileTrue(self.trajectoryPicker)
 
         # POV left+right: pick trajectory
-        self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
-        self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
+        #self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
+        #self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5, slowDownAtFinish=False)
@@ -462,10 +469,6 @@ class RobotContainer:
 
 
         # now add the trajectories (please replace these with the real ones):
-
-        # feeder locations:
-        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
 
         #  - go to left branch of reef side B
         goSideELeftBranch = TrajectoryCommand(
