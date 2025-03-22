@@ -8,6 +8,7 @@ from __future__ import annotations
 import commands2
 import math
 
+import constants
 from subsystems.drivesubsystem import DriveSubsystem
 from wpimath.geometry import Rotation2d, Translation2d
 from wpilib import SmartDashboard
@@ -16,7 +17,7 @@ from commands.aimtodirection import AimToDirectionConstants
 from constants import AutoConstants
 
 class GoToPointConstants:
-    kPTranslate = 0.25  # make it 0.2 to be conservative?  # you will need to calibrate this one to your robot
+    kPTranslate = 0.25 / (constants.DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
     kUseSqrtControl = AutoConstants.kUseSqrtControl
 
     kMinTranslateSpeed = 0.035  # moving forward slower than this is unproductive
