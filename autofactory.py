@@ -487,10 +487,7 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            settings={
-                "GainTran": constants.ApproachFeederAutonomous.speedGain * approachSpeedFactor,
-                "Tolernce": constants.ApproachFeederAutonomous.toleranceInches,
-            },
+            settings={"GainTran": constants.ApproachFeederAutonomous.speedGain * approachSpeedFactor},
             pushForwardMinDistance=constants.ApproachFeederAutonomous.minDistance,
             pushForwardSeconds=constants.ApproachFeederAutonomous.timeSeconds / approachSpeedFactor,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
