@@ -728,7 +728,7 @@ class RobotContainer:
         intake = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm).andThen(
             IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
         )
-        score = MoveElevatorAndArm(position=13.0, elevator=self.elevator, arm=self.arm).andThen(
+        score = MoveElevatorAndArm(position=ElevatorConstants.heightOfLevel3, elevator=self.elevator, arm=self.arm).andThen(
             IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(1.0)
         )
         armDown = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm)
@@ -738,25 +738,8 @@ class RobotContainer:
         rotation2 = AimToDirection(degrees=0.0, speed=0.3, drivetrain=self.robotDrive)
         rotations = rotation1.andThen(rotation2)
 
-        # 4. vision: kiss an AprilTag in front with the right camera, and then with the left camera
-        alignWRightCam = self.approachReef(self.frontRightCamera, desiredHeading=None)
-        moveBack = SwerveMove(metersBackwards=0.5, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2)
-        alignWLeftCam = self.approachReef(self.frontLeftCamera, desiredHeading=None)
-        # and the complicated part: turn around and kiss same AprilTag with the back camera
-        turnAround = SwerveMove(metersBackwards=0.3, metersToTheLeft=-0.25, drivetrain=self.robotDrive, speed=0.2,
-                                heading=lambda: self.robotDrive.getHeading().rotateBy(Rotation2d.fromDegrees(180)))
-        alignWBackCam = turnAround.andThen(
-            SetCameraPipeline(self.rearCamera, 0, None)
-        ).andThen(
-            AutoFactory.approachFeeder(
-                self, camera=self.rearCamera, headingDegrees=None, speed=0.15
-            )
-        )
-
-        # 5. the combination
-        movement = squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
-        vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(alignWBackCam)
-        return movement.andThen(vision)
+        # 4. the combination
+        return squareDance.andThen(intake).andThen(score).andThen(armDown).andThen(rotations)
 
 
     def configureReefApproachStyles(self):
