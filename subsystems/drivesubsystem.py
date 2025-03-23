@@ -375,7 +375,8 @@ class DriveSubsystem(Subsystem):
                 else:
                     adjustment = -angleMove * self.gyroOvershootFraction
                     self._lastGyroAngleAdjustment += adjustment
-                    self.gyro.setAngleAdjustment(self._lastGyroAngleAdjustment)
+                    self.gyro.setAngleAdjustment(max(-359, min(+359, self._lastGyroAngleAdjustment)))
+                    # ^^ NavX code doesn't like angle adjustments outside of (-360, +360) range
 
             self._lastGyroAngle = gyroAngle
             self._lastGyroAngleTime = now
