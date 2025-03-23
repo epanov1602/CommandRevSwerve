@@ -3,7 +3,7 @@ import typing
 
 import wpilib
 
-from commands2 import Subsystem
+from commands2 import Subsystem, TimedCommandRobot
 from wpimath.filter import SlewRateLimiter
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (
@@ -22,6 +22,9 @@ from rev import SparkMax, SparkFlex
 import navx
 
 
+GYRO_OVERSHOOT_FRACTION = -4.0 / 360  # our gyro didn't overshoot, it "undershot" by 4 degrees in a 360 degree turn
+
+
 class DriveSubsystem(Subsystem):
     def __init__(self, maxSpeedScaleFactor=None) -> None:
         super().__init__()
@@ -29,6 +32,10 @@ class DriveSubsystem(Subsystem):
             assert callable(maxSpeedScaleFactor)
 
         self.maxSpeedScaleFactor = maxSpeedScaleFactor
+
+        self.gyroOvershootFraction = 0.0
+        if not TimedCommandRobot.isSimulation():
+            self.gyroOvershootFraction = GYRO_OVERSHOOT_FRACTION
 
         enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
 
@@ -69,6 +76,7 @@ class DriveSubsystem(Subsystem):
         self.gyro = navx.AHRS.create_spi()
         self._lastGyroAngleTime = 0
         self._lastGyroAngle = 0
+        self._lastGyroAngleAdjustment = 0
         self._lastGyroState = "ok"
 
         # Slew rate filter variables for controlling lateral acceleration
@@ -140,6 +148,7 @@ class DriveSubsystem(Subsystem):
         if resetGyro:
             self.gyro.reset()
             self.gyro.setAngleAdjustment(0)
+            self._lastGyroAngleAdjustment = 0
             self._lastGyroAngleTime = 0
             self._lastGyroAngle = 0
 
@@ -354,7 +363,19 @@ class DriveSubsystem(Subsystem):
         else:
             if self.gyro.isCalibrating():
                 state = "calibrating"
-            self._lastGyroAngle = self.gyro.getAngle()
+            gyroAngle = self.gyro.getAngle()
+
+            # correct for gyro drift
+            if self.gyroOvershootFraction != 0.0 and self._lastGyroAngle != 0.0:
+                angleMove = gyroAngle - self._lastGyroAngle
+                if abs(angleMove) > 10:  # if less than 10 degrees, adjust
+                    print(f"WARNING: big angle move {angleMove} from {self._lastGyroAngle} to {gyroAngle}")
+                else:
+                    adjustment = -angleMove * self.gyroOvershootFraction
+                    self._lastGyroAngleAdjustment += adjustment
+                    self.gyro.setAngleAdjustment(self._lastGyroAngleAdjustment)
+
+            self._lastGyroAngle = gyroAngle
             self._lastGyroAngleTime = now
 
         if state != self._lastGyroState:
