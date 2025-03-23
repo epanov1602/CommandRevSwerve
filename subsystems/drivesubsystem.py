@@ -22,7 +22,7 @@ from rev import SparkMax, SparkFlex
 import navx
 
 
-GYRO_OVERSHOOT_FRACTION = -4.0 / 360  # our gyro didn't overshoot, it "undershot" by 4 degrees in a 360 degree turn
+GYRO_OVERSHOOT_FRACTION = 0 # -3.75 / 360  # our gyro didn't overshoot, it "undershot" by 4 degrees in a 360 degree turn
 
 
 class DriveSubsystem(Subsystem):
@@ -366,12 +366,13 @@ class DriveSubsystem(Subsystem):
             gyroAngle = self.gyro.getAngle()
 
             # correct for gyro drift
-            if self.gyroOvershootFraction != 0.0 and self._lastGyroAngle != 0.0:
+            if self.gyroOvershootFraction != 0.0:
                 angleMove = gyroAngle - self._lastGyroAngle
-                if abs(angleMove) > 10:  # if less than 10 degrees, adjust
+                if abs(angleMove) > 15:  # if less than 10 degrees, adjust (otherwise it's some kind of glitch or reset)
                     print(f"WARNING: big angle move {angleMove} from {self._lastGyroAngle} to {gyroAngle}")
                 else:
                     adjustment = -angleMove * self.gyroOvershootFraction
+                    print(f"adjustment: {self._lastGyroAngleAdjustment}")
                     self._lastGyroAngleAdjustment += adjustment
                     self.gyro.setAngleAdjustment(self._lastGyroAngleAdjustment)
 
