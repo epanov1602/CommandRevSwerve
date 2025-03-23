@@ -19,7 +19,7 @@ from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController, SendableChooser, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
-from commands.approach import ApproachTag
+from commands.approach import ApproachTag, ApproachManually
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
@@ -364,8 +364,21 @@ class RobotContainer:
                     cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
-            self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
-                self.approachFeeder()
+            #self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
+            #    self.approachFeeder()
+            #)
+            # right and left trigger = approach right or left feeder, manually
+            self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.1).whileTrue(
+                self.approachFeeder(
+                    headingDegrees = +54,  # right feeder
+                    speed = lambda: 0.7 * self.driverController.getRawAxis(XboxController.Axis.kRightTrigger)
+                )
+            )
+            self.driverController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.1).whileTrue(
+                self.approachFeeder(
+                    headingDegrees = -54,  # left feeder
+                    speed = lambda: 0.7 * self.driverController.getRawAxis(XboxController.Axis.kLeftTrigger)
+                )
             )
 
         self.configurePovTurns()
@@ -457,7 +470,7 @@ class RobotContainer:
 
         #armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         #reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker.alongWith(armDown))
-        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker).andThen(self.approachFeeder())
+        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker)
 
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
@@ -850,25 +863,17 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=constants.ApproachFeederTeleop.timeSeconds):
 
-        def desiredHeadingBackingToFeeder():
-            angle = self.robotDrive.getHeading().degrees()
-            return -54 if angle < 0 else +54  # are we facing the right feeder?
-
+    def approachFeeder(self, headingDegrees, speed):
         pipeline = SetCameraPipeline(self.rearCamera, 0, onlyTagIds=(1, 2, 12, 13))
 
-        command = ApproachTag(
+        command = ApproachManually(
             self.rearCamera,
             self.robotDrive,
-            desiredHeadingBackingToFeeder,
-            speed=1.0,
+            speed=speed,
+            specificHeadingDegrees=headingDegrees,
             reverse=True,
             settings={"GainTran": constants.ApproachFeederTeleop.speedGain},
-            pushForwardSeconds=pushForwardSeconds,
-            pushForwardMinDistance=constants.ApproachFeederTeleop.minDistance,
-            finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
-            dashboardName="back",
         )
 
-        return pipeline.andThen(command).withTimeout(10)
+        return pipeline.andThen(command)
