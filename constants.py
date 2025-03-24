@@ -103,6 +103,7 @@ class DriveConstants:
 
     kLeadElevationCanId = 10
     kFollowElevationCanId = 11
+    kIntakeFollowMotorCanId = 14
     kArmLeadMotorCanId = 18
     kIntakeLeadMotorCanId = 19
     kIntakeRangefinderCanId = 33
