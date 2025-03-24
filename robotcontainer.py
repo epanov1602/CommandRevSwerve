@@ -199,7 +199,9 @@ class RobotContainer:
 
         self.intake = Intake(
             leaderCanID=DriveConstants.kIntakeLeadMotorCanId,
-            followerCanID=None, leaderInverted=True, followerInverted=False,
+            leaderInverted=True,
+            followerCanID=DriveConstants.kIntakeFollowMotorCanId,
+            followerInverted=False,
             recoilSpeed=0.15,
             rangeFinder=self.rangefinder,
             rangeToGamepiece=100  # 100 millimeters to gamepiece at most, and if it is further away then it won't count

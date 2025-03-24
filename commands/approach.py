@@ -42,7 +42,7 @@ class Tunable:
                     self.chooser.setDefaultOption(label, value)
                 else:
                     self.chooser.addOption(label, value)
-        SmartDashboard.putData(name, self.chooser)
+        SmartDashboard.putData(prefix + name, self.chooser)
 
     def fetch(self):
         if self.chooser is not None:
@@ -68,7 +68,7 @@ class ApproachTag(commands2.Command):
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
-        dashboardName="apch"
+        dashboardName=""
     ):
         """
         Align the swerve robot to AprilTag precisely and then optionally slowly push it forward for a split second
@@ -157,12 +157,15 @@ class ApproachTag(commands2.Command):
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
         self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
+        self.APPROACH_SQRTCTRL = Tunable(settings, prefix, "SqrtCtrl", 1.0, (0.0, 1.0))
+
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
             self.DESIRED_HEADING_RADIUS,
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
             self.APPROACH_SHAPE,
+            self.APPROACH_SQRTCTRL,
         ]
         if isinstance(self.pushForwardSeconds, Tunable):
             self.tunables.append(self.pushForwardSeconds)
@@ -313,8 +316,7 @@ class ApproachTag(commands2.Command):
 
         # 2. proportional control: if we are almost finished turning, use slower turn speed (to avoid overshooting)
         proportionalSpeed = self.KPMULT_ROTATION.value * AimToDirectionConstants.kP * abs(degreesRemaining)
-        if AimToDirectionConstants.kUseSqrtControl:
-            proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
+        proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
 
         # 3. if target angle is on the right, we should really turn right (negative turn speed)
         turnSpeed = min([proportionalSpeed, 1.0])
@@ -399,8 +401,12 @@ class ApproachTag(commands2.Command):
     def computeProportionalSpeed(self, distance) -> float:
         kpMultTran = self.KPMULT_TRANSLATION.value
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
-        if GoToPointConstants.kUseSqrtControl:
+        sqrtCtrl = self.APPROACH_SQRTCTRL.value
+        if sqrtCtrl >= 1:
             velocity = math.sqrt(0.5 * velocity * kpMultTran)
+        else:
+            finalApproachValue = max(velocity, math.sqrt(0.5 * velocity * kpMultTran) * sqrtCtrl)
+            velocity = min(finalApproachValue, velocity)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
