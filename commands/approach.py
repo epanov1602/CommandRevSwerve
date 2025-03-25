@@ -159,6 +159,8 @@ class ApproachTag(commands2.Command):
 
         self.APPROACH_SQRTCTRL = Tunable(settings, prefix, "SqrtCtrl", 1.0, (0.0, 1.0))
 
+        self.OUT_OF_SIGHT_ALLOWED = Tunable(settings, prefix, "AllowOOS", 1.0, (0.0, 1.0))
+
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
             self.DESIRED_HEADING_RADIUS,
@@ -166,6 +168,7 @@ class ApproachTag(commands2.Command):
             self.KPMULT_ROTATION,
             self.APPROACH_SHAPE,
             self.APPROACH_SQRTCTRL,
+            self.OUT_OF_SIGHT_ALLOWED,
         ]
         if isinstance(self.pushForwardSeconds, Tunable):
             self.tunables.append(self.pushForwardSeconds)
@@ -278,16 +281,25 @@ class ApproachTag(commands2.Command):
                     fwdSpeed = math.copysign(GoToPointConstants.kMinTranslateSpeed, self.finalApproachSpeed)
             leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
-            # - otherwise slow down if the visual estimate is old or if heading is not right yet
+            # - slow down if the visual estimate is old, if heading is not right yet, or if rotating away
+            closeToEdge = 0
+            if self.everSawObject and self.OUT_OF_SIGHT_ALLOWED.value == 0 and self.lastSeenObjectX * rotationSpeed > 0:
+                closeToEdge = abs(self.lastSeenObjectX) / 5.0  # rotating away from the object in frame? slow this down!
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS.value
+
             if farFromDesiredHeading >= 1:
                 warnings = "large heading error"
+            if closeToEdge >= 1:
+                warnings = "close to frame edge"
             if visionOld >= 1:
                 warnings = "temporarily out of sight"
             # any other reason to slow down? put it above
 
-            problems = max((visionOld, farFromDesiredHeading))
-            fwdSpeed *= max((0.0, 1.0 - problems * problems))
+            fwdSpeed *= max(0.0, 1 - max(farFromDesiredHeading, closeToEdge, visionOld))
+
+            if self.OUT_OF_SIGHT_ALLOWED.value == 0:
+                leftSpeed *= max(0.0, 1 - visionOld)
+                rotationSpeed *= max(0.0, 1 - max(visionOld, closeToEdge))
 
         # 5. drive!
         if self.reverse:
