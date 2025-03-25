@@ -257,6 +257,30 @@ class RobotContainer:
     def configureAutos(self) -> None:
         AutoFactory.init(self)
 
+    def configurePovTurns(self):
+        from commands.aimtodirection import AimToDirection
+
+        def next60degreesClockwise():
+            current = 60 * round(self.robotDrive.getHeading().degrees() / 60.0)
+            return current - 60
+
+        def next60degreesCounterclockwise():
+            current = 60 * round(self.robotDrive.getHeading().degrees() / 60.0)
+            return current + 60
+
+        self.driverController.povUp().whileTrue(
+            AimToDirection(degrees=0, drivetrain=self.robotDrive)
+        )
+        self.driverController.povDown().whileTrue(
+            AimToDirection(degrees=180, drivetrain=self.robotDrive)
+        )
+        self.driverController.povRight().whileTrue(
+            AimToDirection(degrees=next60degreesClockwise, drivetrain=self.robotDrive)
+        )
+        self.driverController.povLeft().whileTrue(
+            AimToDirection(degrees=next60degreesCounterclockwise, drivetrain=self.robotDrive)
+        )
+
 
     def configureButtonBindings(self) -> None:
         """
@@ -274,8 +298,8 @@ class RobotContainer:
         #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
         #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
         # feeder locations:
-        self.driverController.povRight().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)))
-        self.driverController.povLeft().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)))
+        #self.driverController.povRight().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)))
+        #self.driverController.povLeft().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)))
 
         # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
         # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose)))
@@ -343,6 +367,8 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
                 self.approachFeeder()
             )
+
+        self.configurePovTurns()
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -420,7 +446,7 @@ class RobotContainer:
 
         # POV up: run the trajectory while button pushed
         self.trajectoryPicker = TrajectoryPicker(self.robotDrive.field, subsystems=requirements)
-        self.driverController.povUp().whileTrue(self.trajectoryPicker)
+        #self.driverController.povUp().whileTrue(self.trajectoryPicker)
 
         # POV left+right: pick trajectory
         #self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
@@ -435,7 +461,7 @@ class RobotContainer:
 
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
-        self.driverController.povDown().whileTrue(reverseTrajectory)
+        #self.driverController.povDown().whileTrue(reverseTrajectory)
         self.trajectoryBoard.button(1).whileTrue(reverseTrajectory)
 
         # a function to choose trajectory by combining the letter and side (for example, "C-left")
