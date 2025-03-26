@@ -17,7 +17,7 @@ from robotpy_apriltag import AprilTagFieldLayout
 
 U_TURN = Rotation2d.fromDegrees(180)
 SIM_MAX_TAG_DISTANCE = 6  # meters
-SIM_MAX_TAG_AREA = 11  # percent
+SIM_MAX_TAG_AREA = 20  # percent
 SIM_CAMERA_FOV = 50  # degrees horizontal
 SIM_MAX_POSE_YAW = 60  # if tag is more than 60 degrees rotated, we don't see it
 
@@ -216,7 +216,7 @@ class PhotonTagCameraSim(Subsystem):
 
             ty, tx = 0.1, -vectorToTag.angle().degrees()
             ta = 2.32 / math.pow(vectorToTag.norm(), 2)  # 2.32% of the screen = 1m away (70 deg Arducam/Limelight)
-            if ta / SIM_MAX_TAG_AREA > math.pow(1 - abs(tx) / (SIM_CAMERA_FOV / 2), 2):
+            if ta / SIM_MAX_TAG_AREA > 1.0 - math.pow(abs(tx) / (SIM_CAMERA_FOV / 2), 2):
                 continue  # tag too close, we likely won't detect it well or at all
             ta *= facingUs.cos()
 
