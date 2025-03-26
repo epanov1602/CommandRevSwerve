@@ -15,11 +15,14 @@ class ResetXY(commands2.Command):
         """
         super().__init__()
         self.drivetrain = drivetrain
-        self.position = Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(headingDegrees))
+        self.translation = Translation2d(x, y)
+        self.headingDeg = headingDegrees
         self.addRequirements(drivetrain)
 
     def initialize(self):
-        self.drivetrain.resetOdometry(self.position)
+        d = self.drivetrain
+        heading = Rotation2d.fromDegrees(self.headingDeg) if self.headingDeg is not None else d.getPose().rotation()
+        d.resetOdometry(Pose2d(self.translation, heading))
 
     def isFinished(self) -> bool:
         return True  # this is an instant command, it finishes right after it initialized

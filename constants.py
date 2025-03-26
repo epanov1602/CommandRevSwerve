@@ -226,12 +226,14 @@ def makePose(x, y, heading):
 
 class LeftFeeder:
     location = (1.285, 6.917, -54)
+    xy = (location[0], location[1],)
     pose = makePose(*location)
     tags = (1, 13)
 
 
 class RightFeeder:
     location = (1.285, 1.135, +54)
+    xy = (location[0], location[1],)
     pose = makePose(*location)
     tags = (2, 12)
 

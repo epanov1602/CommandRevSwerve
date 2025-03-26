@@ -294,20 +294,21 @@ class RobotContainer:
 
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
-        # feeder locations:
-        #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
-        # feeder locations:
-        #self.driverController.povRight().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)))
-        #self.driverController.povLeft().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)))
+        startButton.onTrue(
+            ResetXY(*constants.LeftFeeder.location, drivetrain=self.robotDrive)
+        )
 
-        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
-        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose)))
+        # feeder locations:
+        self.driverController.button(XboxController.Button.kRightBumper).onTrue(
+            ResetXY(*constants.RightFeeder.xy, headingDegrees=None, drivetrain=self.robotDrive)
+        )
+        self.driverController.button(XboxController.Button.kLeftBumper).onTrue(
+            ResetXY(*constants.LeftFeeder.xy,  headingDegrees=None, drivetrain=self.robotDrive)
+        )
 
         # ^^ this (Y,Y) is the right feeding station for today's practice
 
         # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
-        self.configureFpvDriving(self.driverController, speed=0.3)
         if self.scoringController != self.driverController:
             self.configureFpvDriving(self.scoringController, speed=0.3)
 
