@@ -23,8 +23,9 @@ from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
 from subsystems.elevator import ElevatorConstants
 
-# which trajectory to use
 BACKUP_METERS = 0.3
+
+INTAKE_FOLLOWER_SPEED = 0.11  # please feel free to calibrate
 
 class AutoFactory(object):
 
@@ -564,7 +565,7 @@ class AutoFactory(object):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=0.5)  # play pretend, in simulation
 
-        return IntakeGamepiece(self.intake, speed=speed)
+        return IntakeGamepiece(self.intake, speed=speed, speedF=INTAKE_FOLLOWER_SPEED)
 
 
     @staticmethod
@@ -572,7 +573,7 @@ class AutoFactory(object):
         if TimedCommandRobot.isSimulation():
             return WaitCommand(seconds=0.5)  # play pretend, in simulation
 
-        return StartIntakingGamepiece(self.intake, speed=speed)
+        return StartIntakingGamepiece(self.intake, speed=speed, speedF=INTAKE_FOLLOWER_SPEED)
 
 
     @staticmethod

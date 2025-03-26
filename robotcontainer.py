@@ -311,7 +311,7 @@ class RobotContainer:
         if self.scoringController != self.driverController:
             self.configureFpvDriving(self.scoringController, speed=0.3)
 
-        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
+        from commands.intakecommands import IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
 
         # right bumper = intake new gamepiece
@@ -753,7 +753,7 @@ class RobotContainer:
         """
         :returns: the command to run in test mode (to exercise all systems)
         """
-        from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward
+        from commands.intakecommands import IntakeFeedGamepieceForward
         from commands.elevatorcommands import MoveElevatorAndArm, MoveArm
         from commands.aimtodirection import AimToDirection
 
@@ -769,7 +769,7 @@ class RobotContainer:
 
         # 2. intake the gamepiece and eject it in position 2, to test arm+elevator+intake
         intake = MoveElevatorAndArm(position=0, angle=ArmConstants.kArmIntakeAngle, elevator=self.elevator, arm=self.arm).andThen(
-            IntakeGamepiece(intake=self.intake, speed=0.115).withTimeout(10.0)
+            AutoFactory.intakeGamepiece(self, speed=0.115).withTimeout(10.0)
         )
         score = MoveElevatorAndArm(position=ElevatorConstants.heightOfLevel3, elevator=self.elevator, arm=self.arm).andThen(
             IntakeFeedGamepieceForward(intake=self.intake, speed=0.3).withTimeout(1.0)

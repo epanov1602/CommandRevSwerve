@@ -5,17 +5,18 @@ from subsystems.intake import Intake
 
 
 class IntakeGamepiece(commands2.Command):
-    def __init__(self, intake: Intake, speed=0.115):
+    def __init__(self, intake: Intake, speed=0.115, speedF=None):
         super().__init__()
         self.intake = intake
         self.speed = speed
+        self.speedF = speedF
         self.addRequirements(intake)
 
     def end(self, interrupted: bool):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
-        self.intake.intakeGamepiece(self.speed)
+        self.intake.intakeGamepiece(self.speed, self.speedF)
 
     def isFinished(self) -> bool:
         return self.intake.isGamepieceInside()
@@ -25,17 +26,18 @@ class IntakeGamepiece(commands2.Command):
 
 
 class StartIntakingGamepiece(commands2.Command):
-    def __init__(self, intake: Intake, speed=0.115):
+    def __init__(self, intake: Intake, speed=0.115, speedF=None):
         super().__init__()
         self.intake = intake
         self.speed = speed
+        self.speedF = speedF
         self.addRequirements(intake)
 
     def end(self, interrupted: bool):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
-        self.intake.intakeGamepiece(self.speed)
+        self.intake.intakeGamepiece(self.speed, self.speedF)
 
     def isFinished(self) -> bool:
         return self.intake.isGamepiecePartlyInside()
