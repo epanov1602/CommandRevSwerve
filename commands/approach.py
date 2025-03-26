@@ -619,12 +619,14 @@ class ApproachManually(commands2.Command):
         fwdSpeed = self.speed()
         fwdSpeed = fwdSpeed * abs(fwdSpeed)
 
-        # 4. if we have not seen that object in a while, go slower
-        if leftSpeed != 0:
+        # 4. if we have not seen that object in a while (or about to lose it from sight), go slower
+        if self.everSawObject:
             visionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
-            leftSpeed *= max(0, 1 - visionOld * visionOld)
+            closeToEdge = abs(self.lastSeenObjectX) / 5.0 if self.lastSeenObjectX * rotationSpeed > 0 else 0.0
+            leftSpeed *= max(0.0, 1.0 - visionOld)
+            rotationSpeed *= max(0.25, 1.0 - closeToEdge)
 
-        # 4. drive!
+        # 5. drive!
         if self.reverse:
             self.drivetrain.drive(-fwdSpeed, -leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=True)
         else:
