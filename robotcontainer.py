@@ -364,9 +364,6 @@ class RobotContainer:
                     cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
-            #self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
-            #    self.approachFeeder()
-            #)
             # right and left trigger = approach right or left feeder, manually
             self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.1).whileTrue(
                 self.approachFeeder(
