@@ -158,8 +158,6 @@ class ApproachTag(commands2.Command):
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
         self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
-        self.APPROACH_SQRTCTRL = Tunable(settings, prefix, "SqrtCtrl", 1.0, (0.0, 1.0))
-
         self.OUT_OF_SIGHT_ALLOWED = Tunable(settings, prefix, "AllowOOS", 1.0, (0.0, 1.0))
 
         self.tunables = [
@@ -168,7 +166,6 @@ class ApproachTag(commands2.Command):
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
             self.APPROACH_SHAPE,
-            self.APPROACH_SQRTCTRL,
             self.OUT_OF_SIGHT_ALLOWED,
         ]
         if isinstance(self.pushForwardSeconds, Tunable):
@@ -415,12 +412,7 @@ class ApproachTag(commands2.Command):
     def computeProportionalSpeed(self, distance) -> float:
         kpMultTran = self.KPMULT_TRANSLATION.value
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
-        sqrtCtrl = self.APPROACH_SQRTCTRL.value
-        if sqrtCtrl >= 1:
-            velocity = math.sqrt(0.5 * velocity * kpMultTran)
-        else:
-            finalApproachValue = max(velocity, math.sqrt(0.5 * velocity * kpMultTran) * sqrtCtrl)
-            velocity = min(finalApproachValue, velocity)
+        velocity = math.sqrt(0.5 * velocity * kpMultTran)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
