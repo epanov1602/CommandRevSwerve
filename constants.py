@@ -23,16 +23,16 @@ class ApproachReefTeleop:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 0.85  # increase if failing to approach from far away
-    minDistance = 0.24  # increase if failing to approach from close distance
+    timeSeconds = 0.9  # increase if failing to approach from far away
+    minDistance = 0.25  # increase if failing to approach from close distance
 
 class ApproachReefAutonomous:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 1.5  # increase if failing to approach from far away
-    minDistance = 0.30  # *slightly* increase if failing to approach from close distance
-    speedGain = 0.6  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+    timeSeconds = 0.7  # 0.85 was fine, trying lower ( increase if failing to approach from far away )
+    minDistance = 0.5  # *slightly* increase if failing to approach from close distance
+    speedGain = 0.5  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
     delayBeforeRaisingElevator = 1.2  # seconds
 
 class ApproachFeederTeleop:

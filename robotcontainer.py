@@ -354,7 +354,7 @@ class RobotContainer:
             self.driverController.button(XboxController.Button.kX).whileTrue(
                self.approachReef(
                    self.frontRightCamera,
-                   pushForwardSeconds=1.17 * constants.ApproachReefTeleop.timeSeconds,
+                   pushForwardSeconds=constants.ApproachReefTeleop.timeSeconds,
                    cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                )
             )
