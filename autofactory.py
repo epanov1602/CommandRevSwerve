@@ -25,7 +25,7 @@ from subsystems.elevator import ElevatorConstants
 
 BACKUP_METERS = 0.3
 
-INTAKE_FOLLOWER_SPEED = 0.4  # please feel free to calibrate
+INTAKE_FOLLOWER_SPEED = 0.40  # please feel free to calibrate
 
 class AutoFactory(object):
 
