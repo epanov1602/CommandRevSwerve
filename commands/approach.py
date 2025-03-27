@@ -293,7 +293,7 @@ class ApproachTag(commands2.Command):
             if closeToEdge >= 1:
                 warnings = "close to frame edge"
             if visionOld >= 1:
-                warnings = "temporarily out of sight"
+                warnings = f"temporarily out of sight (for {(now - self.lastSeenObjectTime)}s, last seen {self.lastSeenObjectTime})"
             # any other reason to slow down? put it above
 
             fwdSpeed *= max(0.0, 1 - max(farFromDesiredHeading, closeToEdge, visionOld))
