@@ -31,7 +31,7 @@ class ApproachReefAutonomous:
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
     timeSeconds = 1.5  # increase if failing to approach from far away
-    minDistance = 0.15  # *slightly* increase if failing to approach from close distance
+    minDistance = 0.30  # *slightly* increase if failing to approach from close distance
     speedGain = 0.6  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
     delayBeforeRaisingElevator = 1.2  # seconds
 
