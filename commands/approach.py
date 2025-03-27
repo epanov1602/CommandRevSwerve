@@ -228,7 +228,7 @@ class ApproachTag(commands2.Command):
         # good ways to finish
         elif self.tReachedFinalApproach != 0:
             length = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
-            if length > self.finalApproachMinDistance and now > self.tReachedFinalApproach + self.finalApproachSeconds:
+            if now > self.tReachedFinalApproach + self.finalApproachSeconds:
                 self.finished = f"approached within {now - self.tReachedFinalApproach}s, drove {length}m"
 
         if not self.finished:
@@ -276,7 +276,8 @@ class ApproachTag(commands2.Command):
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
                 if self.finalApproachMinDistance > 0:
                     completedDistance = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
-                    completedPercentage = min(completedPercentage, completedDistance / self.finalApproachMinDistance)
+                    if completedDistance < self.finalApproachMinDistance:
+                        completedPercentage = 0.0  # if min distance is not met, don't even slow down
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
                 if abs(fwdSpeed) < GoToPointConstants.kMinTranslateSpeed:
                     fwdSpeed = math.copysign(GoToPointConstants.kMinTranslateSpeed, self.finalApproachSpeed)
