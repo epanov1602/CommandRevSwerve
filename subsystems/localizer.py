@@ -33,7 +33,7 @@ class Localizer(commands2.Subsystem):
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
-    INTERSECTION_WEIGHT_FACTOR = 0.005
+    INTERSECTION_WEIGHT = 0.005
 
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
