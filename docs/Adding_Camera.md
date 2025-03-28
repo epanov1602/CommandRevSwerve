@@ -1,4 +1,14 @@
 # Code snippet for adding a camera (Limelight or PhotonVision)
+First of all, your `pyproject.toml` file will need to change: we need to add `"pyntcore"` into the `requires` list.
+
+```python
+# Other pip packages to install
+requires = [
+    "pyntcore",
+]
+```
+
+And now, depending on which camera you use, you might want to borrow one of our code snippets below.
 
 <details>
 <summary>Example code for Limelight camera</summary>
