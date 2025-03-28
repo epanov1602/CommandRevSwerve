@@ -1451,7 +1451,21 @@ This should go as a function in `robotcontainer.py`, and you can either bind it 
         from commands.approach import ApproachTag
         from commands.swervetopoint import SwerveToSide
 
-        approach = ApproachTag(self.camera, self.robotDrive, None, speed=1.0, pushForwardSeconds=None)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
+        approach = ApproachTag(self.camera, self.robotDrive, None, speed=1.0, pushForwardSeconds=None)   # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
+
+        # if you know that you want to drive forward for up to 0.7 seconds and approximately 0.4 meters without stopping after the object is approached
+        # , you can set pushForwardSeconds=0.7, pushForwardMinDistance=0.4 in this command
+        # approach = ApproachTag(self.camera, self.robotDrive, None, speed=1.0, pushForwardSeconds=0.7, pushForwardMinDistance=0.4)
+
+        # if you also know that you want to drive slower for better precision (or faster, for better time)
+        # , you can override translation gain ("GainTran") or any other internal approach setting:
+        # approach = ApproachTag(
+        #     self.camera, self.robotDrive, None, speed=1.0, pushForwardSeconds=0.7, pushForwardMinDistance=0.4,
+        #     settings={
+        #        "GainTran": 0.4,
+        #     }
+        # )
+
 
         # or you can do this, if you want to score the coral 15 centimeters to the right and two centimeters back from the AprilTag
         # stepToSide = SwerveToSide(drivetrain=self.robotDrive, metersToTheLeft=-0.15, metersBackwards=0.02, speed=0.2)
