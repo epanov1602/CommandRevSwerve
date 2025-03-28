@@ -1477,7 +1477,7 @@ This should go as a function in `robotcontainer.py`, and you can either bind it 
 
 This code works with Limelight or PhotonVision cameras from [here](Adding_Camera.md) (step-by-step video https://www.youtube.com/watch?v=8b9DZQ8CyII).
 
-The example command code here can go to `commands/approach.py` :
+And this example command code snippet below can go to `commands/approach.py` :
 
 ```python
 #
