@@ -8,7 +8,7 @@ requires = [
 ]
 ```
 
-And now, depending on which camera you use, you might want to borrow one of our code snippets below.
+And now, depending on which camera you use, you might want to borrow one of our code snippets below:
 
 <details>
 <summary>Example code for Limelight camera</summary>
