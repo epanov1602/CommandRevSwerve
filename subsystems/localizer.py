@@ -28,12 +28,12 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
-    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = False  # avoid making adjustments to odometry if only one tag is seen
+    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = True  # avoid making adjustments to odometry if only one tag is seen
     TAG_TOO_CLOSE_METERS = 1.0  # tags closer than 1 meter won't cause bigger impact on (X, Y) update
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
     MAX_ANGULAR_DEVIATION_DEGREES = 45  # if a tag appears to be more than 45 degrees away, ignore it (something wrong)
-    IMPORTANT_TAG_WEIGHT_FACTOR = 2.0  # if a tag is important (for example, located on a shooting target)
+    INTERSECTION_WEIGHT_FACTOR = 0.005
 
     REDRAW_DASHBOARD_FREQUENCY = 5  # how often to redraw the tags in shuffleboard
     MAX_LOCATION_HISTORY_SIZE = 50  # that's worth 1 second of updates, at 50 updates/sec
@@ -77,7 +77,9 @@ class Localizer(commands2.Subsystem):
 
         self.learningRateMult = SendableChooser()
         self.learningRateMult.addOption("100%", 1.0)
+        self.learningRateMult.addOption("30%", 0.3)
         self.learningRateMult.setDefaultOption("10%", 0.1)
+        self.learningRateMult.addOption("3%", 0.03)
         self.learningRateMult.addOption("1%", 0.01)
         self.learningRateMult.addOption("0.1%", 0.001)
         SmartDashboard.putData("LoclzLearnRate", self.learningRateMult)
@@ -152,13 +154,13 @@ class Localizer(commands2.Subsystem):
         now = Timer.getFPGATimestamp()
         robotPose = self.drivetrain.getPose()
         learningRate = Localizer.LEARNING_RATE * self.learningRateMult.getSelected()
-        ready = True
+        intersectionReady = True
 
         # if saw more multiple tags in the last 0.25s, then apply adjustments (if enabled)
         while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
             self.recentlySeenTags.popleft()
         if Localizer.ONLY_WORK_IF_SEEING_MULTIPLE_TAGS:
-            ready = self.recentlySawMoreThanOneTag(now - 0.25)
+            intersectionReady = self.recentlySawMoreThanOneTag(now - 0.25)
 
         for name, camera in self.cameras.items():
             if enabled is None:
@@ -209,10 +211,10 @@ class Localizer(commands2.Subsystem):
                     continue  # our field map does not know this tag
                 self.recentlySeenTags.append((now, tagId))
 
-                odometryAdjustment = self.calculateMegaTag2_OdometryAdjustment(
+                odometryAdjustment = self.calculateProximityOdometryAdjustment(
                     camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
-                if odometryAdjustment is None and ready:
+                if odometryAdjustment is None and intersectionReady:
                     odometryAdjustment = self.calculateIntersectionOdometryAdjustment(
                         camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
@@ -220,7 +222,7 @@ class Localizer(commands2.Subsystem):
                     shift, turn = odometryAdjustment
                     self.drivetrain.adjustOdometry(shift, turn)
 
-            # 5. finally, finish the drawing of detected tags on the graphical interface
+            # 5. finally, finish the drawing of detected tags on the dashboard
             if redrawing:
                 self.eraseUnusedLastDrawnTags(camera, tagsSeen)
                 camera.lastDrawnTags = tagsSeen
@@ -242,11 +244,11 @@ class Localizer(commands2.Subsystem):
                 self.fieldDrawing.getObject(lineFromTag).setPoses([])
 
 
-    def calculateMegaTag2_OdometryAdjustment(
+    def calculateProximityOdometryAdjustment(
         self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
     ):
         ta = tag.getArea()
-        if ta < 0.5:
+        if ta < 0.5:  # tag not in proximity
             return None
 
         tagId = tag.getFiducialId()
@@ -349,10 +351,6 @@ class Localizer(commands2.Subsystem):
         turnDegrees = odometryVectorToTag.angle().degrees() - observedVectorToTag.angle().degrees()
         turnDegrees = Rotation2d.fromDegrees((turnDegrees + 180) % 360 - 180)  # avoid dRot=+350 degrees if it's -10 deg
 
-        # use "learning rate" (for example, 0.05) to partly apply this (X, Y) shift and partly the shift in heading
-        if tagId in self.importantTagIDs:
-            learningRate = learningRate * Localizer.IMPORTANT_TAG_WEIGHT_FACTOR
-
         skip = False
         if abs(turnDegrees.degrees()) > Localizer.MAX_ANGULAR_DEVIATION_DEGREES:
             skip = True
@@ -385,7 +383,7 @@ class Localizer(commands2.Subsystem):
             # ^^ power 1, because the biggest cause will be systematic errors (uncalibrated camera angle or location)
 
         # for intersection localization, use lower learning rate
-        learningRate *= 0.005
+        learningRate *= self.INTERSECTION_WEIGHT
 
         # adjust the (X, Y) in the drivetrain odometry
         shift = shiftMeters * learningRate
