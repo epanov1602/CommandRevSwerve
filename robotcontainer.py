@@ -391,6 +391,11 @@ class RobotContainer:
                                                arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         level0PosButton.onTrue(level0PositionCmd)
 
+        levelSpinoutPosButton = self.scoringController.povUp()
+        levelSpinoutPosCmd = MoveElevatorAndArm(elevator=self.elevator, position=ElevatorConstants.heightOfSpinoutPos,
+                                                arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+        levelSpinoutPosButton.onTrue(levelSpinoutPosCmd)
+
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kB)

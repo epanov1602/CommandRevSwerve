@@ -13,6 +13,7 @@ import constants
 class ElevatorConstants:
     heightOfLevel1 = 0.0
     heightOfLevel2 = 5.0
+    heightOfSpinoutPos = 9.0
     heightOfLevel3 = 14.0
     heightOfLevel4 = 30.0
 
