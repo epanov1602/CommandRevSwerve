@@ -47,8 +47,8 @@ class ApproachFeederAutonomous:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 0.12  # increase if failing to approach from far away
-    minDistance = 0.28  # *slightly* increase if failing to approach from close distance
+    timeSeconds = 0.2  # increase if failing to approach from far away
+    minDistance = 0.4  # *slightly* increase if failing to approach from close distance
     speedGain = 1.1  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
     toleranceInches = 14  # plus minus left-right tolerance
 
