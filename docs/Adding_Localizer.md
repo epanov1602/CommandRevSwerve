@@ -774,7 +774,6 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
-    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = True  # avoid making adjustments to odometry if only one tag is seen
     TAG_TOO_CLOSE_METERS = 1.0  # tags closer than 1 meter won't cause bigger impact on (X, Y) update
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
@@ -905,8 +904,7 @@ class Localizer(commands2.Subsystem):
         # if saw more multiple tags in the last 0.25s, then apply adjustments (if enabled)
         while len(self.recentlySeenTags) > 4 * Localizer.MAX_LOCATION_HISTORY_SIZE:
             self.recentlySeenTags.popleft()
-        if Localizer.ONLY_WORK_IF_SEEING_MULTIPLE_TAGS:
-            intersectionReady = self.recentlySawMoreThanOneTag(now - 0.25)
+        intersectionReady = self.recentlySawMoreThanOneTag(now - 0.25)
 
         for name, camera in self.cameras.items():
             if enabled is None:
