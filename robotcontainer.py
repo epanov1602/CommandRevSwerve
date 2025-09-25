@@ -300,6 +300,19 @@ class RobotContainer:
             AimToDirection(degrees=next60degreesCounterclockwise, drivetrain=self.robotDrive)
         )
 
+        mufuTrajectory = JerkyTrajectory(
+            drivetrain=self.robotDrive,
+            swerve=True,
+            speed=0.1,
+            waypoints=[
+                (1.750,6.926,-31.088),
+                (4.340,6.710,-12.364),
+                (6.126, 6.346, -60.0)
+            ],
+            endpoint=(6.377,4.229,176.532)
+        )
+        self.scoringController.povUp().whileTrue(mufuTrajectory)
+
 
     def configureButtonBindings(self) -> None:
         """
