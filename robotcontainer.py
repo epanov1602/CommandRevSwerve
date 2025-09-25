@@ -263,14 +263,14 @@ class RobotContainer:
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.clearDashboard()
         AutoFactory.updateDashboard(self)
-        self.localizer.setAllowed(False)  # localizer not allowed in auto (untested!)
+        #self.localizer.setAllowed(False)  # localizer not allowed in auto (untested!)
 
 
     def teleopInit(self):
         AutoFactory.clearDashboard(self)
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.updateDashboard()
-        self.localizer.setAllowed(True)  # localizer allowed in teleop
+        #self.localizer.setAllowed(True)  # localizer allowed in teleop
 
 
     def configureAutos(self) -> None:
@@ -311,7 +311,7 @@ class RobotContainer:
             ],
             endpoint=(6.377,4.229,176.532)
         )
-        self.scoringController.povUp().whileTrue(mufuTrajectory)
+        self.scoringController.povDown().whileTrue(mufuTrajectory)
 
 
     def configureButtonBindings(self) -> None:
