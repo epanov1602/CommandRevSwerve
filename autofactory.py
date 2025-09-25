@@ -183,8 +183,8 @@ class AutoFactory(object):
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
         #self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
-        self.autoTrajStyle.setDefaultOption("dog", (JerkyTrajectory, True))
-        self.autoTrajStyle.addOption("eagle", (SwerveTrajectory, True))
+        self.autoTrajStyle.addOption("dog", (JerkyTrajectory, True))
+        self.autoTrajStyle.setDefaultOption("eagle", (SwerveTrajectory, True))
 
         # driving speed
         self.autoDrvSpeed = SendableChooser()
