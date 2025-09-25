@@ -3,7 +3,7 @@ import typing
 
 import wpilib
 
-from commands2 import Subsystem
+from commands2 import Subsystem, TimedCommandRobot
 from wpimath.filter import SlewRateLimiter
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (
@@ -14,12 +14,15 @@ from wpimath.kinematics import (
 )
 from wpilib import SmartDashboard, Field2d
 
-
 from constants import DriveConstants, ModuleConstants
 import swerveutils
 from .maxswervemodule import MAXSwerveModule
 from rev import SparkMax, SparkFlex
 import navx
+
+
+GYRO_OVERSHOOT_FRACTION = -0.1 / 360
+# ^^ our gyro didn't overshoot, it "undershot" by 0.1 degrees in a 360 degree turn
 
 
 class DriveSubsystem(Subsystem):
@@ -29,6 +32,10 @@ class DriveSubsystem(Subsystem):
             assert callable(maxSpeedScaleFactor)
 
         self.maxSpeedScaleFactor = maxSpeedScaleFactor
+
+        self.gyroOvershootFraction = 0.0
+        if not TimedCommandRobot.isSimulation():
+            self.gyroOvershootFraction = GYRO_OVERSHOOT_FRACTION
 
         enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
 
@@ -69,11 +76,15 @@ class DriveSubsystem(Subsystem):
         self.gyro = navx.AHRS.create_spi()
         self._lastGyroAngleTime = 0
         self._lastGyroAngle = 0
+        self._lastGyroAngleAdjustment = 0
         self._lastGyroState = "ok"
 
         # Slew rate filter variables for controlling lateral acceleration
         self.currentTranslationDir = 0.0
         self.currentTranslationMag = 0.0
+        self.xSpeedDelivered = 0.0
+        self.ySpeedDelivered = 0.0
+        self.rotDelivered = 0.0
 
         self.magLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
         self.rotLimiter = SlewRateLimiter(DriveConstants.kRotationalSlewRate)
@@ -128,16 +139,18 @@ class DriveSubsystem(Subsystem):
         """
         return self.odometry.getPose()
 
-    def resetOdometry(self, pose: Pose2d) -> None:
+    def resetOdometry(self, pose: Pose2d, resetGyro=True) -> None:
         """Resets the odometry to the specified pose.
 
         :param pose: The pose to which to set the odometry.
 
         """
-        self.gyro.reset()
-        self.gyro.setAngleAdjustment(0)
-        self._lastGyroAngleTime = 0
-        self._lastGyroAngle = 0
+        if resetGyro:
+            self.gyro.reset()
+            self.gyro.setAngleAdjustment(0)
+            self._lastGyroAngleAdjustment = 0
+            self._lastGyroAngleTime = 0
+            self._lastGyroAngle = 0
 
         self.odometry.resetPosition(
             self.getGyroHeading(),
@@ -211,13 +224,6 @@ class DriveSubsystem(Subsystem):
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
 
-        if (xSpeed != 0 or ySpeed != 0) and self.maxSpeedScaleFactor is not None:
-            norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
-            scale = abs(self.maxSpeedScaleFactor() / norm)
-            if scale < 1:
-                xSpeed = xSpeed * scale
-                ySpeed = ySpeed * scale
-
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed
 
@@ -285,23 +291,24 @@ class DriveSubsystem(Subsystem):
             self.currentRotation = rot
 
         # Convert the commanded speeds into the correct units for the drivetrain
-        xSpeedDelivered = xSpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
-        ySpeedDelivered = ySpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
-        rotDelivered = self.currentRotation * DriveConstants.kMaxAngularSpeed
+        self.xSpeedDelivered = xSpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
+        self.ySpeedDelivered = ySpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
+        self.rotDelivered = self.currentRotation * DriveConstants.kMaxAngularSpeed
 
         swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
             ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeedDelivered,
-                ySpeedDelivered,
-                rotDelivered,
+                self.xSpeedDelivered,
+                self.ySpeedDelivered,
+                self.rotDelivered,
                 self.getGyroHeading(),
             )
             if fieldRelative
-            else ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered)
+            else ChassisSpeeds(self.xSpeedDelivered, self.ySpeedDelivered, self.rotDelivered)
         )
-        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond
-        )
+        maxSpeed = DriveConstants.kMaxSpeedMetersPerSecond
+        if self.maxSpeedScaleFactor is not None:
+            maxSpeed = maxSpeed * self.maxSpeedScaleFactor()
+        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(swerveModuleStates, maxSpeed)
         self.frontLeft.setDesiredState(fl)
         self.frontRight.setDesiredState(fr)
         self.rearLeft.setDesiredState(rl)
@@ -326,9 +333,10 @@ class DriveSubsystem(Subsystem):
 
         :param desiredStates: The desired SwerveModule states.
         """
-        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            desiredStates, DriveConstants.kMaxSpeedMetersPerSecond
-        )
+        maxSpeed = DriveConstants.kMaxSpeedMetersPerSecond
+        if self.maxSpeedScaleFactor is not None:
+            maxSpeed = maxSpeed * self.maxSpeedScaleFactor()
+        fl, fr, rl, rr = SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStates, maxSpeed)
         self.frontLeft.setDesiredState(fl)
         self.frontRight.setDesiredState(fr)
         self.rearLeft.setDesiredState(rl)
@@ -353,9 +361,24 @@ class DriveSubsystem(Subsystem):
         if not self.gyro.isConnected():
             state = "disconnected"
         else:
+            notCalibrating = True
             if self.gyro.isCalibrating():
+                notCalibrating = False
                 state = "calibrating"
-            self._lastGyroAngle = self.gyro.getAngle()
+            gyroAngle = self.gyro.getAngle()
+
+            # correct for gyro drift
+            if self.gyroOvershootFraction != 0.0 and self._lastGyroAngle != 0 and notCalibrating:
+                angleMove = gyroAngle - self._lastGyroAngle
+                if abs(angleMove) > 15:  # if less than 10 degrees, adjust (otherwise it's some kind of glitch or reset)
+                    print(f"WARNING: big angle move {angleMove} from {self._lastGyroAngle} to {gyroAngle}")
+                else:
+                    adjustment = -angleMove * self.gyroOvershootFraction
+                    self._lastGyroAngleAdjustment += adjustment
+                    self.gyro.setAngleAdjustment(max(-359, min(+359, self._lastGyroAngleAdjustment)))
+                    # ^^ NavX code doesn't like angle adjustments outside of (-360, +360) range
+
+            self._lastGyroAngle = gyroAngle
             self._lastGyroAngleTime = now
 
         if state != self._lastGyroState:
