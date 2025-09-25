@@ -12,7 +12,7 @@ import math
 
 import rev
 from wpimath import units
-from wpimath.geometry import Translation2d, Pose2d, Rotation2d
+from wpimath.geometry import Translation2d, Pose2d, Rotation2d, Pose3d, Translation3d, Rotation3d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.trajectory import TrapezoidProfileRadians
 
@@ -241,5 +241,7 @@ class RightFeeder:
 class RobotCameraLocations:
     kFrontLeft = Pose2d(Translation2d(x=0.37, y=+0.18), Rotation2d.fromDegrees(0))
     kFrontRight = Pose2d(Translation2d(x=0.37, y=-0.18), Rotation2d.fromDegrees(0))
+    kFrontCenter = Pose3d(Translation3d(x=0.37, y=0, z=0.1), Rotation3d.fromDegrees(0, 0, 0))
+
     kRight = Pose2d(Translation2d(x=0.0, y=-0.30), Rotation2d.fromDegrees(-60))
     kRear = Pose2d(Translation2d(x=+0.05, y=0), Rotation2d.fromDegrees(-180))

@@ -17,7 +17,7 @@ from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
 from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController, SendableChooser, SmartDashboard
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 import constants
 from commands.approach import ApproachTag, ApproachManually
 from commands.elevatorcommands import MoveElevatorAndArm
@@ -61,7 +61,9 @@ class RobotContainer:
         self.addArmSubsystems()
         self.addRobotDrivetrain(robot)
         self.addCameras(self.FIELD_LAYOUT_FILE)
-        self.addCameraBasedLocalizer(self.FIELD_LAYOUT_FILE)
+
+        self.addLimelightLocalizer()
+        #self.addCameraBasedLocalizer(self.FIELD_LAYOUT_FILE)
         # self.addIntakeBasedLocalizer()
         # ^^ sometimes gamepiece is ingested already while driving, so intake-based localizer is not a great idea
 
@@ -99,12 +101,15 @@ class RobotContainer:
             self.frontRightCamera = LimelightCamera("limelight-aiming")
             self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
             self.rearCamera = PhotonTagCamera("Arducam_Rear")
+            self.centerCamera = LimelightCamera("limelight-center")
 
         else:
             # simulated robot, using simulated cameras
             print(f"Loading AprilTag field layout from {fieldLayoutFile} ...")
             fieldLayout = AprilTagFieldLayout(fieldLayoutFile)
+
             from subsystems.photon_tag_camera import PhotonTagCameraSim
+
             self.frontRightCamera = PhotonTagCameraSim(
                 "Sim_FrontRight", fieldLayout, RobotCameraLocations.kFrontRight, self.robotDrive
             )  # name of your camera goes in parentheses
@@ -114,7 +119,9 @@ class RobotContainer:
             self.rearCamera = PhotonTagCameraSim(
                 "Sim_Rear", fieldLayout, RobotCameraLocations.kRear, self.robotDrive
             )
-
+            self.centerCamera = PhotonTagCameraSim(
+                "Sim_FrontCenter", fieldLayout, RobotCameraLocations.kFrontCenter.toPose2d(), self.robotDrive
+            )
 
     def addRobotDrivetrain(self, robot):
         def maxSpeedScaledownFactor():
@@ -155,6 +162,18 @@ class RobotContainer:
                         print(f"not resetting odometry to match right left feeder: distance={distance} meters (high!)")
 
         self.intake.setOnSensingGamepiece(onIntakeSensingGamepiece)
+
+
+    def addLimelightLocalizer(self):
+        from subsystems.limelight_localizer import LimelightLocalizer
+
+        self.limelight_localizer = LimelightLocalizer(self.robotDrive, flipIfRed=None)
+        self.limelight_localizer.addCamera(
+            self.centerCamera,
+            Translation3d(0.4, 0.0, 0.15),
+            Rotation2d.fromDegrees(0),  # 0 degrees = looking forward
+            minPercentFrame=0.05,  # if the observed tag is smaller than 0.05% of the frame, do not use that tag
+        )
 
 
     def addCameraBasedLocalizer(self, fieldLayoutFile):
