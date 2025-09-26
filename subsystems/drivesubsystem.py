@@ -21,7 +21,7 @@ from rev import SparkMax, SparkFlex
 import navx
 
 
-GYRO_OVERSHOOT_FRACTION = -0.1 / 360
+GYRO_OVERSHOOT_FRACTION = -3.25 / 360
 # ^^ our gyro didn't overshoot, it "undershot" by 0.1 degrees in a 360 degree turn
 
 
