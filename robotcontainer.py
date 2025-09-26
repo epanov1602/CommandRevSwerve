@@ -172,6 +172,9 @@ class RobotContainer:
 
 
     def addLimelightLocalizer(self):
+        if commands2.TimedCommandRobot.isSimulation():
+            return  # you don't need a localizer in sim
+
         from subsystems.limelight_localizer import LimelightLocalizer
 
         self.limelight_localizer = LimelightLocalizer(self.robotDrive, flipIfRed=None)
