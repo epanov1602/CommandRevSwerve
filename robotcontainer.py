@@ -62,6 +62,9 @@ class RobotContainer:
         self.addRobotDrivetrain(robot)
         self.addCameras(self.FIELD_LAYOUT_FILE)
 
+        self.localizer = None
+        self.limelight_localizer = None
+
         self.addLimelightLocalizer()
         #self.addCameraBasedLocalizer(self.FIELD_LAYOUT_FILE)
         # self.addIntakeBasedLocalizer()
@@ -102,6 +105,7 @@ class RobotContainer:
             self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
             self.rearCamera = PhotonTagCamera("Arducam_Rear")
             self.centerCamera = LimelightCamera("limelight-center")
+            self.leftCamera = LimelightCamera("limelight-left")
 
         else:
             # simulated robot, using simulated cameras
@@ -121,6 +125,9 @@ class RobotContainer:
             )
             self.centerCamera = PhotonTagCameraSim(
                 "Sim_FrontCenter", fieldLayout, RobotCameraLocations.kFrontCenter.toPose2d(), self.robotDrive
+            )
+            self.leftCamera = PhotonTagCameraSim(
+                "Sim_Left", fieldLayout, RobotCameraLocations.kLeft.toPose2d(), self.robotDrive
             )
 
     def addRobotDrivetrain(self, robot):
@@ -168,10 +175,17 @@ class RobotContainer:
         from subsystems.limelight_localizer import LimelightLocalizer
 
         self.limelight_localizer = LimelightLocalizer(self.robotDrive, flipIfRed=None)
+
         self.limelight_localizer.addCamera(
             self.centerCamera,
-            Translation3d(0.4, 0.0, 0.15),
+            constants.RobotCameraLocations.kFrontCenter.translation(),
             Rotation2d.fromDegrees(0),  # 0 degrees = looking forward
+            minPercentFrame=0.05,  # if the observed tag is smaller than 0.05% of the frame, do not use that tag
+        )
+        self.limelight_localizer.addCamera(
+            self.leftCamera,
+            constants.RobotCameraLocations.kLeft.translation(),
+            Rotation2d.fromDegrees(90),  # 90 degrees = looking left
             minPercentFrame=0.05,  # if the observed tag is smaller than 0.05% of the frame, do not use that tag
         )
 
@@ -263,14 +277,20 @@ class RobotContainer:
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.clearDashboard()
         AutoFactory.updateDashboard(self)
-        #self.localizer.setAllowed(False)  # localizer not allowed in auto (untested!)
+        if self.localizer is not None:
+            self.localizer.setAllowed(False)  # localizer not allowed in auto (untested!)
+        if self.limelight_localizer is not None:
+            self.limelight_localizer.setAllowed(False)
 
 
     def teleopInit(self):
         AutoFactory.clearDashboard(self)
         if self.trajectoryPicker is not None:
             self.trajectoryPicker.updateDashboard()
-        #self.localizer.setAllowed(True)  # localizer allowed in teleop
+        if self.localizer is not None:
+            self.localizer.setAllowed(True)  # localizer allowed in teleop
+        if self.limelight_localizer is not None:
+            self.limelight_localizer.setAllowed(True)
 
 
     def configureAutos(self) -> None:

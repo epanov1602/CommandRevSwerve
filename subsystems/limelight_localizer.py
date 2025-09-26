@@ -96,7 +96,7 @@ class LimelightLocalizer(Subsystem):
                 continue
 
             p = c.cameraPoseOnRobot
-            camera.cameraPoseSetRequest.set([p.x, p.y, p.z, c.cameraHeadingOnRobot.degrees(), 0.0, 0.0])
+            camera.cameraPoseSetRequest.set([p.x, p.y, p.z, 0.0, 0.0, c.cameraHeadingOnRobot.degrees()])
 
             # Limelight4-only (does nothing on Limelight 3)
             camera.imuModeRequest.set(0)
