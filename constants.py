@@ -242,6 +242,7 @@ class RobotCameraLocations:
     kFrontLeft = Pose2d(Translation2d(x=0.37, y=+0.18), Rotation2d.fromDegrees(0))
     kFrontRight = Pose2d(Translation2d(x=0.37, y=-0.18), Rotation2d.fromDegrees(0))
     kFrontCenter = Pose3d(Translation3d(x=0.37, y=0, z=0.1), Rotation3d.fromDegrees(0, 0, 0))
+    kLeft = Pose3d(Translation3d(x=0.30, y=0.33, z=0.9), Rotation3d.fromDegrees(0, 0, 90))
 
     kRight = Pose2d(Translation2d(x=0.0, y=-0.30), Rotation2d.fromDegrees(-60))
     kRear = Pose2d(Translation2d(x=+0.05, y=0), Rotation2d.fromDegrees(-180))
