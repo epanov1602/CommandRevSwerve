@@ -85,8 +85,8 @@ class RobotContainer:
             # "holonomic" means that it rotates left independently of swerving left = three sticks needed to control
             HolonomicDrive(
                 self.robotDrive,
-                forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
-                leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
+                forwardSpeed=lambda: +self.driverController.getRawAxis(XboxController.Axis.kLeftY),
+                leftSpeed=lambda: +self.driverController.getRawAxis(XboxController.Axis.kLeftX),
                 rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
                 deadband=OIConstants.kDriveDeadband,
                 fieldRelative=True,
