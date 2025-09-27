@@ -127,6 +127,8 @@ class DriveSubsystem(Subsystem):
         SmartDashboard.putNumber("x", pose.x)
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
+        SmartDashboard.putNumber("gyroHeading", self.getGyroHeading().degrees())
+
         self.field.setRobotPose(pose)
 
     def getHeading(self) -> Rotation2d:
@@ -147,8 +149,12 @@ class DriveSubsystem(Subsystem):
         """
         if resetGyro:
             self.gyro.reset()
-            self.gyro.setAngleAdjustment(0)
-            self._lastGyroAngleAdjustment = 0
+            self._lastGyroAngleAdjustment = DriveConstants.kGyroReversed * pose.rotation().degrees()
+            if self._lastGyroAngleAdjustment > 180:
+                self._lastGyroAngleAdjustment -= 360
+            if self._lastGyroAngleAdjustment < -180:
+                self._lastGyroAngleAdjustment += 360
+            self.gyro.setAngleAdjustment(self._lastGyroAngleAdjustment)
             self._lastGyroAngleTime = 0
             self._lastGyroAngle = 0
 
