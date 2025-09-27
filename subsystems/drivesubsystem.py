@@ -227,8 +227,8 @@ class DriveSubsystem(Subsystem):
         if square:
             rot = rot * abs(rot)
             norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
-            xSpeed = xSpeed * norm
-            ySpeed = ySpeed * norm
+            xSpeed = xSpeed * norm * norm
+            ySpeed = ySpeed * norm * norm
 
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed
