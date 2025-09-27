@@ -189,7 +189,7 @@ class ModuleConstants:
     kDrivingMotorIdleMode = SparkBase.IdleMode.kBrake
     kTurningMotorIdleMode = SparkBase.IdleMode.kBrake
 
-    kDrivingMotorCurrentLimit = 50  # amp
+    kDrivingMotorCurrentLimit = 40  # amp
     kTurningMotorCurrentLimit = 20  # amp
 
     kDrivingMinSpeedMetersPerSecond = 0.01
