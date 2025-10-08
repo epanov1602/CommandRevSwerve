@@ -19,6 +19,7 @@ class CameraState:
     cameraPoseOnRobot: Translation3d
     cameraHeadingOnRobot: Rotation2d
     minPercentFrame: float
+    maxRotationSpeed: float
 
 
 class LimelightLocalizer(Subsystem):
@@ -42,7 +43,7 @@ class LimelightLocalizer(Subsystem):
         self.learningRateMult.addOption("3%", 0.03)
         self.learningRateMult.addOption("1%", 0.01)
         self.learningRateMult.addOption("0.1%", 0.001)
-        SmartDashboard.putData("LocLearnRate", self.learningRateMult)
+        SmartDashboard.putData("LocaLearnRate", self.learningRateMult)
 
         self.enabled = None
         self.allowed = True
@@ -55,6 +56,7 @@ class LimelightLocalizer(Subsystem):
         cameraPoseOnRobot: Translation3d,
         cameraHeadingOnRobot: Rotation2d,
         minPercentFrame: float = 0.07,
+        maxRotationSpeed: float = 999,
     ) -> None:
         """
         :param camera: camera to add
@@ -62,10 +64,13 @@ class LimelightLocalizer(Subsystem):
         :param cameraHeadingOnRobot: is this camera looking straight forward (Rotation2d.fromDegrees(0)), or maybe right (Rotation2d.fromDegrees(-90)) ?
         :param maxDistanceMeters: only use this camera for localization if distance to tag is under so many meters
         :param minPercentFrame: if tags are too small (for example smaller than 0.07% of frame), do not use them
+        :param maxRotationSpeed: when robot spins too fast (in degrees per second), camera will be ignored
         """
         assert isinstance(camera, LimelightCamera), "you can only add LimelightCamera(s) to LimelightLocalizer"
         assert camera.cameraName not in self.cameras, f"camera {camera.cameraName} already added to LimelightLocalizer"
-        self.cameras[camera.cameraName] = CameraState(camera, cameraPoseOnRobot, cameraHeadingOnRobot, minPercentFrame)
+        self.cameras[camera.cameraName] = CameraState(
+            camera, cameraPoseOnRobot, cameraHeadingOnRobot, minPercentFrame, maxRotationSpeed
+        )
         camera.addLocalizer()
 
 
@@ -74,6 +79,9 @@ class LimelightLocalizer(Subsystem):
 
 
     def periodic(self) -> None:
+        if len(self.cameras) == 0:
+            return
+
         enabled, flipped = None, False
         if self.enabled is None:
             self.initEnabledChooser()
@@ -85,14 +93,15 @@ class LimelightLocalizer(Subsystem):
         if not enabled:
             return
 
-        learningRate = LEARNING_RATE * self.learningRateMult.getSelected()
+        learningRate: float = LEARNING_RATE * self.learningRateMult.getSelected()
         odometryPos: Pose2d = self.drivetrain.getPose()
         heading: Rotation2d = self.drivetrain.getHeading()
+        rotationSpeed: float = self.drivetrain.getTurnRate()  # rotation speed in degrees per second
         assert heading is not None
 
         for c in self.cameras.values():
             camera = c.camera
-            if not camera.ticked:
+            if not camera.ticked or abs(rotationSpeed) > c.maxRotationSpeed:
                 continue
 
             p = c.cameraPoseOnRobot

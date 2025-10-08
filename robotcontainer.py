@@ -10,13 +10,16 @@ from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 
 from commands.reset_xy import ResetXY, ResetSwerveFront
+from subsystems.limelight_camera import LimelightCamera
+from subsystems.limelight_localizer import LimelightLocalizer
+
 
 class RobotContainer:
     """
@@ -29,17 +32,23 @@ class RobotContainer:
     def __init__(self, robot) -> None:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
-        if commands2.TimedCommandRobot.isSimulation():
-            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
+        self.limelightLocalizer = LimelightLocalizer(self.robotDrive)
 
-        # The driver's controller
+        #self.frontCamera = LimelightCamera("limelight-front")
+        #self.limelightLocalizer.addCamera(
+        #    self.frontCamera,
+        #    cameraPoseOnRobot=Translation3d(x=0.40, y=-0.15, z=0.5),
+        #    cameraHeadingOnRobot=Rotation2d.fromDegrees(0.0))
+
+
+        # The driver's controller (joystick)
         self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
 
         # Configure the button bindings and autos
         self.configureButtonBindings()
         self.configureAutos()
 
-        # Configure default command for driving using sticks
+        # Configure default command for driving using joystick sticks
         from commands.holonomicdrive import HolonomicDrive
         self.robotDrive.setDefaultCommand(
             HolonomicDrive(
@@ -54,6 +63,9 @@ class RobotContainer:
             )
         )
 
+        if commands2.TimedCommandRobot.isSimulation():
+            self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
+
     def configureButtonBindings(self) -> None:
         """
         Use this method to define your button->command mappings. Buttons can be created by
@@ -61,12 +73,20 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
+        # example 1: when "X" button is pressed, turn the wheels into "swerve X brake" positions
+        brakeCommand = RunCommand(self.robotDrive.setX, self.robotDrive)
         xButton = self.driverController.button(XboxController.Button.kX)
-        xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
-        xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
+        xButton.whileTrue(brakeCommand)
 
-        yButton = self.driverController.button(XboxController.Button.kY)
-        yButton.onTrue(ResetSwerveFront(self.robotDrive))
+        # example 2: when POV-up button pressed, reset robot field position to "facing North"
+        resetFacingNorthCommand = ResetXY(x=1.0, y=4.0, headingDegrees=0, drivetrain=self.robotDrive)
+        self.driverController.povUp().onTrue(resetFacingNorthCommand)
+
+        # example 3: when "POV-down" is pressed, reset robot field position to "facing South"
+        resetFacingSouthCommand = ResetXY(x=7.0, y=4.0, headingDegrees=180, drivetrain=self.robotDrive)
+        self.driverController.povDown().onTrue(resetFacingSouthCommand)
+        self.driverController.button(1).onTrue(resetFacingSouthCommand)
+
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
