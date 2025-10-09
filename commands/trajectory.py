@@ -16,8 +16,13 @@ from commands.aimtodirection import AimToDirection
 from commands.swervetopoint import SwerveToPoint
 from commands.gotopoint import GoToPoint
 
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Transform2d
-from wpilib import SmartDashboard
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpilib import SmartDashboard, DriverStation
+
+
+FIELD_WIDTH = 8.052
+FIELD_LENGTH = 17.55
+U_TURN = Rotation2d.fromDegrees(180)
 
 
 class JerkyTrajectory(commands2.Command):
@@ -29,7 +34,8 @@ class JerkyTrajectory(commands2.Command):
         swerve: bool | str = False,
         speed=1.0,
         setup: typing.Optional[typing.Callable[[], None]] = None,
-        stopAtEnd=True,
+        stopAtEnd: bool = True,
+        flipIfRed: bool = False,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
@@ -52,6 +58,7 @@ class JerkyTrajectory(commands2.Command):
         self.speed = speed
         self.swerve = swerve
         self.stopAtEnd = stopAtEnd
+        self.flipIfRed = flipIfRed
         self.setup = setup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints]
         if endpoint is not None:
@@ -65,7 +72,9 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
+        return JerkyTrajectory(
+            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup, self.stopAtEnd, self.flipIfRed
+        )
 
     def trajectoryToDisplay(self):
         result = []
@@ -102,14 +111,24 @@ class JerkyTrajectory(commands2.Command):
         self.command.initialize()
 
     def getRemainingWaypointsAheadOfUs(self):
+        mustFlip = False
+        if self.flipIfRed:
+            mustFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
+
         # find the waypoint nearest to the current location: we want to skip all the waypoints before it
-        nearest, distance = None, None
-        location = self.drivetrain.getPose()
+        nearest, distance, nh = None, None, None
+
+        location = self.drivetrain.getPose().translation()
+        if mustFlip:  # if flipping the field for red team, flip robot location too
+            location, _ = _flipWaypoint((location, None))
+
         for point, heading in self.waypoints:
-            d = location.translation().distance(point)
+            d = location.distance(point)
             if nearest is None or d < distance:
-                nearest, distance = point, d
+                nearest, distance, nh = point, d, heading
+
         # only use the waypoints that we must not skip (those past the nearest waypoint, i.e. not already behind)
         waypoints = []
         if nearest is not None:
@@ -121,6 +140,13 @@ class JerkyTrajectory(commands2.Command):
                     skip = False
         if len(waypoints) == 0:
             waypoints = [self.waypoints[-1]]
+
+        # if the nearest point is also in the same direction, include it too
+        if nearest is not None and _sameDirection(nearest - location, waypoints[0][0] - location):
+            waypoints = [(nearest, nh)] + waypoints
+
+        if mustFlip:
+            waypoints = [_flipWaypoint(p) for p in waypoints]
         return waypoints
 
     def execute(self):
@@ -191,7 +217,9 @@ class SwerveTrajectory(JerkyTrajectory):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
+        return SwerveTrajectory(
+            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup, self.stopAtEnd, self.flipIfRed
+        )
 
     def initialize(self):
         if self.setup is not None:
@@ -280,11 +308,11 @@ class SwerveTrajectory(JerkyTrajectory):
         self.command.initialize()
 
 
-def mirror(waypoints, fieldWidth=8.052):
+def mirror(waypoints, width=FIELD_WIDTH):
     """
     Converts right-side trajectory into left-side trajectory
     :param waypoints: original trajectory, list of tuples of (x, y, heading) or (x, y)
-    :param fieldWidth: width of the field
+    :param width: width of the field
     :return: a mirror image of trajectory waypoints
     """
     # a tuple is treated as a single waypoint
@@ -299,14 +327,31 @@ def mirror(waypoints, fieldWidth=8.052):
     for point in waypoints:
         if len(point) == 2 and isinstance(point[0], Translation2d):
             location, heading = point
-            result.append((Translation2d(location.x, fieldWidth - location.y), reflect(heading)))
+            result.append((Translation2d(location.x, width - location.y), reflect(heading)))
         elif len(point) == 2:
             x, y = point
-            result.append((x, fieldWidth - y))
+            result.append((x, width - y))
         elif len(point) == 3:
             x, y, heading = point
-            result.append((x, fieldWidth - y, reflect(heading)))
+            result.append((x, width - y, reflect(heading)))
         else:
             assert False, f"unknown waypoint format: {point}"
 
     return result
+
+
+def _flipWaypoint(waypoint, width=FIELD_WIDTH, length=FIELD_LENGTH) -> typing.Tuple[Translation2d, Rotation2d]:
+    translation, rotation = waypoint
+    translation = Translation2d(length - translation.x, width - translation.y)
+    if rotation is not None:
+        rotation = rotation + U_TURN
+    return translation, rotation
+
+
+def _sameDirection(direction1: Translation2d, direction2: Translation2d, minCos=0.5) -> bool:
+    """
+    :param minCos: minimum cosine of angles between two directions (to be considered "same direction")
+    """
+    length1, length2 = direction1.norm(), direction2.norm()
+    product = direction1.x * direction2.x + direction1.y * direction2.y
+    return product > length1 * length2 * minCos

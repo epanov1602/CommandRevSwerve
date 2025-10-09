@@ -140,7 +140,7 @@ class LimelightLocalizer(Subsystem):
             color = DriverStation.getAlliance()
             if color is None:
                 return  # we cannot yet decide on whether the field should be flipped
-            flipped = (color == wpilib.DriverStation.Alliance.kRed) and self.flipIfRed
+            flipped = (color == DriverStation.Alliance.kRed) and self.flipIfRed
             print("Localizer: color={}, flipped={}".format(color, flipped))
         print("Localizer will assume flipped={} (username={}, flipIfRed={})".format(flipped, self.username, self.flipIfRed))
 

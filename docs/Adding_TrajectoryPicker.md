@@ -144,49 +144,49 @@ class ReversedTrajectoryPicker(commands2.Command):
 
 ```python3
     def configureButtonBindings():
-        # ...
+    # ...
 
-        # part A: add trajectory picker and add trajectory commands into it
-        from commands.trajectory_picker import TrajectoryPicker
+    # part A: add trajectory picker and add trajectory commands into it
+    from commands.trajectory_picker import TrajectoryPicker
 
-        self.trajectoryPicker = TrajectoryPicker(
-            self.robotDrive.field,
-            # which subsystems must be locked for exclusive use?
-            subsystems=[self.robotDrive, self.intake],
-        )
+    self.trajectoryPicker = TrajectoryPicker(
+        self.robotDrive.field,
+        # which subsystems must be locked for exclusive use?
+        subsystems=[self.robotDrive, self.intake],
+    )
 
-        from commands.jerky_trajectory import JerkyTrajectory
+    from commands.trajectory import JerkyTrajectory
 
-        goToPos1 = JerkyTrajectory(
-            # swerve=True, # uncomment if you have a swerve drive (or you can also use swerve="last-point")
-            drivetrain=self.robotDrive,
-            endpoint=(5.54, 3.99, -180),
-            waypoints=[
-                (1.07, 0.77, 60.0),
-                (2.41, 1.31, 0.9),
-                (3.66, 1.16, -20.0),
-                (5.91, 1.034, 0.9),
-                (7.00, 1.70, 70.0),
-                (7.00, 3.39, 122.97),
-            ],
-            speed=0.2
-        )
-        self.trajectoryPicker.addCommands("to-pos1", goToPos1)
+    goToPos1 = JerkyTrajectory(
+        # swerve=True, # uncomment if you have a swerve drive (or you can also use swerve="last-point")
+        drivetrain=self.robotDrive,
+        endpoint=(5.54, 3.99, -180),
+        waypoints=[
+            (1.07, 0.77, 60.0),
+            (2.41, 1.31, 0.9),
+            (3.66, 1.16, -20.0),
+            (5.91, 1.034, 0.9),
+            (7.00, 1.70, 70.0),
+            (7.00, 3.39, 122.97),
+        ],
+        speed=0.2
+    )
+    self.trajectoryPicker.addCommands("to-pos1", goToPos1)
 
-        goToPos2 = JerkyTrajectory(
-            # swerve=True, # uncomment if you have a swerve drive (you can also use swerve="last-point")
-            drivetrain=self.robotDrive,
-            endpoint=(3.92, 2.97, 60.0),
-            waypoints=[
-                (1.07, 0.77, 60.0),
-                (2.937, 1.897, 39.66),
-                (3.680, 2.580, 60.0),
-            ],
-            speed=0.2
-        )
-        self.trajectoryPicker.addCommands("to-pos2", goToPos2)
+    goToPos2 = JerkyTrajectory(
+        # swerve=True, # uncomment if you have a swerve drive (you can also use swerve="last-point")
+        drivetrain=self.robotDrive,
+        endpoint=(3.92, 2.97, 60.0),
+        waypoints=[
+            (1.07, 0.77, 60.0),
+            (2.937, 1.897, 39.66),
+            (3.680, 2.580, 60.0),
+        ],
+        speed=0.2
+    )
+    self.trajectoryPicker.addCommands("to-pos2", goToPos2)
 
-        # ...
+    # ...
 ```
 </details>
 

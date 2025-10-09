@@ -13,6 +13,7 @@ from wpimath.controller import PIDController, ProfiledPIDControllerRadians, Holo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
+from commands.trajectory import SwerveTrajectory, JerkyTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 
@@ -80,12 +81,28 @@ class RobotContainer:
 
         # example 2: when POV-up button pressed, reset robot field position to "facing North"
         resetFacingNorthCommand = ResetXY(x=1.0, y=4.0, headingDegrees=0, drivetrain=self.robotDrive)
-        self.driverController.povUp().onTrue(resetFacingNorthCommand)
+        self.driverController.povUp().whileTrue(resetFacingNorthCommand)
 
         # example 3: when "POV-down" is pressed, reset robot field position to "facing South"
         resetFacingSouthCommand = ResetXY(x=7.0, y=4.0, headingDegrees=180, drivetrain=self.robotDrive)
-        self.driverController.povDown().onTrue(resetFacingSouthCommand)
-        self.driverController.button(1).onTrue(resetFacingSouthCommand)
+        self.driverController.povDown().whileTrue(resetFacingSouthCommand)
+
+        # example 4: when "Y" is pressed, robot drives this trajectory
+        trajectoryCommand1 = SwerveTrajectory(
+            drivetrain=self.robotDrive,
+            speed=+1.0,
+            endpoint=(6.0, 4.0, -180),
+            waypoints=[
+                (1.0, 4.0, 0.0),
+                (2.5, 5.0, 0.0),
+                (3.0, 6.5, 0.0),
+                (6.5, 5.0, -90),
+            ],
+            flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
+            stopAtEnd=True,  # to keep driving onto next command, set =False
+        )
+        self.driverController.button(XboxController.Button.kA).whileTrue(trajectoryCommand1)
+        self.driverController.button(XboxController.Button.kB).whileTrue(trajectoryCommand1.reversed())
 
 
     def disablePIDSubsystems(self) -> None:

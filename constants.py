@@ -27,7 +27,7 @@ class DriveConstants:
     # Driving Parameters - Note that these are not the maximum capable speeds of
     # the robot, rather the allowed maximum speeds
     kMaxSpeedMetersPerSecond = 4.8
-    kMaxAngularSpeed = math.tau  # radians per second
+    kMaxAngularSpeed = 2 * math.tau  # radians per second
 
     kDirectionSlewRate = 1.2  # radians per second
     kMagnitudeSlewRate = 1.8  # percent per second (1 = 100%)
