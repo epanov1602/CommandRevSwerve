@@ -13,6 +13,7 @@ from wpimath.controller import PIDController, ProfiledPIDControllerRadians, Holo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
+from commands.aimtodirection import AimToDirection
 from commands.trajectory import SwerveTrajectory, JerkyTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
@@ -168,6 +169,13 @@ class RobotContainer:
 
     def getTestCommand(self) -> typing.Optional[commands2.Command]:
         """
-        :returns: the command to run in test mode (to exercise all systems)
+        :returns: the command to run in test mode ("test dance") to exercise all subsystems
         """
-        return None
+
+        # example commands that test drivetrain's motors and gyro (our only subsystem)
+        turnRight = AimToDirection(degrees=-45, drivetrain=self.robotDrive, speed=0.25)
+        turnLeft = AimToDirection(degrees=45, drivetrain=self.robotDrive, speed=0.25)
+        backToZero = AimToDirection(degrees=0, drivetrain=self.robotDrive, speed=0.0)
+
+        command = turnRight.andThen(turnLeft).andThen(backToZero)
+        return command
