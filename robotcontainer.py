@@ -16,10 +16,10 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 from commands.trajectory import SwerveTrajectory, JerkyTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
-
-from commands.reset_xy import ResetXY, ResetSwerveFront
 from subsystems.limelight_camera import LimelightCamera
 from subsystems.limelight_localizer import LimelightLocalizer
+
+from commands.reset_xy import ResetXY, ResetSwerveFront
 
 
 class RobotContainer:
@@ -95,13 +95,13 @@ class RobotContainer:
         trajectoryCommand1 = SwerveTrajectory(
             drivetrain=self.robotDrive,
             speed=+1.0,
-            endpoint=(6.0, 4.0, -180),
             waypoints=[
-                (1.0, 4.0, 0.0),
-                (2.5, 5.0, 0.0),
-                (3.0, 6.5, 0.0),
-                (6.5, 5.0, -90),
+                (1.0, 4.0, 0.0),  # start at x=1.0, y=4.0, heading=0 degrees (North)
+                (2.5, 5.0, 0.0),  # next waypoint: x=2.5, y=5.0
+                (3.0, 6.5, 0.0),  # next waypoint
+                (6.5, 5.0, -90),  # next waypoint
             ],
+            endpoint=(6.0, 4.0, -180),  # end point: x=6.0, y=4.0, heading=180 degrees (South)
             flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
             stopAtEnd=True,  # to keep driving onto next command, set =False
         )
@@ -150,58 +150,21 @@ class RobotContainer:
         return command
 
     def getAutonomousTrajectoryExample(self) -> commands2.Command:
-        # Create config for trajectory
-        config = TrajectoryConfig(
-            AutoConstants.kMaxSpeedMetersPerSecond,
-            AutoConstants.kMaxAccelerationMetersPerSecondSquared,
-        )
-        # Add kinematics to ensure max speed is actually obeyed
-        config.setKinematics(DriveConstants.kDriveKinematics)
-
-        # An example trajectory to follow. All units in meters.
-        exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-            # Start at the origin facing the +X direction
-            Pose2d(0, 0, Rotation2d(0)),
-            # Pass through these two interior waypoints, making an 's' curve path
-            [Translation2d(0.5, 0.5), Translation2d(1, -0.5)],
-            # End 1.5 meters straight ahead of where we started, facing forward
-            Pose2d(1.5, 0, Rotation2d(0)),
-            config,
+        command = SwerveTrajectory(
+            drivetrain=self.robotDrive,
+            speed=+1.0,
+            waypoints=[
+                (1.0, 4.0, 0.0),  # start at x=1.0, y=4.0, heading=0 degrees (North)
+                (2.5, 5.0, 0.0),  # next waypoint: x=2.5, y=5.0
+                (3.0, 6.5, 0.0),  # next waypoint
+                (6.5, 5.0, -90),  # next waypoint
+            ],
+            endpoint=(6.0, 4.0, -180),  # end point: x=6.0, y=4.0, heading=180 degrees (South)
+            flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
+            stopAtEnd=True,  # to keep driving onto next command, set =False
         )
 
-        thetaController = ProfiledPIDControllerRadians(
-            AutoConstants.kPThetaController,
-            0,
-            0,
-            AutoConstants.kThetaControllerConstraints,
-        )
-        thetaController.enableContinuousInput(-math.pi, math.pi)
-
-        driveController = HolonomicDriveController(
-            PIDController(AutoConstants.kPXController, 0, 0),
-            PIDController(AutoConstants.kPXController, 0, 0),
-            thetaController,
-        )
-
-        swerveControllerCommand = commands2.SwerveControllerCommand(
-            exampleTrajectory,
-            self.robotDrive.getPose,  # Functional interface to feed supplier
-            DriveConstants.kDriveKinematics,
-            driveController,
-            self.robotDrive.setModuleStates,
-            (self.robotDrive,),
-        )
-
-        # Reset odometry to the starting pose of the trajectory.
-        self.robotDrive.resetOdometry(exampleTrajectory.initialPose())
-
-        # Run path following command, then stop at the end.
-        return swerveControllerCommand.andThen(
-            cmd.run(
-                lambda: self.robotDrive.drive(0, 0, 0, False, False),
-                self.robotDrive,
-            )
-        )
+        return command
 
     def getTestCommand(self) -> typing.Optional[commands2.Command]:
         """
