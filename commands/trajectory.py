@@ -55,6 +55,7 @@ class JerkyTrajectory(commands2.Command):
             assert len(waypoints) > 0, "if endpoint is None, waypoints cannot be empty"
 
         self.drivetrain = drivetrain
+        self.field = drivetrain.field if hasattr(drivetrain, "field") else None
         self.speed = speed
         self.swerve = swerve
         self.stopAtEnd = stopAtEnd
@@ -161,6 +162,7 @@ class JerkyTrajectory(commands2.Command):
         if self.command is not None:
             self.command.end(interrupted)
             self.command = None
+        self._showTrajectory([])
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
         else:
@@ -209,6 +211,20 @@ class JerkyTrajectory(commands2.Command):
 
         log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"next: {point.x}, {point.y}")
         return InstantCommand(log).andThen(command)
+
+    def _showTrajectory(self, waypoints, chunks=10):
+        if self.field is not None:
+            trajectory = []
+            prev = None
+            for point, rotation in waypoints:
+                if prev is None:
+                    trajectory.append(Pose2d(point, U_TURN))
+                else:
+                    vector = point - prev
+                    points = [prev + (vector * float((1 + chunk) / chunks)) for chunk in range(chunks)]
+                    trajectory.extend([Pose2d(i, U_TURN) for i in points])
+                prev = point
+            self.field.getObject("active-trajectory").setPoses(trajectory)
 
 
 class SwerveTrajectory(JerkyTrajectory):
@@ -307,6 +323,7 @@ class SwerveTrajectory(JerkyTrajectory):
         self.command = swerveControllerCommand.andThen(catchup).andThen(stop)
         self.command.initialize()
 
+        self._showTrajectory(waypoints)
 
 def mirror(waypoints, width=FIELD_WIDTH):
     """

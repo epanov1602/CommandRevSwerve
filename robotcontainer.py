@@ -36,6 +36,7 @@ class RobotContainer:
         self.limelightLocalizer = LimelightLocalizer(self.robotDrive)
 
         #self.frontCamera = LimelightCamera("limelight-front")
+
         #self.limelightLocalizer.addCamera(
         #    self.frontCamera,
         #    cameraPoseOnRobot=Translation3d(x=0.40, y=-0.15, z=0.5),
@@ -67,6 +68,7 @@ class RobotContainer:
         if commands2.TimedCommandRobot.isSimulation():
             self.robotDrive.simPhysics = BadSimPhysics(self.robotDrive, robot)
 
+
     def configureButtonBindings(self) -> None:
         """
         Use this method to define your button->command mappings. Buttons can be created by
@@ -74,20 +76,22 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
 
-        # example 1: when "X" button is pressed, turn the wheels into "swerve X brake" positions
+        # example 1: hold the wheels in "swerve X brake" position, when "X" button is pressed
         brakeCommand = RunCommand(self.robotDrive.setX, self.robotDrive)
         xButton = self.driverController.button(XboxController.Button.kX)
-        xButton.whileTrue(brakeCommand)
+        xButton.whileTrue(brakeCommand)  # while "X" button is True (pressed), keep executing the brakeCommand
 
-        # example 2: when POV-up button pressed, reset robot field position to "facing North"
+        # example 2: when "POV-up" button pressed, reset robot field position to "facing North"
         resetFacingNorthCommand = ResetXY(x=1.0, y=4.0, headingDegrees=0, drivetrain=self.robotDrive)
-        self.driverController.povUp().whileTrue(resetFacingNorthCommand)
+        povUpButton = self.driverController.povUp()
+        povUpButton.whileTrue(resetFacingNorthCommand)
 
         # example 3: when "POV-down" is pressed, reset robot field position to "facing South"
         resetFacingSouthCommand = ResetXY(x=7.0, y=4.0, headingDegrees=180, drivetrain=self.robotDrive)
-        self.driverController.povDown().whileTrue(resetFacingSouthCommand)
+        povDownButton = self.driverController.povDown()
+        povDownButton.whileTrue(resetFacingSouthCommand)
 
-        # example 4: when "Y" is pressed, robot drives this trajectory
+        # example 4: robot drives this trajectory command when "A" button is pressed
         trajectoryCommand1 = SwerveTrajectory(
             drivetrain=self.robotDrive,
             speed=+1.0,
@@ -101,8 +105,13 @@ class RobotContainer:
             flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
             stopAtEnd=True,  # to keep driving onto next command, set =False
         )
-        self.driverController.button(XboxController.Button.kA).whileTrue(trajectoryCommand1)
-        self.driverController.button(XboxController.Button.kB).whileTrue(trajectoryCommand1.reversed())
+        aButton = self.driverController.button(XboxController.Button.kA)
+        aButton.whileTrue(trajectoryCommand1)  # while "A" button is pressed, keep running trajectoryCommand1
+
+        # example 5: and when "B" button is pressed, drive the reversed trajectory
+        reversedTrajectoryCommand1 = trajectoryCommand1.reversed()
+        bButton = self.driverController.button(XboxController.Button.kB)
+        bButton.whileTrue(reversedTrajectoryCommand1)  # while "B" button is pressed, keep running this command
 
 
     def disablePIDSubsystems(self) -> None:
