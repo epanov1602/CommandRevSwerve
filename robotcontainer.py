@@ -97,12 +97,11 @@ class RobotContainer:
             drivetrain=self.robotDrive,
             speed=+1.0,
             waypoints=[
-                (1.0, 4.0, 0.0),  # start at x=1.0, y=4.0, heading=0 degrees (North)
-                (2.5, 5.0, 0.0),  # next waypoint: x=2.5, y=5.0
-                (3.0, 6.5, 0.0),  # next waypoint
-                (6.5, 5.0, -90),  # next waypoint
+                (1.0, 7.0, -54),  # start at left feeding station: x=1.0, y=7.0, heading=-54 degrees
+                (1.5, 6.5, 0),  # next waypoint
+                (2.0, 4.5, 0),  # next waypoint
             ],
-            endpoint=(6.0, 4.0, -180),  # end point: x=6.0, y=4.0, heading=180 degrees (South)
+            endpoint=(3.2, 4.0, 0),  # end point at the reef facing North
             flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
             stopAtEnd=True,  # to keep driving onto next command, set =False
         )
