@@ -21,7 +21,7 @@ class AimToDirectionConstants:
 
     kMinTurnSpeed = 0.025  # turning slower than this is unproductive for the motor (might not even spin)
     kAngleToleranceDegrees = 4.0  # plus minus 3 degrees is "close enough"
-    kAngleVelocityToleranceDegreesPerSec = 50  # velocity under 100 degrees/second is considered "stopped"
+    kAngleVelocityToleranceDegreesPerSec = 1  # velocity under 100 degrees/second is considered "stopped"
 
 
 class AimToDirection(commands2.Command):
@@ -88,7 +88,7 @@ class AimToDirection(commands2.Command):
         degreesRemaining = rotationRemaining.degrees()
         # if we are pretty close to the direction we wanted, consider the command finished
         if abs(degreesRemaining) < AimToDirectionConstants.kAngleToleranceDegrees:
-            turnVelocity = self.drivetrain.getTurnRateDegreesPerSec()
+            turnVelocity = self.drivetrain.getTurnRate()
             SmartDashboard.putString("command/c" + self.__class__.__name__, "good angle")
             if abs(turnVelocity) < AimToDirectionConstants.kAngleVelocityToleranceDegreesPerSec:
                 SmartDashboard.putString("command/c" + self.__class__.__name__, "completed")

@@ -1313,7 +1313,7 @@ class FollowObject(commands2.Command):
         # 2. if we see the object well now, is it close enough to finish the approach?
         if self.stopWhen is not None:
             if not self.drivingAllowed and abs(x) < self.stopWhen.aimingToleranceDegrees:
-                turnVelocity = self.drivetrain.getTurnRateDegreesPerSec()
+                turnVelocity = self.drivetrain.getTurnRate()
                 if abs(turnVelocity) < AimToDirectionConstants.kAngleVelocityToleranceDegreesPerSec:
                     print(f"FollowObject: finished, the object is pretty close (x={x}, turnVelocity={turnVelocity})")
                     self.finished = True  # already aiming at it pretty well and not allowed to move to it
