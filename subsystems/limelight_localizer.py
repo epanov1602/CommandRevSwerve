@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from typing import Dict
 
@@ -11,7 +12,8 @@ from subsystems.limelight_camera import LimelightCamera
 
 U_TURN = Rotation2d.fromDegrees(180)
 LEARNING_RATE = 0.3
-
+TYPICAL_PERCENT_FRAME = 0.7  # when the tag is ~2m away
+EMPHASIZE_TAGS_NEARBY = False
 
 @dataclass
 class CameraState:
@@ -129,7 +131,10 @@ class LimelightLocalizer(Subsystem):
                 x, y, z, roll, pitch, yaw, latencyMillisec, count, span, distance, percentage = botpose[0:11]
                 # SmartDashboard.putNumber("Localizer/" + c.camera.cameraName, percentage)
                 if count > 0 and percentage > c.minPercentFrame and not (x == 0 and y == 0):
-                    shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * learningRate
+                    gain = percentage / TYPICAL_PERCENT_FRAME  # tags nearby have more say than tags far away
+                    if not EMPHASIZE_TAGS_NEARBY:
+                        gain = math.sqrt(gain)
+                    shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * min(learningRate * gain, 0.5)
                     self.drivetrain.adjustOdometry(shift, Rotation2d.fromDegrees(0))
 
 
