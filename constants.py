@@ -104,7 +104,7 @@ class ModuleConstants:
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
     #  , depending which swerve module you have (MK4i, MK4n, Rev, WCP, ThriftyBot, etc)
-    kTurningEncoderInverted = True
+    kTurningEncoderInverted = False
     kTurningMotorInverted = True
 
     # The MAXSwerve module can be configured with one of three pinion gears: 12T, 13T, or 14T.
