@@ -174,7 +174,7 @@ class AutoConstants:
 
     kPXController = 1
     kPYController = 1
-    kPThetaController = 1
+    kPThetaController = 0.67
 
     # Constraint for the motion profiled robot angle controller
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(
