@@ -3,6 +3,7 @@ from phoenix6.controls import VelocityVoltage
 from phoenix6.hardware import TalonFX
 from phoenix6.signals import NeutralModeValue, InvertedValue
 from rev import SparkMax, SparkFlex, SparkLowLevel, SparkBase, SparkClosedLoopController, SparkRelativeEncoder
+from wpilib import SmartDashboard
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
 
@@ -50,6 +51,7 @@ class MAXSwerveModule:
         self.drivingRevEncoder: SparkRelativeEncoder | None = None
         self.drivingRevPIDController: SparkClosedLoopController | None = None
 
+        self.drivingCanId = drivingCANId
         if drivingIsTalon:
             # Talon
             self.drivingTalonMotor = TalonFX(drivingCANId)
@@ -118,6 +120,7 @@ class MAXSwerveModule:
             )
         else:
             rotations = self.drivingTalonMotor.get_position().value
+            #SmartDashboard.putNumber(f"motor{self.drivingCanId}pos", rotations)
             meters = rotations * self.drivingTalonRotationsToMeters
             return SwerveModulePosition(
                 meters,
