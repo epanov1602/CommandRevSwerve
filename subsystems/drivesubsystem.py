@@ -393,19 +393,11 @@ class DriveSubsystem(Subsystem):
 
 
     def getTurnRate(self) -> float:
-        """Returns the turn rate of the robot (in radians per second)
-
-        :returns: The turn rate of the robot, in radians per second
-        """
-        return self.gyro.getRate() * DriveConstants.kGyroReversed
-
-
-    def getTurnRateDegreesPerSec(self) -> float:
         """Returns the turn rate of the robot (in degrees per second)
 
         :returns: The turn rate of the robot, in degrees per second
         """
-        return self.getTurnRate() * 180 / math.pi
+        return self.gyro.getRate() * DriveConstants.kGyroReversed
 
 
 class BadSimPhysics(object):

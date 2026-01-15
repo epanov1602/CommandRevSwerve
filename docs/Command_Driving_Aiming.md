@@ -172,7 +172,7 @@ class AimToDirection(commands2.Command):
         degreesRemaining = rotationRemaining.degrees()
         # if we are pretty close to the direction we wanted, consider the command finished
         if abs(degreesRemaining) < AimToDirectionConstants.kAngleToleranceDegrees:
-            turnVelocity = self.drivetrain.getTurnRateDegreesPerSec()
+            turnVelocity = self.drivetrain.getTurnRate()
             if abs(turnVelocity) < AimToDirectionConstants.kAngleVelocityToleranceDegreesPerSec:
                 return True
 
