@@ -41,12 +41,12 @@ class SwerveTowardsObject(commands2.Command):
             )
 
             # setup a condition for when to run that command
-            whenRightTriggerPressed = self.driverController.axisGreaterThan(
+            whenLeftTriggerPressed = self.driverController.axisGreaterThan(
                 XboxController.Axis.kLeftTrigger, threshold=0.1
             )
 
             # connect the command to its trigger
-            whenRightTriggerPressed.whileTrue(driveToGamepiece)
+            whenLeftTriggerPressed.whileTrue(driveToGamepiece)
 
         ```
     """
@@ -139,7 +139,7 @@ class SwerveTowardsObject(commands2.Command):
 
         # 1. if direction to the object unknown, stop and wait
         if self.targetLocationXY is None:
-            self.drivetrain.drive(xSpeed=0, ySpeed=0, rot=0, fieldRelative=False, rateLimit=True)
+            self.drivetrain.drive(xSpeed=0, ySpeed=0, rotSpeed=0, fieldRelative=False, rateLimit=True)
             return
 
         # 2. how far to we need to strafe to the left? (let's use the coordinates!)
@@ -158,9 +158,9 @@ class SwerveTowardsObject(commands2.Command):
 
         # 4. driving time: if target is on the right, then strafe right (otherwise left)
         if vectorToTarget.y > 0:  # y > 0 means strafe left
-            self.drivetrain.drive(fwdSpeed, +lateralSpeed, rot=0.0, fieldRelative=False, rateLimit=True)
+            self.drivetrain.drive(fwdSpeed, +lateralSpeed, rotSpeed=0.0, fieldRelative=False, rateLimit=True)
         else:  # y < 0 means strafe right
-            self.drivetrain.drive(fwdSpeed, -lateralSpeed, rot=0.0, fieldRelative=False, rateLimit=True)
+            self.drivetrain.drive(fwdSpeed, -lateralSpeed, rotSpeed=0.0, fieldRelative=False, rateLimit=True)
 
 
     def end(self, interrupted: bool):
