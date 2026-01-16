@@ -49,14 +49,25 @@ class DriveTowardsObject(commands2.Command):
 
         ```
     """
+
     def __init__(
-        self,
-        drivetrain,
-        speed: typing.Callable[[], float],
-        camera,
-        cameraPipeline: int = -1,
-        maxTurnSpeed=1.0,
+            self,
+            drivetrain,
+            speed: typing.Callable[[], float],
+            camera,
+            cameraPipeline: int = -1,
+            objectSizeWhenNear: float = 10.0,
+            maxTurnSpeed=1.0,
     ):
+        """
+
+        :param drivetrain: robot drivetrain (tank or swerve) 
+        :param speed: speed of driving (not turning)
+        :param camera: camera for object detection
+        :param cameraPipeline: if not None, which pipeline in the camera is setup to detect this type of object
+        :param objectSizeWhenNear: size of object in the camera when it is too close, units = % of screen (geometry says we should be turning much less when object is too close)
+        :param maxTurnSpeed: maximum turning speed
+        """
         super().__init__()
 
         assert hasattr(drivetrain, 'getHeading'), "drivetrain must have a getHeading method"
@@ -64,12 +75,15 @@ class DriveTowardsObject(commands2.Command):
         self.addRequirements(drivetrain)
 
         assert hasattr(camera, 'hasDetection'), "camera must have a hasDetection method"
+        assert hasattr(camera, 'getA'), "camera must have a getA method (for comparing with objectSizeWhenNear)"
         assert hasattr(camera, 'getX'), "camera must have a getX method"
         self.camera = camera
+        self.addRequirements(camera)
 
+        assert objectSizeWhenNear > 0
+        self.objectSizeWhenNear = objectSizeWhenNear
         self.cameraPipeline = cameraPipeline
         self.cameraStartingHeartbeat = None
-        self.addRequirements(camera)
 
         self.fwdSpeed = speed
         self.maxTurnSpeed = maxTurnSpeed
@@ -77,7 +91,6 @@ class DriveTowardsObject(commands2.Command):
         self.startTime = 0.0
         self.lastTimeDetected = None
         self.targetDirection = None
-
 
     def initialize(self):
         self.startTime = Timer.getFPGATimestamp()
@@ -93,16 +106,21 @@ class DriveTowardsObject(commands2.Command):
                     self.camera.setPipeline(self.cameraPipeline)
                     self.cameraStartingHeartbeat = self.camera.getHB() + 2
 
-
     def execute(self):
         now = Timer.getFPGATimestamp()
 
         # 0. do we know the direction to the target
         if self.camera.hasDetection():
             x = self.camera.getX()
+
+            # when object is too close, we should be turning by a smaller angle
+            objectSize = self.camera.getA()
+            turnFraction = max(0.33, 1.0 - math.sqrt(objectSize / self.objectSizeWhenNear))  # approximation
+
             if (self.cameraStartingHeartbeat is None) or (self.camera.getHB() >= self.cameraStartingHeartbeat):
                 front = self.drivetrain.getHeading()  # which way the robot front is facing?
-                self.targetDirection = front.rotateBy(Rotation2d.fromDegrees(-x))  # is object by X degrees to the right from that?
+                self.targetDirection = front.rotateBy(
+                    Rotation2d.fromDegrees(-x * turnFraction))  # is object by X degrees to the right from that?
                 self.lastTimeDetected = now
         if self.lastTimeDetected is not None and now > self.lastTimeDetected + Constants.kDetectionTimeoutSeconds:
             self.targetDirection = None
@@ -140,12 +158,10 @@ class DriveTowardsObject(commands2.Command):
         else:
             self.drivetrain.arcadeDrive(fwdSpeed, +turnSpeed)  # positive turn speed = left turn
 
-
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
-
 
     def isFinished(self) -> bool:
         return False  # never finish on its own
