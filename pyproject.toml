@@ -29,6 +29,7 @@ components = [
 
 # Other pip packages to install
 requires = [
+    "robotpy-rev",
     "robotpy-navx==2026.0.0b1",
     "phoenix6==26.1.0",
 ]

@@ -2,7 +2,8 @@ from phoenix6.configs import TalonFXConfiguration
 from phoenix6.controls import VelocityVoltage
 from phoenix6.hardware import TalonFX
 from phoenix6.signals import NeutralModeValue, InvertedValue
-from rev import SparkMax, SparkFlex, SparkLowLevel, SparkBase, SparkClosedLoopController, SparkRelativeEncoder
+from rev import SparkMax, SparkFlex, SparkLowLevel, SparkBase, SparkClosedLoopController, SparkRelativeEncoder, \
+    ResetMode, PersistMode
 from wpilib import SmartDashboard
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
@@ -32,8 +33,8 @@ class MAXSwerveModule:
         )
         self.turningRevMotor.configure(
             getSwerveTurningMotorConfig(turnMotorInverted),
-            SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters)
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters)
         self.turningEncoder = self.turningRevMotor.getAbsoluteEncoder()
         self.turningPIDController = self.turningRevMotor.getClosedLoopController()
 
@@ -73,8 +74,8 @@ class MAXSwerveModule:
             )
             self.drivingRevMotor.configure(
                 getSwerveDrivingMotorConfig(),
-                SparkBase.ResetMode.kResetSafeParameters,
-                SparkBase.PersistMode.kPersistParameters
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters
             )
             self.drivingRevPIDController = self.drivingRevMotor.getClosedLoopController()
             self.drivingRevEncoder = self.drivingRevMotor.getEncoder()

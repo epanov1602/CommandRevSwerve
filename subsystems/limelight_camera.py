@@ -55,6 +55,7 @@ class LimelightCamera(Subsystem):
 
     def setPipeline(self, index: int):
         self.pipelineIndexRequest.set(float(index))
+        self.heartbeating = False  # wait until the next heartbeat before saying self.haveDetection == true
 
     def getPipeline(self) -> int:
         return int(self.pipelineIndex.get(-1))
