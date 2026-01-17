@@ -14,6 +14,7 @@ from wpimath.kinematics import (
 )
 from wpilib import SmartDashboard, Field2d
 
+from commands.aimtodirection import AimToDirectionConstants
 from constants import DriveConstants, ModuleConstants
 import swerveutils
 from .maxswervemodule import MAXSwerveModule
@@ -75,6 +76,9 @@ class DriveSubsystem(Subsystem):
             motorControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
         )
+
+        # Override for the direction where robot should point
+        self.overrideControlsToFaceThisPoint: Translation2d | None = None
 
         # The gyro sensor
         self.gyro = navx.AHRS.create_spi()
@@ -184,8 +188,10 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset += dRot
 
+
     def stop(self):
         self.arcadeDrive(0, 0)
+
 
     def arcadeDrive(
         self,
@@ -195,6 +201,7 @@ class DriveSubsystem(Subsystem):
     ) -> None:
         self.drive(xSpeed, 0, rot, False, False, square=assumeManualInput)
 
+
     def rotate(self, rotSpeed) -> None:
         """
         Rotate the robot in place, without moving laterally (for example, for aiming)
@@ -202,11 +209,12 @@ class DriveSubsystem(Subsystem):
         """
         self.arcadeDrive(0, rotSpeed)
 
+
     def drive(
         self,
         xSpeed: float,
         ySpeed: float,
-        rot: float,
+        rotSpeed: float,
         fieldRelative: bool,
         rateLimit: bool,
         square: bool = False
@@ -215,18 +223,19 @@ class DriveSubsystem(Subsystem):
 
         :param xSpeed:        Speed of the robot in the x direction (forward).
         :param ySpeed:        Speed of the robot in the y direction (sideways).
-        :param rot:           Angular rate of the robot.
-        :param fieldRelative: Whether the provided x and y speeds are relative to the
-                              field.
+        :param rotSpeed:      Angular rate of the robot.
+        :param fieldRelative: Are provided x and y speeds relative to the field?
         :param rateLimit:     Whether to enable rate limiting for smoother control.
         :param square:        Whether to square the inputs (useful for manual control)
         """
 
         if square:
-            rot = rot * abs(rot)
-            norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
+            norm = math.hypot(xSpeed, ySpeed)
+            rotSpeed = rotSpeed * abs(rotSpeed)
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
+        if self.overrideControlsToFaceThisPoint:
+            rotSpeed = self.calaculateOverrideRotSpeed()
 
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed
@@ -289,10 +298,10 @@ class DriveSubsystem(Subsystem):
             ySpeedCommanded = self.currentTranslationMag * math.sin(
                 self.currentTranslationDir
             )
-            self.currentRotation = self.rotLimiter.calculate(rot)
+            self.currentRotation = self.rotLimiter.calculate(rotSpeed)
 
         else:
-            self.currentRotation = rot
+            self.currentRotation = rotSpeed
 
         # Convert the commanded speeds into the correct units for the drivetrain
         self.xSpeedDelivered = xSpeedCommanded * DriveConstants.kMaxSpeedMetersPerSecond
@@ -318,6 +327,7 @@ class DriveSubsystem(Subsystem):
         self.rearLeft.setDesiredState(rl)
         self.rearRight.setDesiredState(rr)
 
+
     def setX(self) -> None:
         """Sets the wheels into an X formation to prevent movement."""
         self.frontLeft.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
@@ -326,6 +336,7 @@ class DriveSubsystem(Subsystem):
         )
         self.rearLeft.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(-45)))
         self.rearRight.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
+
 
     def setModuleStates(
         self,
@@ -346,12 +357,14 @@ class DriveSubsystem(Subsystem):
         self.rearLeft.setDesiredState(rl)
         self.rearRight.setDesiredState(rr)
 
+
     def resetEncoders(self) -> None:
         """Resets the drive encoders to currently read a position of 0."""
         self.frontLeft.resetEncoders()
         self.rearLeft.resetEncoders()
         self.frontRight.resetEncoders()
         self.rearRight.resetEncoders()
+
 
     def getGyroHeading(self) -> Rotation2d:
         """Returns the heading of the robot, tries to be smart when gyro is disconnected
@@ -398,6 +411,45 @@ class DriveSubsystem(Subsystem):
         :returns: The turn rate of the robot, in degrees per second
         """
         return self.gyro.getRate() * DriveConstants.kGyroReversed
+
+
+    def startOverrideToFaceThisPoint(self, point: Translation2d) -> bool:
+        if self.overrideControlsToFaceThisPoint is not None:
+            return False
+        self.overrideControlsToFaceThisPoint = point
+        return True
+
+
+    def stopOverrideToFaceThisPoint(self, point: Translation2d):
+        if self.overrideControlsToFaceThisPoint == point:
+            self.overrideControlsToFaceThisPoint = None
+            return True
+        return False
+
+
+    def calaculateOverrideRotSpeed(self):
+        # 1. how many degrees we need to turn?
+        pose = self.getPose()
+        vectorToTarget = self.overrideControlsToFaceThisPoint - pose.translation()
+        if not vectorToTarget.squaredNorm() > 0:
+            return 0.0
+        targetDirection = vectorToTarget.angle()
+        degreesRemainingToTurn = (targetDirection - pose.rotation()).degrees()
+
+        # (do not turn left 350 degrees if you can just turn right -10 degrees, and vice versa)
+        while degreesRemainingToTurn > 180:
+            degreesRemainingToTurn -= 360
+        while degreesRemainingToTurn < -180:
+            degreesRemainingToTurn += 360
+
+        # 2. proportional control: if we are almost finished turning, use slower turn speed (to avoid overshooting)
+        proportionalSpeed = AimToDirectionConstants.kP * abs(degreesRemainingToTurn)
+        if AimToDirectionConstants.kUseSqrtControl:
+            proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
+        rotSpeed = min(proportionalSpeed, 1.0)
+
+        # 3. if need to turn left, return the positive speed, otherwise negative
+        return proportionalSpeed if degreesRemainingToTurn > 0 else -proportionalSpeed
 
 
 class BadSimPhysics(object):

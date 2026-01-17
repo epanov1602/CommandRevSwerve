@@ -1904,7 +1904,7 @@ class ApproachTag(commands2.Command):
 
     def computeTagDistanceFromTagSizeOnFrame(self, objectSizePercent):
         """
-        # if a 0.2*0.2 meter AprilTag appears to take 1% of the screen on a 1.33-square-radian FOV camera...
+        # if a 0.2*0.2 meter AprilTag appears to take 1% of the screen on a 1.15-square-radian FOV camera...
         #   angular_area = area / distance^2
         #   4 * 0.01 = 0.2 * 0.2 / distance^2
         #   distance = sqrt(0.2 * 0.2 / (1.33 * 0.03)) = 1.0 meters
@@ -1912,8 +1912,8 @@ class ApproachTag(commands2.Command):
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
-        return math.sqrt(0.2 * 0.2 / (1.70 * 0.01 * objectSizePercent))
-        # note: Arducam w OV9281 (and Limelight 3 / 4) is 0.57 sq radians (not 1.33)
+        return math.sqrt(0.2 * 0.2 / (1.15 * 0.01 * objectSizePercent))
+        # note: Arducam w OV9281 (and Limelight 3 / 4) is 1.70 sq radians (not 1.33)
 
 
     def hasReachedGlidePath(self, degreesLeftToRotate: float, distanceToGlidePath: float) -> bool:
