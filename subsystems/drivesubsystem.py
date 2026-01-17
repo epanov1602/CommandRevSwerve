@@ -235,7 +235,7 @@ class DriveSubsystem(Subsystem):
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
         if self.overrideControlsToFaceThisPoint:
-            rotSpeed = self.calculateOverrideRotSpeed()
+            rotSpeed = self.calaculateOverrideRotSpeed()
 
         xSpeedCommanded = xSpeed
         ySpeedCommanded = ySpeed

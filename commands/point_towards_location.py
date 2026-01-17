@@ -50,6 +50,7 @@ class PointTowardsLocation(commands2.Command):
         self.activeTargetLocation: Translation2d | None = None
         self.active = False
 
+
     def initialize(self):
         self.active = False
         color = DriverStation.getAlliance()
