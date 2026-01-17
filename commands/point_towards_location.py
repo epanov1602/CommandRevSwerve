@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-from importlib.metadata import unique_everseen
-
 import commands2
 
 from wpilib import SmartDashboard, DriverStation
