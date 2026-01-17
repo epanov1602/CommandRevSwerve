@@ -207,19 +207,19 @@ class DriveTowardsObject(commands2.Command):
             # create a command for driving towards the gamepiece, using existing Limelight camera and pipeline 1 inside it
             driveToGamepiece = DriveTowardsObject(
                 drivetrain=self.robotDrive,
-                speed=lambda: self.driverController.getRawAxis(XboxController.Axis.kRightTrigger),  # speed controlled by "right trigger" stick of the joystick
+                speed=lambda: self.driverController.getRawAxis(XboxController.Axis.kLeftTrigger),  # speed controlled by "left trigger" stick of the joystick
                 maxTurnSpeed=1.0,
                 camera=self.frontPickupCamera,
                 cameraPipeline=1,  # if pipeline 1 in that camera is setup to do gamepiece detection
             )
 
             # setup a condition for when to run that command
-            whenRightTriggerPressed = self.driverController.axisGreaterThan(
-                XboxController.Axis.kRightTrigger, threshold=0.1
+            whenLeftTriggerPressed = self.driverController.axisGreaterThan(
+                XboxController.Axis.kLeftTrigger, threshold=0.1
             )
 
             # connect the command to its trigger
-            whenRightTriggerPressed.whileTrue(driveToGamepiece)
+            whenLeftTriggerPressed.whileTrue(driveToGamepiece)
 
         ```
     """
