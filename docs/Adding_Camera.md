@@ -432,7 +432,7 @@ class PhotonTagCameraSim(Subsystem):
                 continue  # tag not really facing us
 
             ty, tx = 0.1, -vectorToTag.angle().degrees()
-            ta = 1.0 / math.pow(vectorToTag.norm(), 2)  # 1% of the screen => 1m away
+            ta = 4.0 / (1.15 * math.pow(vectorToTag.norm(), 2))  # 1% of the screen => 1m away
             if ta / SIM_MAX_TAG_AREA > math.pow(1 - abs(tx) / (SIM_CAMERA_FOV / 2), 2):
                 continue  # tag too close, we likely won't detect it well or at all
             ta *= facingUs.cos()
