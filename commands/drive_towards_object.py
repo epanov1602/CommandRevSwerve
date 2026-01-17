@@ -13,15 +13,20 @@ import commands2
 from wpilib import SmartDashboard, Timer
 from wpimath.geometry import Rotation2d, Translation2d, Pose2d
 from constants import AutoConstants, DriveConstants
+from subsystems.drivesubsystem import DriveSubsystem
 
 
 class Constants:
-    kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
-    kPTranslate = 0.25 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
-    kMinTurnSpeed = 0.025  # turning slower than this is unproductive for the motor (might not even spin)
-    kMinLateralSpeed = 0.025  # driving slower than this is unproductive (motor might not even spin)
     kUseSqrtControl = AutoConstants.kUseSqrtControl
     kDetectionTimeoutSeconds = 1.0  # if detection lost for this many seconds, done
+
+    # for the swerve command:
+    kPTranslate = 0.25 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
+    kMinLateralSpeed = 0.025  # driving slower than this is unproductive (motor might not even spin)
+
+    # for the tank command:
+    kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
+    kMinTurnSpeed = 0.025  # turning slower than this is unproductive for the motor (might not even spin)
 
 
 class SwerveTowardsObject(commands2.Command):
@@ -53,14 +58,14 @@ class SwerveTowardsObject(commands2.Command):
     """
 
     def __init__(
-            self,
-            drivetrain: DriveSubsystem,
-            speed: typing.Callable[[], float],
-            camera,
-            cameraPipeline: int = -1,
-            objectDiameterMeters: float = 0.2,
-            maxLateralSpeed=1.0,
-            reverse=False,
+        self,
+        drivetrain: DriveSubsystem,
+        speed: typing.Callable[[], float],
+        camera,
+        cameraPipeline: int = -1,
+        objectDiameterMeters: float = 0.2,
+        maxLateralSpeed=1.0,
+        reverse=False,
     ):
         """
 
@@ -131,7 +136,7 @@ class SwerveTowardsObject(commands2.Command):
                     self.targetLocationXY = robotPoseXY.translation() - vectorToTarget
                 else:
                     self.targetLocationXY = robotPoseXY.translation() + vectorToTarget
-                self.drivetrain.field.getObject("swerve-towards").setPoses(square(self.targetLocationXY, side=0.1))
+                self.drivetrain.field.getObject("swerve-towards").setPoses(_square(self.targetLocationXY, side=0.1))
         if self.lastTimeDetected is not None and now > self.lastTimeDetected + Constants.kDetectionTimeoutSeconds:
             self.drivetrain.field.getObject("swerve-towards").setPoses([])
             SmartDashboard.putNumber("SwerveTowards/strafe-distance", 0)
@@ -220,13 +225,13 @@ class DriveTowardsObject(commands2.Command):
     """
 
     def __init__(
-            self,
-            drivetrain,
-            speed: typing.Callable[[], float],
-            camera,
-            cameraPipeline: int = -1,
-            objectSizeWhenNear: float = 10.0,
-            maxTurnSpeed=1.0,
+        self,
+        drivetrain,
+        speed: typing.Callable[[], float],
+        camera,
+        cameraPipeline: int = -1,
+        objectSizeWhenNear: float = 10.0,
+        maxTurnSpeed=1.0,
     ):
         """
 
@@ -261,6 +266,7 @@ class DriveTowardsObject(commands2.Command):
         self.lastTimeDetected = None
         self.targetDirection = None
 
+
     def initialize(self):
         self.startTime = Timer.getFPGATimestamp()
         self.lastTimeDetected = None
@@ -274,6 +280,7 @@ class DriveTowardsObject(commands2.Command):
                 if pipelineWas != self.cameraPipeline:
                     self.camera.setPipeline(self.cameraPipeline)
                     self.cameraStartingHeartbeat = self.camera.getHB() + 2
+
 
     def execute(self):
         now = Timer.getFPGATimestamp()
@@ -327,16 +334,18 @@ class DriveTowardsObject(commands2.Command):
         else:
             self.drivetrain.arcadeDrive(fwdSpeed, +turnSpeed)  # positive turn speed = left turn
 
+
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
+
     def isFinished(self) -> bool:
         return False  # never finish on its own
 
 
-def square(center: Translation2d, side: float) -> typing.List[Pose2d]:
+def _square(center: Translation2d, side: float) -> typing.List[Pose2d]:
     zero = Rotation2d(0)
     return [
         Pose2d(center + Translation2d(-side, -side), zero),
