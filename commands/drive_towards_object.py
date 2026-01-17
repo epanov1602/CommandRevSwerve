@@ -35,7 +35,7 @@ class SwerveTowardsObject(commands2.Command):
     Example (this can go into robotcontaier.py, inside of configureButtonBindings() function):
 
         ```
-            from commands.drive_towards_object import DriveTowardsObject
+            from commands.drive_towards_object import SwerveTowardsObject
 
             # create a command for driving towards the gamepiece, using existing Limelight camera and pipeline 1 inside it
             driveToGamepiece = SwerveTowardsObject(
