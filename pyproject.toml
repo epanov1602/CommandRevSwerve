@@ -12,7 +12,7 @@ robotpy_version = "2026.1.1"
 # -> equivalent to `pip install robotpy[extra1, ...]
 components = [
     # "all",
-    # "apriltag",
+    "apriltag",
     "commands2",
     # "cscore",
     # "navx",
@@ -21,7 +21,7 @@ components = [
     # "phoenix6",
     # "photonvision",
     # "playingwithfusion",
-    "rev",
+    # "rev",
     # "romi",
     # "sim",
     # "xrp",
@@ -30,6 +30,7 @@ components = [
 # Other pip packages to install
 requires = [
     "robotpy-rev",
-    "robotpy-navx==2026.0.0b1",
-    "phoenix6==26.1.0",
+    "robotpy-navx",
+    "photonlibpy==2026.1.1rc3",
+    "phoenix6",
 ]
