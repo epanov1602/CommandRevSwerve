@@ -386,7 +386,7 @@ class DriveSubsystem(Subsystem):
         rotSpeed = min(proportionalSpeed, 1.0)
 
         # 3. if need to turn left, return the positive speed, otherwise negative
-        return proportionalSpeed if degreesRemainingToTurn > 0 else -proportionalSpeed
+        return rotSpeed if degreesRemainingToTurn > 0 else -rotSpeed
 
 
 class BadSimPhysics(object):

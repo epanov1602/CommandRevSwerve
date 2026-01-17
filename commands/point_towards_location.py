@@ -25,8 +25,8 @@ class PointTowardsLocation(commands2.Command):
             # create a command for keeping the robot nose pointed towards the hub
             keepPointingTowardsHub = PointTowardsLocation(
                 drivetrain=self.robotDrive,
-                location=Translation2d(x=2.0, y=4.05),
-                locationIfRed=Translation2d(x=14.0, y=4.05),
+                location=Translation2d(x=4.59, y=4.025),
+                locationIfRed=Translation2d(x=11.88, y=4.025),
             )
 
             # setup a condition for when to do this: do it when the joystick right trigger is pressed by more than 50%
