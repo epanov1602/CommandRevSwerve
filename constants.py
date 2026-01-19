@@ -55,7 +55,7 @@ class DriveConstants:
     kBackLeftChassisAngularOffset = math.pi
     kBackRightChassisAngularOffset = math.pi / 2
 
-    # SPARK MAX CAN IDs
+    # MOTOR CAN IDs
     kFrontLeftDrivingCanId = 1
     kRearLeftDrivingCanId = 2
     kFrontRightDrivingCanId = 3
@@ -67,6 +67,7 @@ class DriveConstants:
     kRearRightTurningCanId = 8
 
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
+    kGyroIsPigeon = False
 
 
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:

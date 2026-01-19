@@ -1,6 +1,6 @@
 from phoenix6.configs import TalonFXConfiguration
 from phoenix6.controls import VelocityVoltage
-from phoenix6.hardware import TalonFX
+from phoenix6.hardware import TalonFX, CANcoder
 from phoenix6.signals import NeutralModeValue, InvertedValue
 from rev import SparkMax, SparkFlex, SparkLowLevel, SparkBase, SparkClosedLoopController, SparkRelativeEncoder, \
     ResetMode, PersistMode
@@ -11,32 +11,36 @@ from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
 from constants import ModuleConstants, getSwerveDrivingMotorConfig, getSwerveTurningMotorConfig
 
 
-class MAXSwerveModule:
+class SwerveModule:
     def __init__(
         self,
         drivingCANId: int,
         turningCANId: int,
         chassisAngularOffset: float,
         turnMotorInverted = True,
-        motorControllerType = SparkFlex,
+        revControllerType = SparkFlex,
         drivingIsTalon = False,
+        cancoderCANId: int = -1,
     ) -> None:
-        """Constructs a MAXSwerveModule where turning motor is Rev and uses rev absolute encoder.
+        """Constructs a swerve module using Rev (SparMax/SparkFlex) or Talon (Kraken) motor controllers.
         The driving motor can either be Rev or Kraken (set `drivingIsKraken=True` to enable Kraken).
         """
         self.chassisAngularOffset = 0
         self.desiredState = SwerveModuleState(0.0, Rotation2d())
 
         # turning encoder and PID controller
-        self.turningRevMotor = motorControllerType(
+        self.turningRevMotor = revControllerType(
             turningCANId, SparkLowLevel.MotorType.kBrushless
         )
         self.turningRevMotor.configure(
             getSwerveTurningMotorConfig(turnMotorInverted),
             ResetMode.kResetSafeParameters,
             PersistMode.kPersistParameters)
-        self.turningEncoder = self.turningRevMotor.getAbsoluteEncoder()
+        self.turningAbsEncoder = self.turningRevMotor.getAbsoluteEncoder()
         self.turningPIDController = self.turningRevMotor.getClosedLoopController()
+
+        # do we have an independent absolute encoder?
+        self.cancoder = CANcoder(cancoderCANId) if cancoderCANId >= 0 else None
 
         # driving encoder and PID controller (Talon or Rev)
 
@@ -69,7 +73,7 @@ class MAXSwerveModule:
 
         else:
             # REV
-            self.drivingRevMotor = motorControllerType(
+            self.drivingRevMotor = revControllerType(
                 drivingCANId, SparkLowLevel.MotorType.kBrushless
             )
             self.drivingRevMotor.configure(
@@ -86,7 +90,7 @@ class MAXSwerveModule:
         # them. This is useful in case a SPARK MAX is swapped out.
 
         self.chassisAngularOffset = chassisAngularOffset
-        self.desiredState.angle = Rotation2d(self.turningEncoder.getPosition())
+        self.desiredState.angle = Rotation2d(self.turningAbsEncoder.getPosition())
 
 
     def getState(self) -> SwerveModuleState:
@@ -99,12 +103,12 @@ class MAXSwerveModule:
         if self.drivingRevEncoder is not None:
             return SwerveModuleState(
                 self.drivingRevEncoder.getVelocity(),
-                Rotation2d(self.turningEncoder.getPosition() - self.chassisAngularOffset),
+                Rotation2d(self.turningAbsEncoder.getPosition() - self.chassisAngularOffset),
             )
         else:
             rps = self.drivingTalonMotor.get_velocity().value
             mps = rps * self.drivingTalonRotationsToMeters
-            return SwerveModuleState(mps, Rotation2d(self.turningEncoder.getPosition() - self.chassisAngularOffset))
+            return SwerveModuleState(mps, Rotation2d(self.turningAbsEncoder.getPosition() - self.chassisAngularOffset))
 
 
     def getPosition(self) -> SwerveModulePosition:
@@ -117,7 +121,7 @@ class MAXSwerveModule:
         if self.drivingRevEncoder is not None:
             return SwerveModulePosition(
                 self.drivingRevEncoder.getPosition(),
-                Rotation2d(self.turningEncoder.getPosition() - self.chassisAngularOffset),
+                Rotation2d(self.turningAbsEncoder.getPosition() - self.chassisAngularOffset),
             )
         else:
             rotations = self.drivingTalonMotor.get_position().value
@@ -125,7 +129,7 @@ class MAXSwerveModule:
             meters = rotations * self.drivingTalonRotationsToMeters
             return SwerveModulePosition(
                 meters,
-                Rotation2d(self.turningEncoder.getPosition() - self.chassisAngularOffset)
+                Rotation2d(self.turningAbsEncoder.getPosition() - self.chassisAngularOffset)
             )
 
 
@@ -153,7 +157,7 @@ class MAXSwerveModule:
         # Optimize the reference state to avoid spinning further than 90 degrees.
         optimizedDesiredState = correctedDesiredState
         SwerveModuleState.optimize(
-            optimizedDesiredState, Rotation2d(self.turningEncoder.getPosition())
+            optimizedDesiredState, Rotation2d(self.turningAbsEncoder.getPosition())
         )
 
         # Command driving and turning SPARKS MAX towards their respective setpoints.
@@ -184,7 +188,7 @@ class MAXSwerveModule:
             self.drivingTalonMotor.set_control(
                 self.drivingTalonVelocityRequest.with_velocity(0)
             )
-        self.turningPIDController.setReference(self.turningEncoder.getPosition(), SparkLowLevel.ControlType.kPosition)
+        self.turningPIDController.setReference(self.turningAbsEncoder.getPosition(), SparkLowLevel.ControlType.kPosition)
         if self.desiredState.speed != 0:
             self.desiredState = SwerveModuleState(speed=0, angle=self.desiredState.angle)
 

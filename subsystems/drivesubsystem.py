@@ -1,9 +1,11 @@
 import math
+import time
 import typing
 
 import wpilib
 
 from commands2 import Subsystem, TimedCommandRobot
+from phoenix6.hardware import Pigeon2
 from wpimath.filter import SlewRateLimiter
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (
@@ -12,16 +14,18 @@ from wpimath.kinematics import (
     SwerveDrive4Kinematics,
     SwerveDrive4Odometry,
 )
-from wpilib import SmartDashboard, Field2d
+from wpilib import SmartDashboard, Field2d, DriverStation
 
 from commands.aimtodirection import AimToDirectionConstants
 from constants import DriveConstants, ModuleConstants
-from .maxswervemodule import MAXSwerveModule
+from .modified_navx import NavxGyro
+from .swervemodule import SwerveModule
 from rev import SparkMax, SparkFlex
 import navx
 
 
 GYRO_OVERSHOOT_FRACTION = -3.25 / 360
+U_TURN = Rotation2d.fromDegrees(180)
 # ^^ our gyro didn't overshoot, it "undershot" by 0.1 degrees in a 360 degree turn
 
 
@@ -32,59 +36,52 @@ class DriveSubsystem(Subsystem):
             assert callable(maxSpeedScaleFactor)
 
         self.maxSpeedScaleFactor = maxSpeedScaleFactor
-
-        self.gyroOvershootFraction = 0.0
-        if not TimedCommandRobot.isSimulation():
-            self.gyroOvershootFraction = GYRO_OVERSHOOT_FRACTION
-
         enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
 
         # Create MAXSwerveModules
-        self.frontLeft = MAXSwerveModule(
+        self.frontLeft = SwerveModule(
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
         )
 
-        self.frontRight = MAXSwerveModule(
+        self.frontRight = SwerveModule(
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
         )
 
-        self.rearLeft = MAXSwerveModule(
+        self.rearLeft = SwerveModule(
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
         )
 
-        self.rearRight = MAXSwerveModule(
+        self.rearRight = SwerveModule(
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
         )
 
         # Override for the direction where robot should point
         self.overrideControlsToFaceThisPoint: Translation2d | None = None
 
-        # The gyro sensor
-        self.gyro = navx.AHRS.create_spi()
-        self._lastGyroAngleTime = 0
-        self._lastGyroAngle = 0
-        self._lastGyroAngleAdjustment = 0
-        self._lastGyroState = "ok"
+        if DriveConstants.kGyroIsPigeon:
+            self.gyro = Pigeon2(0)
+        else:
+            self.gyro = NavxGyro(GYRO_OVERSHOOT_FRACTION)
 
         self.xSpeedLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
         self.ySpeedLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
@@ -102,17 +99,23 @@ class DriveSubsystem(Subsystem):
             ),
         )
         self.odometryHeadingOffset = Rotation2d(0)
-        self.resetOdometry(Pose2d(0, 0, 0))
+        self.resetOdometry(Pose2d(14.0, 4.05, U_TURN))
 
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
 
+        self.fieldRelativeIsRed = False
         self.simPhysics = None
 
 
     def periodic(self) -> None:
         if self.simPhysics is not None:
             self.simPhysics.periodic()
+
+        red = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        if self.fieldRelativeIsRed != red:
+            self.fieldRelativeIsRed = red
+            SmartDashboard.putString("AllianceColor", "RED" if red else "BLUE")
 
         # Update the odometry in the periodic block
         pose = self.odometry.update(
@@ -145,12 +148,13 @@ class DriveSubsystem(Subsystem):
         :param pose: The pose to which to set the odometry.
 
         """
+        """Resets the odometry to the specified pose.
+
+        :param pose: The pose to which to set the odometry.
+
+        """
         if resetGyro:
             self.gyro.reset()
-            self.gyro.setAngleAdjustment(0)
-            self._lastGyroAngleAdjustment = 0
-            self._lastGyroAngleTime = 0
-            self._lastGyroAngle = 0
 
         self.odometry.resetPosition(
             self.getGyroHeading(),
@@ -239,8 +243,9 @@ class DriveSubsystem(Subsystem):
 
         # field relative conversion must happen before rate limiting, since rate limiting is optional
         if fieldRelative:
+            heading = self.getPose().rotation()
             targetChassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeedGoal, ySpeedGoal, rotSpeedGoal, self.getGyroHeading(),
+                xSpeedGoal, ySpeedGoal, rotSpeedGoal, heading + U_TURN if self.fieldRelativeIsRed else heading,
             )
         else:
             targetChassisSpeeds = ChassisSpeeds(xSpeedGoal, ySpeedGoal, rotSpeedGoal)
@@ -304,42 +309,11 @@ class DriveSubsystem(Subsystem):
 
 
     def getGyroHeading(self) -> Rotation2d:
-        """Returns the heading of the robot, tries to be smart when gyro is disconnected
+        """Returns the heading of the robot
 
         :returns: the robot's heading as Rotation2d
         """
-        now = wpilib.Timer.getFPGATimestamp()
-        past = self._lastGyroAngleTime
-        state = "ok"
-
-        if not self.gyro.isConnected():
-            state = "disconnected"
-        else:
-            notCalibrating = True
-            if self.gyro.isCalibrating():
-                notCalibrating = False
-                state = "calibrating"
-            gyroAngle = self.gyro.getAngle()
-
-            # correct for gyro drift
-            if self.gyroOvershootFraction != 0.0 and self._lastGyroAngle != 0 and notCalibrating:
-                angleMove = gyroAngle - self._lastGyroAngle
-                if abs(angleMove) > 15:  # if less than 10 degrees, adjust (otherwise it's some kind of glitch or reset)
-                    print(f"WARNING: big angle move {angleMove} from {self._lastGyroAngle} to {gyroAngle}")
-                else:
-                    adjustment = -angleMove * self.gyroOvershootFraction
-                    self._lastGyroAngleAdjustment += adjustment
-                    self.gyro.setAngleAdjustment(max(-359, min(+359, self._lastGyroAngleAdjustment)))
-                    # ^^ NavX code doesn't like angle adjustments outside of (-360, +360) range
-
-            self._lastGyroAngle = gyroAngle
-            self._lastGyroAngleTime = now
-
-        if state != self._lastGyroState:
-            SmartDashboard.putString("gyro", f"{state} after {int(now - past)}s")
-            self._lastGyroState = state
-
-        return Rotation2d.fromDegrees(self._lastGyroAngle * DriveConstants.kGyroReversed)
+        return Rotation2d.fromDegrees(self.gyro.get_yaw().value * DriveConstants.kGyroReversed)
 
 
     def getTurnRate(self) -> float:
@@ -347,7 +321,7 @@ class DriveSubsystem(Subsystem):
 
         :returns: The turn rate of the robot, in degrees per second
         """
-        return self.gyro.getRate() * DriveConstants.kGyroReversed
+        return self.gyro.get_angular_velocity_z_device().value * DriveConstants.kGyroReversed
 
 
     def startOverrideToFaceThisPoint(self, point: Translation2d) -> bool:
@@ -427,5 +401,5 @@ class BadSimPhysics(object):
             rot = (speeds.omega * 180 / math.pi) * dt
 
             g = drivetrain.gyro
-            g.setAngleAdjustment(g.getAngleAdjustment() + rot * DriveConstants.kGyroReversed)
+            g.set_yaw(g.get_yaw().value + rot * DriveConstants.kGyroReversed)
             drivetrain.adjustOdometry(trans, Rotation2d())
