@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from navx import AHRS
 from commands2 import Subsystem, TimedCommandRobot
-from phoenix6 import StatusSignal, StatusCode
 from wpilib import SmartDashboard, Timer
+from phoenix6 import StatusCode
 
 
 @dataclass
@@ -93,6 +93,6 @@ class NavxGyro(Subsystem):
         self.yaw = yaw
 
 
-    def get_angular_velocity_z_device(self) -> StatusSignal:
+    def get_angular_velocity_z_device(self) -> Signal:
         self.speed_signal.value = self.gyro.getRate()
         return self.speed_signal
