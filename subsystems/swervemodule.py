@@ -142,7 +142,7 @@ class SwerveModule:
         if abs(desiredState.speed) < ModuleConstants.kDrivingMinSpeedMetersPerSecond:
             # if WPILib doesn't want us to move at all, don't bother to bring the wheels back to zero angle yet
             # (causes brownout protection when battery is lower: https://youtu.be/0Xi9yb1IMyA)
-            inXBrake = abs(abs(desiredState.angle.degrees()) - 45) < 0.01
+            inXBrake = abs(abs(desiredState.angle.degrees() % 90) - 45) < 0.01
             if not inXBrake:
                 self.stop()
                 return
