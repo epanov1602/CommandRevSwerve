@@ -36,43 +36,53 @@ class DriveSubsystem(Subsystem):
             assert callable(maxSpeedScaleFactor)
 
         self.maxSpeedScaleFactor = maxSpeedScaleFactor
-        enabledChassisAngularOffset = 0 if DriveConstants.kAssumeZeroOffsets else 1
 
-        # Create MAXSwerveModules
+        # Swerve modules might have to do angle fusion, here is a simple timer
+        self.nextFusedAngleTime = 0.0
+
+        # Create Swerve Modules
         self.frontLeft = SwerveModule(
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
-            DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
+            DriveConstants.kFrontLeftCancoderCanId,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
+            turningIsTalon=ModuleConstants.kTurningMotorIsTalon,
+            placement="FL",
         )
 
         self.frontRight = SwerveModule(
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
-            DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
+            DriveConstants.kFrontRightCancoderCanId,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
+            turningIsTalon=ModuleConstants.kTurningMotorIsTalon,
+            placement="FR",
         )
 
         self.rearLeft = SwerveModule(
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
-            DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
+            DriveConstants.kRearLeftCancoderCanId,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
+            turningIsTalon=ModuleConstants.kTurningMotorIsTalon,
+            placement="RL",
         )
 
         self.rearRight = SwerveModule(
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
-            DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
+            DriveConstants.kRearRightCancoderCanId,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
             revControllerType=SparkFlex,
             drivingIsTalon=ModuleConstants.kDrivingMotorIsTalon,
+            turningIsTalon=ModuleConstants.kTurningMotorIsTalon,
+            placement="RR",
         )
 
         # Override for the direction where robot should point
@@ -108,6 +118,7 @@ class DriveSubsystem(Subsystem):
 
 
     def periodic(self) -> None:
+        now = Timer.getFPGATimestamp()
         if self.simPhysics is not None:
             self.simPhysics.periodic()
 
@@ -126,6 +137,13 @@ class DriveSubsystem(Subsystem):
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
         self.field.setRobotPose(pose)
+
+        # Update fused angles
+        if now >= self.nextFusedAngleTime:
+            self.nextFusedAngleTime = now + 0.25  # four times per second please
+            for m in [self.frontLeft, self.frontRight, self.rearLeft, self.rearRight]:
+                m.fuseAngles()
+
 
     def getHeading(self) -> Rotation2d:
         return self.getPose().rotation()
