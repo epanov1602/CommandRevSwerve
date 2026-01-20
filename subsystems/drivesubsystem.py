@@ -104,18 +104,12 @@ class DriveSubsystem(Subsystem):
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
 
-        self.fieldRelativeIsRed = False
         self.simPhysics = None
 
 
     def periodic(self) -> None:
         if self.simPhysics is not None:
             self.simPhysics.periodic()
-
-        red = DriverStation.getAlliance() == DriverStation.Alliance.kRed
-        if self.fieldRelativeIsRed != red:
-            self.fieldRelativeIsRed = red
-            SmartDashboard.putString("AllianceColor", "RED" if red else "BLUE")
 
         # Update the odometry in the periodic block
         pose = self.odometry.update(
@@ -244,9 +238,9 @@ class DriveSubsystem(Subsystem):
         # field relative conversion must happen before rate limiting, since rate limiting is optional
         if fieldRelative:
             heading = self.getPose().rotation()
-            targetChassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeedGoal, ySpeedGoal, rotSpeedGoal, heading + U_TURN if self.fieldRelativeIsRed else heading,
-            )
+            if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
+                heading = heading + U_TURN
+            targetChassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedGoal, ySpeedGoal, rotSpeedGoal, heading)
         else:
             targetChassisSpeeds = ChassisSpeeds(xSpeedGoal, ySpeedGoal, rotSpeedGoal)
 
