@@ -8,7 +8,7 @@ from phoenix6 import StatusCode
 
 @dataclass
 class Signal(object):
-    signal: float = 0.0
+    value: float = 0.0
     status: StatusCode = StatusCode.OK
 
 
