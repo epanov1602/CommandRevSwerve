@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from navx import AHRS
 from commands2 import Subsystem, TimedCommandRobot
 from wpilib import SmartDashboard, Timer
-from phoenix6 import StatusCode
+from phoenix6 import StatusCode, StatusSignal
 
 
 @dataclass
