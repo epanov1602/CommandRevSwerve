@@ -106,13 +106,16 @@ class LimelightLocalizer(Subsystem):
 
         for c in self.cameras.values():
             camera = c.camera
+            yaw = heading.degrees() + 180 if flipped else heading.degrees()
+
+            camera.robotOrientationSetRequest.set([yaw % 360, 0.0, 0.0, 0.0, 0.0, 0.0])
             if not camera.ticked or abs(rotationSpeed) > c.maxRotationSpeed:
                 continue
 
             p = c.cameraPoseOnRobot
             camera.cameraPoseSetRequest.set([p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees()])
 
-            # Limelight4-only (does nothing on Limelight 3)
+            # Limelight4-only (does nothing on Limelight 3, also consider trying option setting =4 instead of zero)
             camera.imuModeRequest.set(0)
             # 0 - use external imu (the only option available on Limelight 3)
             # 1 - use external imu, seed internal imu
@@ -120,15 +123,7 @@ class LimelightLocalizer(Subsystem):
             # 3 - use internal with MT1 assisted convergence
             # 4 - use internal IMU with external IMU assisted convergence
 
-            if flipped:
-                yaw = (heading + U_TURN).degrees()
-                camera.robotOrientationSetRequest.set([yaw, 0.0, 0.0, 0.0, 0.0, 0.0])
-                botpose = camera.botPoseFlipped.get()
-            else:
-                yaw = heading.degrees()
-                camera.robotOrientationSetRequest.set([yaw, 0.0, 0.0, 0.0, 0.0, 0.0])
-                botpose = camera.botPose.get()
-
+            botpose = camera.botPoseFlipped.get() if flipped else camera.botPose.get()
             if len(botpose) >= 11:
                 # Translation (X,Y,Z), Rotation(Roll,Pitch,Yaw) in degrees, total latency (cl+tl), tag count, tag span, average tag distance from camera, average tag area (percentage of image)
                 x, y, z, roll, pitch, yaw, latencyMillisec, count, span, distance, percentage = botpose[0:11]
