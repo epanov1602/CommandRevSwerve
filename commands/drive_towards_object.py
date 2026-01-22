@@ -31,7 +31,7 @@ class Constants:
 
 class SwerveTowardsObject(commands2.Command):
     """
-    One can use this command to approach gamepieces using camera.
+    One can use this command to approach gamepieces using camera on the front or back of the robot (back: reverse=True).
     Example (this can go into robotcontaier.py, inside of configureButtonBindings() function):
 
         ```
@@ -126,15 +126,19 @@ class SwerveTowardsObject(commands2.Command):
     def execute(self):
         now = Timer.getFPGATimestamp()
         robotXY: Pose2d = self.drivetrain.getPose()
+
         fwdSpeed = self.fwdSpeed()
+        fwdSpeed *= abs(fwdSpeed)
+        if fwdSpeed != 0 and abs(fwdSpeed) < Constants.kMinLateralSpeed:
+            fwdSpeed = math.copysign(Constants.kMinLateralSpeed, fwdSpeed)
 
         # 0. do we know the direction to the object? is it on the right or left of us?
         self.updateObjectLocation(now, robotXY)
 
         # 1. if direction to the object unknown, just drive slowly
         if self.targetLocationXY is None:
-            slow = fwdSpeed / 3
-            self.drivetrain.drive(xSpeed=slow, ySpeed=0, rotSpeed=0, fieldRelative=False, rateLimit=True, square=False)
+            slow = math.copysign(max(abs(fwdSpeed) / 3, Constants.kMinLateralSpeed), fwdSpeed)
+            self.drivetrain.drive(slow, 0, 0, fieldRelative=False, rateLimit=True, square=False)
             SmartDashboard.putNumber("SwerveTowardsObject/strafe-distance", float('nan'))
             return
 
@@ -195,16 +199,16 @@ class SwerveTowardsObject(commands2.Command):
 
     def calcualteDistanceFromDetectedObject(self, objectSizePercent):
         """
-        # if a 0.2*0.2 meter AprilTag appears to take 1% of the screen on a 1.33-square-radian FOV camera...
+        # if a 0.2*0.2 meter AprilTag appears to take 1% of the screen on a 2.0-square-radian FOV camera...
         #   angular_area = area / distance^2
-        #   1.0steradian * 0.01 = 0.2 * 0.2 / distance^2
-        #   distance = sqrt(0.2 * 0.2 / (1.0 * 0.01)) = 2.0 meters
-        # ... then it must be 2.0 meters away! (assuming that the camera field-of-view is 1.0 steradian, not 1.15)
+        #   2.0steradian * 0.01 = 0.2 * 0.2 / distance^2
+        #   distance = sqrt(0.2 * 0.2 / (2.0 * 0.01)) ~= 1.4 meters
+        # ... then it must be 1.4 meters away! (assuming that the camera field-of-view is 2.0 steradian)
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
-        distance = math.sqrt(self.objectDiameterMeters * self.objectDiameterMeters / (1.15 * 0.01 * objectSizePercent))
-        # note: Arducam w OV9281 is 1.70 steradians, not 1.15
+        distance = math.sqrt(self.objectDiameterMeters * self.objectDiameterMeters / (2.0 * 0.01 * objectSizePercent))
+        # note: Arducam w OV9281 is 1.70 steradians, not 2.0
 
         return distance
 
@@ -248,7 +252,7 @@ class DriveTowardsObject(commands2.Command):
     ):
         """
 
-        :param drivetrain: robot drivetrain (tank or swerve) 
+        :param drivetrain: robot drivetrain (tank or swerve)
         :param speed: speed of driving (not turning)
         :param camera: camera for object detection
         :param cameraPipeline: if not None, which pipeline in the camera is setup to detect this type of object
