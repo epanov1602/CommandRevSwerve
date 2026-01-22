@@ -18,7 +18,7 @@ from wpilib import SmartDashboard, Field2d, DriverStation
 
 from commands.aimtodirection import AimToDirectionConstants
 from constants import DriveConstants, ModuleConstants
-from .modified_navx import NavxGyro
+from .wrapped_navx import NavxGyro
 from .swervemodule import SwerveModule
 from rev import SparkMax, SparkFlex
 import navx
