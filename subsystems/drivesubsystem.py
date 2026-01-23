@@ -14,7 +14,7 @@ from wpimath.kinematics import (
     SwerveDrive4Kinematics,
     SwerveDrive4Odometry,
 )
-from wpilib import SmartDashboard, Field2d, DriverStation
+from wpilib import SmartDashboard, Field2d, DriverStation, Timer
 
 from commands.aimtodirection import AimToDirectionConstants
 from constants import DriveConstants, ModuleConstants
@@ -83,8 +83,7 @@ class DriveSubsystem(Subsystem):
         else:
             self.gyro = NavxGyro(GYRO_OVERSHOOT_FRACTION)
 
-        self.xSpeedLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
-        self.ySpeedLimiter = SlewRateLimiter(DriveConstants.kMagnitudeSlewRate)
+        self.xySpeedLimiter = SlewRateLimiter2d(DriveConstants.kMagnitudeSlewRate)
         self.rotLimiter = SlewRateLimiter(DriveConstants.kRotationalSlewRate)
 
         # Odometry class for tracking robot pose
@@ -249,8 +248,7 @@ class DriveSubsystem(Subsystem):
             targetChassisSpeeds = ChassisSpeeds(xSpeedGoal, ySpeedGoal, rotSpeedGoal)
 
         # rate limiting has to be applied this way, to keep the rate limiters current (with time)
-        slewedX = self.xSpeedLimiter.calculate(targetChassisSpeeds.vx)
-        slewedY = self.ySpeedLimiter.calculate(targetChassisSpeeds.vy)
+        slewedX, slewedY = self.xySpeedLimiter.calculate(targetChassisSpeeds.vx, targetChassisSpeeds.vy)
         slewedRot = self.rotLimiter.calculate(targetChassisSpeeds.omega)
         if rateLimit:
             targetChassisSpeeds.vx, targetChassisSpeeds.vy, targetChassisSpeeds.omega = slewedX, slewedY, slewedRot
@@ -412,3 +410,34 @@ class BadSimPhysics(object):
             g = drivetrain.gyro
             g.set_yaw(g.get_yaw().value + rot * DriveConstants.kGyroReversed)
             drivetrain.adjustOdometry(trans, Rotation2d())
+
+
+class SlewRateLimiter2d:
+    def __init__(self, rate) -> None:
+        self.rate = rate
+        self.t = Timer.getFPGATimestamp()
+        self.x = self.y = 0.0
+
+    def calculate(self, x, y) -> typing.Tuple[float, float]:
+        t = Timer.getFPGATimestamp()
+
+        dx = x - self.x
+        dy = y - self.y
+
+        # this is the maximum permitted change in X or Y, given the slew rate
+        limit = self.rate * abs(t - self.t)
+        self.t = t
+
+        # this is the desired change in X or Y
+        change = max(abs(dx), abs(dy))
+
+        # is this change above the limit? if yes, apply slew rate
+        if limit > 0:
+            if change < limit:
+                self.x, self.y = x, y
+            else:
+                fraction = limit / change
+                self.x += dx * fraction
+                self.y += dy * fraction
+
+        return self.x, self.y

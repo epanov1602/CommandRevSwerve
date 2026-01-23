@@ -169,7 +169,7 @@ class AutoConstants:
     kUseSqrtControl = True  # improves arrival time and precision for simple driving commands
 
     # below are really trajectory constants
-    kMaxSpeedMetersPerSecond = 3
+    kMaxSpeedMetersPerSecond = 4.8
     kMaxAccelerationMetersPerSecondSquared = 3
     kMaxAngularSpeedRadiansPerSecond = math.pi
     kMaxAngularSpeedRadiansPerSecondSquared = math.pi
