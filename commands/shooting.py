@@ -16,6 +16,7 @@ class Constants:
 class KeepAiming(commands2.Command):
     """
     Usage example ( put it into configureButtonBindings(...) ):
+    ```
     keepAiming = KeepAiming(
         goal=self.distanceToGoal,
         shooter=self.shooter,
@@ -24,6 +25,7 @@ class KeepAiming(commands2.Command):
     )
 
     self.driverController.buttons(XboxController.Button.kX).whileTrue(keepAiming)
+    ```
     """
     def __init__(
         self,
@@ -79,16 +81,18 @@ class KeepAiming(commands2.Command):
 class ShootWhenReady(commands2.Command):
     """
     Usage example ( put it into configureButtonBindings(...) ):
+    ```
     shootWhenReady = ShootWhenReady(
         goal=self.distanceToGoal,
         shooter=self.shooter,
         turret=self.turret,
         drivetrain=None,  # if we have a turret (otherwise supply drivetrain=self.robotDrive)
         indexer=self.indexer,
-        indexerSpeed=0.4,
+        indexerSpeed=0.4
     )
 
     self.driverController.buttons(XboxController.Button.kY).whileTrue(shootWhenReady)
+    ```
     """
 
     def __init__(
