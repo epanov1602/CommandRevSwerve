@@ -98,6 +98,7 @@ class DriveSubsystem(Subsystem):
                 self.rearRight.getPosition(),
             ),
         )
+        self.odometryPose = Pose2d()
         self.odometryHeadingOffset = Rotation2d(0)
         self.resetOdometry(Pose2d(14.0, 4.05, U_TURN))
 
@@ -121,6 +122,7 @@ class DriveSubsystem(Subsystem):
                 self.rearRight.getPosition(),
             ),
         )
+        self.odometryPose = pose
         SmartDashboard.putNumber("x", pose.x)
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
@@ -134,7 +136,7 @@ class DriveSubsystem(Subsystem):
 
         :returns: The pose.
         """
-        return self.odometry.getPose()
+        return self.odometryPose
 
     def resetOdometry(self, pose: Pose2d, resetGyro=True) -> None:
         """Resets the odometry to the specified pose.
@@ -160,7 +162,8 @@ class DriveSubsystem(Subsystem):
             ),
             pose,
         )
-        self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
+        self.odometryPose = pose
+        self.odometryHeadingOffset = self.odometryPose.rotation() - self.getGyroHeading()
 
 
     def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
@@ -176,6 +179,7 @@ class DriveSubsystem(Subsystem):
             ),
             newPose,
         )
+        self.odometryPose = newPose
         self.odometryHeadingOffset += dRot
 
 
@@ -330,6 +334,17 @@ class DriveSubsystem(Subsystem):
             self.overrideControlsToFaceThisPoint = None
             return True
         return False
+
+
+    def notPointingTo(self, point: Translation2d, angleToleranceDegrees: float) -> str:
+        if point is None:
+            return "unclear where the drivetrain should point"
+        heading = self.odometryPose.rotation()
+        direction = point - self.odometryPose.translation()
+        if direction.squaredNorm() > 0:
+            if (heading - direction.angle()).cos() < Rotation2d.fromDegrees(angleToleranceDegrees).cos():
+                return "drivetrain not pointing towards target"
+        return ""  # otherwise, all is good
 
 
     def calaculateOverrideRotSpeed(self):

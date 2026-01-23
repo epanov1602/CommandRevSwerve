@@ -14,6 +14,7 @@ from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 from commands.aimtodirection import AimToDirection
 from commands.trajectory import SwerveTrajectory, JerkyTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
+from subsystems.firing_table import FiringTable
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.limelight_camera import LimelightCamera
 from subsystems.limelight_localizer import LimelightLocalizer
@@ -32,6 +33,15 @@ class RobotContainer:
     def __init__(self, robot) -> None:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
+
+        # tracks the location of goal posts for shooting, recommends firing angles and speeds
+        self.firingTable = FiringTable(
+            self.robotDrive,
+            shooterLocationOnDrivetrain=Translation2d(x=-0.2, y=0),
+            goalIfBlue=Translation2d(x=4.59, y=4.025),
+            goalIfRed=Translation2d(x=11.88, y=4.025),
+        )
+
         self.limelightLocalizer = LimelightLocalizer(self.robotDrive)
 
         #self.frontCamera = LimelightCamera("limelight-front")
