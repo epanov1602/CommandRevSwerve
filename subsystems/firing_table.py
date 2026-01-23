@@ -5,7 +5,7 @@
 #
 
 from commands2 import Subsystem
-from wpilib import DriverStation
+from wpilib import DriverStation, SmartDashboard, SendableChooser
 from wpimath.geometry import Translation2d, Rotation2d
 from subsystems.drivesubsystem import DriveSubsystem
 from constants import LookupTable
@@ -37,8 +37,8 @@ class FiringTable(Subsystem):
         shooterLocationOnDrivetrain: Translation2d,
         goalIfBlue: Translation2d,
         goalIfRed: Translation2d,
-        minimumRangeMeters: 0.0,
-        maximumRangeMeters: 0.0,
+        minimumRangeMeters: float = 0.0,
+        maximumRangeMeters: float = 0.0,
     ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
@@ -51,19 +51,49 @@ class FiringTable(Subsystem):
         self.goal = None
         self.vectorToGoal: Translation2d | None = None
 
+        self.rpmFactor = SendableChooser()
+        self.rpmFactor.setDefaultOption("1.0", 1.0)
+        for f in [0.5, 0.6, 0.7, 0.8, 0.9, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.80, 2.00]:
+            self.rpmFactor.addOption(str(f), f)
+        SmartDashboard.putData("FiringTable/rpmFactor", self.rpmFactor)
+
+        self.angleOffset = SendableChooser()
+        self.angleOffset.setDefaultOption("0.0", 0.0)
+        for a in [-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, +2, +4, +6, +8, +10, +12, +14, +16, +18, +20]:
+            self.angleOffset.addOption(str(a), a)
+        SmartDashboard.putData("FiringTable/angleOffset", self.angleOffset)
+
 
     def recommendedShooterRpm(self):
         if self.vectorToGoal is None:
             return 0.0
         distanceMeters = self.distance()
-        return RECOMMENDED_SHOOTER_RPM_BY_DISTANCE.interpolate(distanceMeters)
+        SmartDashboard.putNumber("FiringTable/distance", distanceMeters)
+
+        # lookup the recommended RPM in the table
+        rpm = RECOMMENDED_SHOOTER_RPM_BY_DISTANCE.interpolate(distanceMeters)
+
+        # apply a factor added by the drivers (maybe 1.10 or 0.90 or something)
+        rpm = rpm * self.rpmFactor.getValue()
+
+        SmartDashboard.putNumber("FiringTable/rpm", rpm)
+        return rpm
 
 
     def recommendedFiringAngleDegrees(self) -> float | None:
         if self.vectorToGoal is None:
             return None
         distanceMeters = self.distance()
-        return RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE.interpolate(distanceMeters)
+        SmartDashboard.putNumber("FiringTable/distance", distanceMeters)
+
+        # lookup the recommended angle in the lookup table
+        angleDegrees = RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE.interpolate(distanceMeters)
+
+        # and then apply an offset added by the drivers
+        angleDegrees = angleDegrees + self.angleOffset.getValue()
+
+        SmartDashboard.putNumber("FiringTable/hoodAngle", angleDegrees)
+        return angleDegrees
 
 
     def recommendedTurretDirection(self) -> Rotation2d | None:
@@ -72,6 +102,8 @@ class FiringTable(Subsystem):
         """
         if self.vectorToGoal is None:
             return None
+        SmartDashboard.putNumber("FiringTable/directionDegrees", self.vectorToGoal.angle().degrees())
+
         drivetrainPose = self.drivetrain.getPose()
         return self.vectorToGoal.angle() - drivetrainPose.rotation()
 
