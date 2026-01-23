@@ -20,13 +20,18 @@ class FiringTable(Subsystem):
         drivetrain: DriveSubsystem,
         shooterLocationOnDrivetrain: Translation2d,
         goalIfBlue: Translation2d,
-        goalIfRed: Translation2d
+        goalIfRed: Translation2d,
+        minimumRangeMeters: 0.0,
+        maximumRangeMeters: 0.0,
     ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.shooterLocationOnDrivetrain = shooterLocationOnDrivetrain
         self.goalIfBlue = goalIfBlue
         self.goalIfRed = goalIfRed
+        self.minimumRangeMeters = minimumRangeMeters
+        self.maximumRangeMeters = maximumRangeMeters
+
         self.goal = None
         self.vectorToGoal: Translation2d | None = None
 
