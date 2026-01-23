@@ -23,6 +23,7 @@ class Constants:
     # for the swerve command:
     kPTranslate = 0.25 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
     kMinLateralSpeed = 0.025  # driving slower than this is unproductive (motor might not even spin)
+    kLearnRate = 0.7  # really a fudge factor that improves stability of convergence, like "learning rate" elsewhere
 
     # for the tank command:
     kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
@@ -179,6 +180,7 @@ class SwerveTowardsObject(commands2.Command):
         distance, direction = self.calcualteDistanceFromDetectedObject(a), Rotation2d.fromDegrees(-x)
         SmartDashboard.putNumber("SwerveTowardsObject/distance", distance)
 
+        distance *= Constants.kLearnRate  # improves convergence, no other reason
         fromCameraToTgt = Translation2d(distance * direction.cos(), distance * direction.sin())
         fromRobotToTgt = fromCameraToTgt.rotateBy(self.cameraOnRobot.rotation()) + self.cameraOnRobot.translation()
         fromRobotToTgtFieldRelative = fromRobotToTgt.rotateBy(robotXY.rotation())
