@@ -20,9 +20,9 @@ RECOMMENDED_SHOOTER_RPM_BY_DISTANCE = LookupTable({
 
 # TODO : calibrate this lookup table on a real robot, and add more points
 RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE = LookupTable({
-    1.0 : 70.0,  # if distance is 1m, angle 70 degrees
-    2.0 : 60.0,  # if distance is 2m, angle 60 degrees
-    12.0 : 6000,  # if distance is 12m, angle 45 degrees
+    1.0 : 70.0,  # if distance is 1m, hood angle 70 degrees
+    2.0 : 60.0,  # if distance is 2m, hood angle 60 degrees
+    12.0 : 6000,  # if distance is 12m, hood angle 45 degrees
 })
 
 
