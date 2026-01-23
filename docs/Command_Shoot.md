@@ -17,6 +17,7 @@ Does your robot already have an Intake subsystem in its code (to feed the gamepi
 from commands2 import Command
 from wpilib import SmartDashboard, Timer
 
+
 class ShootGamepiece(Command):
     def __init__(self, intake, shooter, shooterRPM) -> None:
         """
@@ -37,7 +38,7 @@ class ShootGamepiece(Command):
         self.feedTime = 0  # pretend that we didn't feed the gamepiece to the shooter
         self.intake.stop()  # make sure that the intake is stopped
 
-        #if self.intake.noGamepieceInside():
+        # if self.intake.noGamepieceInside():
         #    self.cancel()
         #    return
 
@@ -52,7 +53,7 @@ class ShootGamepiece(Command):
             # ...and if the shooter velocity is pretty close to the target
             if self.shooter.getVelocity() > 0.9 * self.shooter.getVelocityGoal():
                 # ...then feed the gamepiece into the shooter and make note of the time
-                self.intake.feedGamepieceForward()
+                self.intake.feedGamepieceIntoShooter()
                 self.feedTime = Timer.getFPGATimestamp()
 
     def isFinished(self) -> bool:

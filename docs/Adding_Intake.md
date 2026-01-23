@@ -713,14 +713,13 @@ class IntakeFeedGamepieceForward(commands2.Command):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
-        self.intake.feedGamepieceForward(self.speed, self.speed2)
+        self.intake.feedGamepieceIntoShooter(self.speed, self.speed2)
 
     def isFinished(self) -> bool:
         return False  # never finishes, so you should use it with ".withTimeout(...)" or with "button.whileTrue(...)"
 
     def execute(self):
         pass
-
 
 
 class IntakeEjectGamepieceBackward(commands2.Command):
