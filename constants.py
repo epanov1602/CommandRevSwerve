@@ -9,11 +9,13 @@ numerical or boolean constants. Don't use this for any other purpose!
 
 
 import math
+from typing import Dict
 
 from wpimath import units
 from wpimath.geometry import Translation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.trajectory import TrapezoidProfileRadians
+from wpimath.interpolation import TimeInterpolatableFloatBuffer
 
 import rev
 from rev import SparkBase, SparkBaseConfig, ClosedLoopConfig, FeedbackSensor
@@ -182,3 +184,13 @@ class AutoConstants:
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(
         kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared
     )
+
+
+class LookupTable:
+    def __init__(self, points: Dict[float, float]):
+        self.table = TimeInterpolatableFloatBuffer(len(points))
+        for x, y in sorted(points.items()):
+            self.table.addSample(x, y)
+
+    def interpolate(self, x: float):
+        return self.table.sample(x)

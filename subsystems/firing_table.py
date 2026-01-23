@@ -7,8 +7,24 @@
 from commands2 import Subsystem
 from wpilib import DriverStation
 from wpimath.geometry import Translation2d, Rotation2d
-
 from subsystems.drivesubsystem import DriveSubsystem
+from constants import LookupTable
+
+
+# TODO : calibrate this lookup table on a real robot, and add more points
+RECOMMENDED_SHOOTER_RPM_BY_DISTANCE = LookupTable({
+    1.0 : 2000,  # if distance is 1m, spin at 2000 rpm
+    2.0 : 3000,  # if distance is 2m, spin at 3000 rpm
+    12.0 : 6000,  # if distance is 12m, spin at 6000 rpm
+})
+
+# TODO : calibrate this lookup table on a real robot, and add more points
+RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE = LookupTable({
+    1.0 : 70.0,  # if distance is 1m, angle 70 degrees
+    2.0 : 60.0,  # if distance is 2m, angle 60 degrees
+    12.0 : 6000,  # if distance is 12m, angle 45 degrees
+})
+
 
 
 class FiringTable(Subsystem):
@@ -39,26 +55,15 @@ class FiringTable(Subsystem):
     def recommendedShooterRpm(self):
         if self.vectorToGoal is None:
             return 0.0
-        distance = self.distance()
-
-        # TODO: calibrate and improve this lookup table for firing speeds (in RPM)
-        if distance < 3.0:
-            return 3000.
-        elif distance < 4.0:
-            return 4000.
-        elif distance < 5.0:
-            return 5000.
-        else:
-            return 6000.
+        distanceMeters = self.distance()
+        return RECOMMENDED_SHOOTER_RPM_BY_DISTANCE.interpolate(distanceMeters)
 
 
     def recommendedFiringAngleDegrees(self) -> float | None:
         if self.vectorToGoal is None:
             return None
         distanceMeters = self.distance()
-
-        # TODO: calibrate and improve this lookup table for firing angles (in degrees)
-        return 45 + 30 / distanceMeters
+        return RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE.interpolate(distanceMeters)
 
 
     def recommendedTurretDirection(self) -> Rotation2d | None:
@@ -74,11 +79,14 @@ class FiringTable(Subsystem):
     def vector(self) -> Translation2d | None:
         return self.vectorToGoal
 
+
     def distance(self) -> float:
         return self.vectorToGoal.norm() if self.vectorToGoal is not None else 0
 
+
     def direction(self) -> Rotation2d:
         return self.vectorToGoal.angle() if self.vectorToGoal is not None else Rotation2d(0)
+
 
     def periodic(self):
         alliance = DriverStation.getAlliance()
@@ -89,3 +97,4 @@ class FiringTable(Subsystem):
         pose = self.drivetrain.getPose()
         shooter = pose.translation() + self.shooterLocationOnDrivetrain.rotateBy(pose.rotation())
         self.vectorToGoal = self.goal - shooter
+
