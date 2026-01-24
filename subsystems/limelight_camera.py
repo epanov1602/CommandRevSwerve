@@ -34,6 +34,11 @@ class LimelightCamera(Subsystem):
         self.heartbeating = False
         self.ticked = False
 
+        self.takingSnapshotsWhenNoDetection = 0.0
+        self.snapshotRequest = self.table.getIntegerTopic("snapshot").publish()
+        self.snapshotRequestValue = self.table.getIntegerTopic("snapshot").getEntry(0).get()
+        self.lastSnapshotRequestTime = 0.0
+
         self.localizerSubscribed = False
 
     def addLocalizer(self):
@@ -91,6 +96,18 @@ class LimelightCamera(Subsystem):
         if heartbeating != self.heartbeating:
             print(f"Camera {self.cameraName} is " + ("UPDATING" if heartbeating else "NO LONGER UPDATING"))
         self.heartbeating = heartbeating
+
+        if heartbeating and self.takingSnapshotsWhenNoDetection and not self.hasDetection():
+            if now > self.lastSnapshotRequestTime + self.takingSnapshotsWhenNoDetection:
+                self.snapshotRequestValue += 1
+                self.snapshotRequest.set(self.snapshotRequestValue)
+                self.lastSnapshotRequestTime = now + self.takingSnapshotsWhenNoDetection
+
+    def startTakingSnapshotsWhenNoDetection(self, secondsBetweenSnapshots=1.0):
+        self.takingSnapshotsWhenNoDetection = secondsBetweenSnapshots
+
+    def stopTakingSnapshotsWhenNoDetection(self):
+        self.takingSnapshotsWhenNoDetection = 0.0
 
 
 def _fix_name(name: str):
