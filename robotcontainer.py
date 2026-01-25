@@ -8,7 +8,7 @@ import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
-from wpilib import XboxController
+from wpilib import XboxController, Servo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d
 
 from commands.aimtodirection import AimToDirection
@@ -19,7 +19,8 @@ from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.limelight_camera import LimelightCamera
 from subsystems.limelight_localizer import LimelightLocalizer
 
-from commands.reset_xy import ResetXY, ResetSwerveFront
+from commands.reset_xy import ResetXY
+from subsystems.shooter import Shooter
 
 
 class RobotContainer:

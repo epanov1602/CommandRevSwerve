@@ -171,18 +171,17 @@ class AutoConstants:
     kUseSqrtControl = True  # improves arrival time and precision for simple driving commands
 
     # below are really trajectory constants
-    kMaxSpeedMetersPerSecond = 4.8
-    kMaxAccelerationMetersPerSecondSquared = 3
+    kMaxSpeedMetersPerSecond = DriveConstants.kMaxSpeedMetersPerSecond * 0.9
+    kMaxAccelerationMetersPerSecondSquared = DriveConstants.kMagnitudeSlewRate * 0.9
     kMaxAngularSpeedRadiansPerSecond = math.pi
-    kMaxAngularSpeedRadiansPerSecondSquared = math.pi
-
-    kPXController = 1
-    kPYController = 1
-    kPThetaController = 0.67
+    kMaxAngularAccelRadiansPerSecondSquared = math.pi
+    kPXController = 1.0  # how aggressive should be the controller that returns the robot back to the trajectory
+    kPYController = 1.0  # how aggressive should be the controller that returns the robot back to the trajectory
+    kPThetaController = 0.67   # how aggressive should be *angle* controller that returns the robot to the trajectory
 
     # Constraint for the motion profiled robot angle controller
     kThetaControllerConstraints = TrapezoidProfileRadians.Constraints(
-        kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared
+        kMaxAngularSpeedRadiansPerSecond, kMaxAngularAccelRadiansPerSecondSquared
     )
 
 
