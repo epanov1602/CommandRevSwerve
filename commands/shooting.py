@@ -45,7 +45,7 @@ class GetInRange(commands2.Command):
 
     # get in range and rev up the shooter at the same time (and point the turret if you have)
     self.driverController.buttons(XboxController.Button.kA).whileTrue(
-       getInRange.alongWith(getReady)
+       ParallelCommandGroup(getInRange, getReady)
     )
 
     keepShooting = GetReadyAndKeepShooting(
@@ -108,13 +108,16 @@ class GetInRange(commands2.Command):
 
 class GetReadyToShoot(commands2.Command):
     """
+    Uses the firing table and sets the correct RPM+angle in the shooter,
+     aims the turret at the target (if turret is given) or aims the drivetrain there instead.
+
     Usage example ( put it into configureButtonBindings(...) ):
     ```
     keepAiming = GetReadyToShoot(
         goal=self.firingTable,
         shooter=self.shooter,
         turret=self.turret,
-        drivetrain=None  # if we have a turret (otherwise supply drivetrain=self.robotDrive)
+        drivetrain=None  # drivetrain=None if we already have a turret
     )
 
     self.driverController.buttons(XboxController.Button.kX).whileTrue(keepAiming)
@@ -164,7 +167,8 @@ class GetReadyToShoot(commands2.Command):
                 self.drivetrainTarget = goalPoint
 
         # check if we are ready to fire or not
-        self.setNotReady(self.turretNotReady() or self.drivetrainNotReady() or self.shooter.notReady())
+        notYet = self.turretNotReady() or self.drivetrainNotReady() or self.shooter.notReady() or self.distanceNotGood()
+        self.setNotReady(notYet)
 
     def end(self, interrupted: bool):
         self.setNotReady("finished")
@@ -185,7 +189,7 @@ class GetReadyToShoot(commands2.Command):
 
     def setNotReady(self, notReady):
         if notReady != self.notReady:
-            SmartDashboard.putString("GetReadyAndShoot", notReady)
+            SmartDashboard.putString("GetReadyToShoot", notReady)
             self.notReady = notReady
 
     def turretNotReady(self):
@@ -199,14 +203,16 @@ class GetReadyToShoot(commands2.Command):
             notPointing = self.drivetrain.notPointingTo(self.drivetrainTarget, Constants.ANGLE_TOLERANCE_DEGREES)
             if notPointing:
                 return notPointing
-            # distance not right?
-            if self.goal.maximumRangeMeters != 0:
-                distance = self.goal.distance()
-                if distance > self.goal.maximumRangeMeters:
-                    return "too far"
-                if distance < self.goal.minimumRangeMeters:
-                    return "too close"
         # otherwise no problem
+        return ""
+
+    def distanceNotGood(self):
+        if self.goal.maximumRangeMeters != 0:
+            distance = self.goal.distance()
+            if distance > self.goal.maximumRangeMeters:
+                return "too far"
+            if distance < self.goal.minimumRangeMeters:
+                return "too close"
         return ""
 
 
