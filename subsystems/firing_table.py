@@ -19,10 +19,10 @@ RECOMMENDED_SHOOTER_RPM_BY_DISTANCE = LookupTable({
 })
 
 # TODO : calibrate this lookup table on a real robot, and add more points
-RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE = LookupTable({
-    1.0 : 70.0,  # if distance is 1m, hood angle 70 degrees
-    2.0 : 60.0,  # if distance is 2m, hood angle 60 degrees
-    12.0 : 6000,  # if distance is 12m, hood angle 45 degrees
+RECOMMENDED_SHOOTER_HOOD_POSITION_BY_DISTANCE = LookupTable({
+    1.0 : 0.0,  # if distance is 1m, hood position 0.0 (firing very vertically)
+    2.0 : 0.5,  # if distance is 2m, hood position 0.5 (firing at around 60 degrees)
+    12.0 : 1.0,  # if distance is 12m, hood position 1.0 (firing at close to 45 degrees)
 })
 
 
@@ -57,11 +57,11 @@ class FiringTable(Subsystem):
             self.rpmFactor.addOption(str(f), f)
         SmartDashboard.putData("FiringTable/rpmFactor", self.rpmFactor)
 
-        self.angleOffset = SendableChooser()
-        self.angleOffset.setDefaultOption("0.0", 0.0)
+        self.hoodPosOffset = SendableChooser()
+        self.hoodPosOffset.setDefaultOption("0.0", 0.0)
         for a in [-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, +2, +4, +6, +8, +10, +12, +14, +16, +18, +20]:
-            self.angleOffset.addOption(str(a), a)
-        SmartDashboard.putData("FiringTable/angleOffset", self.angleOffset)
+            self.hoodPosOffset.addOption(str(a), a)
+        SmartDashboard.putData("FiringTable/angleOffset", self.hoodPosOffset)
 
 
     def recommendedShooterRpm(self):
@@ -80,20 +80,20 @@ class FiringTable(Subsystem):
         return rpm
 
 
-    def recommendedFiringAngleDegrees(self) -> float | None:
+    def recommendedFiringHoodPosition(self) -> float | None:
         if self.vectorToGoal is None:
             return None
         distanceMeters = self.distance()
         SmartDashboard.putNumber("FiringTable/distance", distanceMeters)
 
         # lookup the recommended angle in the lookup table
-        angleDegrees = RECOMMENDED_SHOOTER_HOOD_ANGLE_BY_DISTANCE.interpolate(distanceMeters)
+        hoodPosition = RECOMMENDED_SHOOTER_HOOD_POSITION_BY_DISTANCE.interpolate(distanceMeters)
 
         # and then apply an offset added by the drivers
-        angleDegrees = angleDegrees + self.angleOffset.getValue()
+        hoodPosition = hoodPosition + self.hoodPosOffset.getValue()
 
-        SmartDashboard.putNumber("FiringTable/hoodAngle", angleDegrees)
-        return angleDegrees
+        SmartDashboard.putNumber("FiringTable/hoodPos", hoodPosition)
+        return hoodPosition
 
 
     def recommendedTurretDirection(self) -> Rotation2d | None:
@@ -102,7 +102,7 @@ class FiringTable(Subsystem):
         """
         if self.vectorToGoal is None:
             return None
-        SmartDashboard.putNumber("FiringTable/directionDegrees", self.vectorToGoal.angle().degrees())
+        SmartDashboard.putNumber("FiringTable/dirnDeg", self.vectorToGoal.angle().degrees())
 
         drivetrainPose = self.drivetrain.getPose()
         return self.vectorToGoal.angle() - drivetrainPose.rotation()

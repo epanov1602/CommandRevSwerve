@@ -145,9 +145,11 @@ class GetReadyToShoot(commands2.Command):
         self.notReady = "?"
 
     def execute(self):
-        # set the correct RPM in the shooter
+        # set the correct RPM (and hood servo position) in the shooter
         rpm = self.goal.recommendedShooterRpm()
+        hoodPosition = self.goal.recommendedFiringHoodPosition()
         self.shooter.setVelocityGoal(rpm, rpm * Constants.RPM_TOLERANCE_FACTOR)
+        self.shooter.setHoodServoGoal(hoodPosition)
 
         # aim the turret if we have it
         if self.turret is not None:

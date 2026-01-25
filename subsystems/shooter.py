@@ -1,6 +1,6 @@
 from commands2 import Subsystem
 from rev import SparkBaseConfig, SparkBase, SparkFlex, ResetMode, PersistMode
-from wpilib import SmartDashboard
+from wpilib import SmartDashboard, Servo
 
 
 class ShooterConstants:
@@ -15,8 +15,14 @@ class ShooterConstants:
 
 
 class Shooter(Subsystem):
-    def __init__(self, inverted=True) -> None:
+    def __init__(self, inverted=True, hoodServo: Servo | None = None) -> None:
         super().__init__()
+
+        self.hoodServo = hoodServo
+        self.hoodServoGoal = 0.0
+        if hoodServo is not None:
+            self.hoodServoGoal = hoodServo.get()
+            self.setHoodServoGoal(self.hoodServoGoal)
 
         self.leadMotor = SparkFlex(ShooterConstants.kShooterMotorA_CANID, SparkBase.MotorType.kBrushless)
         self.leadMotor.configure(
@@ -51,6 +57,12 @@ class Shooter(Subsystem):
         else:
             return ""  # shooter is ready
 
+    def setHoodServoGoal(self, goal):
+        self.hoodServoGoal = max(0.0, min(1.0, goal))
+        SmartDashboard.putNumber("Shooter/hoodServoGoal", goal)
+        if self.hoodServo is not None:
+            self.hoodServo.set(self.hoodServoGoal)
+
     def setVelocityGoal(self, rpm, rpmTolerance):
         self.velocityTolerance = rpmTolerance
         self.velocityGoal = max(-ShooterConstants.initialMaxRPM, min(ShooterConstants.initialMaxRPM, rpm))
@@ -66,15 +78,32 @@ class Shooter(Subsystem):
         seen = self.getVelocity()
         goal = self.getVelocityGoal()
         if goal != self.reportedVelocityGoal or abs(seen - self.reportedVelocitySeen) >= 0.001 * seen:
-            SmartDashboard.putNumber("shooter.rpmSeen", seen)
+            SmartDashboard.putNumber("Shooter/rpmSeen", seen)
             self.reportedVelocitySeen = seen
-            SmartDashboard.putNumber("shooter.rpmGoal", goal)
+            SmartDashboard.putNumber("Shooter/rpmGoal", goal)
             self.reportedVelocityGoal = goal
 
     def stop(self):
         self.leadMotor.stopMotor()
         self.velocityTolerance = 0
         self.velocityGoal = 0
+
+    def driveHoodServo(self, velocity):
+        """
+        Usage example in configureButtonBindings(...):
+        ```
+
+        # for calibrataion, drive that servo using the right stick of the joystick up/down
+        self.shooter.setDefaultCommand(RunCommand(
+           lambda: self.shooter.driveHoodServo(
+               self.driverController.getRawAxis(XboxController.Axis.kRightY)
+           )
+        ))
+
+        ```
+        :param velocity:
+        """
+        self.setHoodServoGoal(self.hoodServoGoal + velocity * 0.01)
 
 
 def _getLeadMotorConfig() -> SparkBaseConfig:
