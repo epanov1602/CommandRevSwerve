@@ -188,20 +188,22 @@ class AutoConstants:
 class LookupTable:
     """
     Allows you to lookup points in a pre-calibrated table, using linear interpolation.
-    For example:
+    Example:
 
 ```
-    shooting_angle_by_distance = LookupTable({
-       1.0 : 80,  # when firing form 1.0 meters away, fire at an 80 degree angle
-       3.0 : 60,  # when firing from 3.0 meters away, fire at a 60 degree angle
-       12.0 : 45,  # when firing from 12 meters away, fire at a 45 degree angle
+    shooting_angle_table = LookupTable({
+       1.0 : 80,
+       3.0 : 60,
+       12.0 : 45,
     })
-
+    # ^^ when firing form 1.0 meters away, fire at an 80 degree angle, etc.
     ...
 
-    distance = self.camera.getDistanceToTarget(self.redTarget)
-    shooting_angle = shooting_angle_by_distance.interpolate(distance)
-    self.shooter.setAngle(shooting_angle)
+    dist = self.camera.distanceTo(self.redTarget)
+
+    angle = shooting_angle_table.interpolate(dist)
+
+    self.shooter.setAngle(angle)
 ```
 
     """
