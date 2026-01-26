@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 from commands2 import Subsystem
-from wpilib import SmartDashboard, SendableChooser, DriverStation
+from wpilib import SmartDashboard, SendableChooser, DriverStation, Timer
 from wpimath.geometry import Rotation2d, Translation3d, Pose2d, Translation2d
 
 from subsystems.limelight_camera import LimelightCamera
@@ -53,6 +53,7 @@ class LimelightLocalizer(Subsystem):
 
         self.allowed = True
         self.cameras: Dict[str, CameraState] = dict()  # list of Limelight cameras
+        self.cycle = 0
 
 
     def addCamera(
@@ -106,7 +107,20 @@ class LimelightLocalizer(Subsystem):
             found.camera.setCameraPoseOnRobot(pos.x, pos.y, pos.z, heading.degrees(), 0.0, pitchDegrees)
 
 
+    def infrequent(self) -> None:
+        for c in self.cameras.values():
+            p = c.cameraPoseOnRobot
+            c.camera.setCameraPoseOnRobot(
+                p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees()
+            )
+            # this resets the camera settings in case it got restarted
+
+
     def periodic(self) -> None:
+        self.cycle += 1
+        if self.cycle % 10 == 0:
+            self.infrequent()
+
         if len(self.cameras) == 0:
             return
 
@@ -117,37 +131,25 @@ class LimelightLocalizer(Subsystem):
         learningRate: float = LEARNING_RATE * self.learningRateMult.getSelected()
         flipped = self.flipIfRed and DriverStation.getAlliance() == DriverStation.Alliance.kRed
         odometryPos: Pose2d = self.drivetrain.getPose()
-        heading: Rotation2d = self.drivetrain.getHeading()
         rotationSpeed: float = self.drivetrain.getTurnRate()  # rotation speed in degrees per second
-        assert heading is not None
+        maxGain = 1.0 / len(self.cameras)  # avoiding oscillations if many cameras
+
+        now = Timer.getFPGATimestamp()
+        heading = odometryPos.rotation()
+        if flipped:
+            heading += U_TURN
 
         for c in self.cameras.values():
-            camera = c.camera
-            yaw = heading.degrees() + 180 if flipped else heading.degrees()
-
-            camera.robotOrientationSetRequest.set([yaw % 360, 0.0, 0.0, 0.0, 0.0, 0.0])
-            if not camera.ticked or abs(rotationSpeed) > c.maxRotationSpeed:
+            c.camera.updateRobotHeading(now, heading)
+            if not c.enabled or not c.camera.ticked or abs(rotationSpeed) > c.maxRotationSpeed:
                 continue
 
-            p = c.cameraPoseOnRobot
-            camera.setCameraPoseOnRobot(p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees())
-
-            # Limelight4-only (does nothing on Limelight 3, also consider trying option setting =4 instead of zero)
-            camera.imuModeRequest.set(0)
-            # 0 - use external imu (the only option available on Limelight 3)
-            # 1 - use external imu, seed internal imu
-            # 2 - use internal
-            # 3 - use internal with MT1 assisted convergence
-            # 4 - use internal IMU with external IMU assisted convergence
-
-            botpose = camera.botPoseFlipped.get() if flipped else camera.botPose.get()
-            if len(botpose) >= 11:
-                # Translation (X,Y,Z), Rotation(Roll,Pitch,Yaw) in degrees, total latency (cl+tl), tag count, tag span, average tag distance from camera, average tag area (percentage of image)
-                x, y, z, roll, pitch, yaw, latencyMillisec, count, span, distance, percentage = botpose[0:11]
-                # SmartDashboard.putNumber("Localizer/" + c.camera.cameraName, percentage)
-                if count > 0 and percentage > c.minPercentFrame and not (x == 0 and y == 0):
-                    gain = percentage / TYPICAL_PERCENT_FRAME  # tags nearby have more say than tags far away
+            x, y, area, count = c.camera.getXYAPositionEstimate(flipped)
+            if area > 0 and count > 0:
+                # SmartDashboard.putNumber("Localizer/" + c.camera.cameraName, area)
+                if area > c.minPercentFrame and not (x == 0 and y == 0):
+                    gain = area / TYPICAL_PERCENT_FRAME  # tags nearby have more say than tags far away
                     if not EMPHASIZE_TAGS_NEARBY:
                         gain = math.sqrt(gain)
-                    shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * min(learningRate * gain, 0.5)
+                    shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * min(learningRate * gain, maxGain)
                     self.drivetrain.adjustOdometry(shift, Rotation2d.fromDegrees(0))
