@@ -40,6 +40,8 @@ class LimelightCamera(Subsystem):
         self.lastSnapshotRequestTime = 0.0
 
         self.localizerSubscribed = False
+        self.cameraPoseSetRequest = None
+
 
     def addLocalizer(self):
         if self.localizerSubscribed:
@@ -56,6 +58,14 @@ class LimelightCamera(Subsystem):
         # and we can then receive the localizer results from the camera back
         self.botPose = self.table.getDoubleArrayTopic("botpose_orb_wpiblue").getEntry([])
         self.botPoseFlipped = self.table.getDoubleArrayTopic("botpose_orb_wpired").getEntry([])
+
+
+    def setCameraPoseOnRobot(self, x, y, z, pitch, roll, yaw):
+        """
+        Only for localization: angles should be in degrees, xyz in meters
+        """
+        if self.cameraPoseSetRequest is not None:
+            self.cameraPoseSetRequest.set([x, y, z, pitch, roll, yaw])
 
 
     def setPipeline(self, index: int):

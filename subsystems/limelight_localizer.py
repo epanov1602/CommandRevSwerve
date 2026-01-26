@@ -2,9 +2,8 @@ import math
 from dataclasses import dataclass
 from typing import Dict
 
-import wpilib
 from commands2 import Subsystem
-from wpilib import Timer, SmartDashboard, SendableChooser, DriverStation
+from wpilib import SmartDashboard, SendableChooser, DriverStation
 from wpimath.geometry import Rotation2d, Translation3d, Pose2d, Translation2d
 
 from subsystems.limelight_camera import LimelightCamera
@@ -23,6 +22,7 @@ class CameraState:
     cameraPitchAngleDegrees: float
     minPercentFrame: float
     maxRotationSpeed: float
+    enabled: bool
 
 
 class LimelightLocalizer(Subsystem):
@@ -34,9 +34,6 @@ class LimelightLocalizer(Subsystem):
         assert hasattr(drivetrain, "getPose"), "drivetrain must have getPose() for localizer to work"
         self.drivetrain = drivetrain
 
-        from getpass import getuser
-
-        self.username = getuser()
         self.flipIfRed = flipIfRed
 
         self.learningRateMult = SendableChooser()
@@ -48,7 +45,12 @@ class LimelightLocalizer(Subsystem):
         self.learningRateMult.addOption("0.1%", 0.001)
         SmartDashboard.putData("LocaLearnRate", self.learningRateMult)
 
-        self.enabled = None
+        self.flipped = False
+        self.enabled = SendableChooser()
+        self.enabled.addOption("off", False)
+        self.enabled.setDefaultOption("on", True)
+        SmartDashboard.putData("Localizer", self.enabled)
+
         self.allowed = True
         self.cameras: Dict[str, CameraState] = dict()  # list of Limelight cameras
 
@@ -74,7 +76,13 @@ class LimelightLocalizer(Subsystem):
         assert isinstance(camera, LimelightCamera), "you can only add LimelightCamera(s) to LimelightLocalizer"
         assert camera.cameraName not in self.cameras, f"camera {camera.cameraName} already added to LimelightLocalizer"
         self.cameras[camera.cameraName] = CameraState(
-            camera, cameraPoseOnRobot, cameraHeadingOnRobot, cameraPitchAngleDegrees, minPercentFrame, maxRotationSpeed
+            camera,
+            cameraPoseOnRobot,
+            cameraHeadingOnRobot,
+            cameraPitchAngleDegrees,
+            minPercentFrame,
+            maxRotationSpeed,
+            enabled=True
         )
         camera.addLocalizer()
 
@@ -83,22 +91,31 @@ class LimelightLocalizer(Subsystem):
         self.allowed = value
 
 
+    def setCameraEnabled(self, name: str, enabled: bool):
+        found = self.cameras.get(name)
+        if found:
+            found.enabled = enabled
+
+
+    def setNewCameraPositionOnRobot(self, name: str, pos: Translation3d, heading: Rotation2d, pitchDegrees: float):
+        found = self.cameras.get(name)
+        if found:
+            found.cameraPoseOnRobot = pos
+            found.cameraHeadingOnRobot = heading
+            found.cameraPitchAngleDegrees = pitchDegrees
+            found.camera.setCameraPoseOnRobot(pos.x, pos.y, pos.z, heading.degrees(), 0.0, pitchDegrees)
+
+
     def periodic(self) -> None:
         if len(self.cameras) == 0:
             return
 
-        enabled, flipped = None, False
-        if self.enabled is None:
-            self.initEnabledChooser()
-        if self.enabled is not None:
-            enabled, flipped = self.enabled.getSelected()
-        if not self.allowed:
-            enabled = False
-
+        enabled = self.enabled.getSelected() and self.allowed
         if not enabled:
             return
 
         learningRate: float = LEARNING_RATE * self.learningRateMult.getSelected()
+        flipped = self.flipIfRed and DriverStation.getAlliance() == DriverStation.Alliance.kRed
         odometryPos: Pose2d = self.drivetrain.getPose()
         heading: Rotation2d = self.drivetrain.getHeading()
         rotationSpeed: float = self.drivetrain.getTurnRate()  # rotation speed in degrees per second
@@ -113,7 +130,7 @@ class LimelightLocalizer(Subsystem):
                 continue
 
             p = c.cameraPoseOnRobot
-            camera.cameraPoseSetRequest.set([p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees()])
+            camera.setCameraPoseOnRobot(p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees())
 
             # Limelight4-only (does nothing on Limelight 3, also consider trying option setting =4 instead of zero)
             camera.imuModeRequest.set(0)
@@ -134,23 +151,3 @@ class LimelightLocalizer(Subsystem):
                         gain = math.sqrt(gain)
                     shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * min(learningRate * gain, 0.5)
                     self.drivetrain.adjustOdometry(shift, Rotation2d.fromDegrees(0))
-
-
-    def initEnabledChooser(self):
-        flipped = None
-        if self.username == "lvuser" and self.flipIfRed is not None:
-            # if we are running on RoboRIO, wait until driver station gives us alliance color
-            color = DriverStation.getAlliance()
-            if color is None:
-                return  # we cannot yet decide on whether the field should be flipped
-            flipped = (color == DriverStation.Alliance.kRed) and self.flipIfRed
-            print("Localizer: color={}, flipped={}".format(color, flipped))
-        print("Localizer will assume flipped={} (username={}, flipIfRed={})".format(flipped, self.username, self.flipIfRed))
-
-        self.enabled = SendableChooser()
-        self.enabled.addOption("off", (None, False))
-        if flipped in (None, False):
-            self.enabled.setDefaultOption("on", (True, False))
-        if flipped in (None, True):
-            self.enabled.setDefaultOption("on-flipped", (True, True))
-        SmartDashboard.putData("Localizer", self.enabled)
