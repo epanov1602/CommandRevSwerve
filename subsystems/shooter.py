@@ -14,6 +14,19 @@ class ShooterConstants:
 
 
 class Shooter(Subsystem):
+    """
+    The easiest way to test the shooter is to put this into configureButtonBindings():
+    ```
+
+    self.driverController.button(XboxController.Button.kA).onTrue(
+            InstantCommand(lambda: self.shooter.setVelocityGoal(2000, 1000))
+    ).onFalse(
+            InstantCommand(lambda: self.shooter.stop())
+    )
+
+    ```
+
+    """
     def __init__(self, inverted=True, hoodServo: Servo | None = None) -> None:
         super().__init__()
 
