@@ -4,14 +4,13 @@ from wpilib import SmartDashboard, Servo
 
 
 class ShooterConstants:
-    kShooterMotorA_CANID = 10
-    kShooterMotorB_CANID = 11
+    kShooterMotorA_CANID = 11
+    kShooterMotorB_CANID = 10
 
-    initialMinRPM = 600  # minimum sensible nonzero RPM
-    initialMaxRPM = 6000
-    initialFF = 1.4 / 10000
-    initialP = 5.0 / 10000
-    initialD = 0.0 / 10000
+    maxRPM = 6000
+    kFF = 18.5 / 10000
+    kP = 0.5 / 10000
+    kD = 0.0 / 10000
 
 
 class Shooter(Subsystem):
@@ -65,7 +64,7 @@ class Shooter(Subsystem):
 
     def setVelocityGoal(self, rpm, rpmTolerance):
         self.velocityTolerance = rpmTolerance
-        self.velocityGoal = max(-ShooterConstants.initialMaxRPM, min(ShooterConstants.initialMaxRPM, rpm))
+        self.velocityGoal = max(-ShooterConstants.maxRPM, min(ShooterConstants.maxRPM, rpm))
         self.pidController.setReference(self.velocityGoal * self.inverted, SparkBase.ControlType.kVelocity)
 
     def getVelocity(self):
@@ -112,13 +111,13 @@ def _getLeadMotorConfig() -> SparkBaseConfig:
     config.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
     config.limitSwitch.forwardLimitSwitchEnabled(False)
     config.limitSwitch.reverseLimitSwitchEnabled(False)
-    config.closedLoop.pid(ShooterConstants.initialP, 0.0, ShooterConstants.initialD)
-    config.closedLoop.velocityFF(ShooterConstants.initialFF)
+    config.closedLoop.pid(ShooterConstants.kP, 0.0, ShooterConstants.kD)
+    config.closedLoop.velocityFF(ShooterConstants.kFF)
     config.closedLoop.outputRange(-1, +1)
     return config
 
 def _getFollowMotorConfig():
     followConfig = SparkBaseConfig()
-    followConfig.follow(ShooterConstants.kShooterMotorA_CANID, False)
+    followConfig.follow(ShooterConstants.kShooterMotorA_CANID, True)  # True = inverted when following
     followConfig.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
     return followConfig
