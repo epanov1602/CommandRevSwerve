@@ -104,8 +104,12 @@ def getSwerveTurningMotorConfig(turnMotorInverted: bool, useAbsoluteEncoderGoals
 
     turningConfig.closedLoop.velocityFF(ModuleConstants.kTurningFF)
     turningConfig.closedLoop.outputRange(ModuleConstants.kTurningMinOutput, ModuleConstants.kTurningMaxOutput)
-    turningConfig.closedLoop.positionWrappingEnabled(True)
-    turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    if useAbsoluteEncoderGoals:
+        turningConfig.closedLoop.positionWrappingEnabled(True)
+        turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    else:
+        turningConfig.closedLoop.positionWrappingEnabled(False)
+
     return turningConfig
 
 
