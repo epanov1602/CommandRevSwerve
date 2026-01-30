@@ -23,7 +23,7 @@ class Constants:
     # for the swerve command:
     kPTranslate = 0.5 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
     kMinLateralSpeed = 0.025  # driving slower than this is unproductive (motor might not even spin)
-    kLearnRate = 1.0  # really a fudge factor that improves stability of convergence, like "learning rate" elsewhere
+    kLearnRate = 0.85  # should be 1.0, but really a fudge factor that improves stability of convergence, like "learning rate" elsewhere
 
     # for the tank command:
     kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
