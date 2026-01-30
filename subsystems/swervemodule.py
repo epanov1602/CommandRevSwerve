@@ -133,9 +133,9 @@ class SwerveModule:
 
     def getRelativeRadians(self) -> float:
         if self.turningRevRelEncoder is not None:
-            return self.turningRevRelEncoder.getPosition() / ModuleConstants.kDrivingMotorReduction * math.tau
+            return self.turningRevRelEncoder.getPosition() / ModuleConstants.kTurningReductionRatio * math.tau
         else:
-            return self.turningTalonMotor.get_position().value / ModuleConstants.kDrivingMotorReduction * math.tau
+            return self.turningTalonMotor.get_position().value / ModuleConstants.kTurningReductionRatio * math.tau
 
 
     def getAbsoluteRadians(self) -> float:
@@ -147,7 +147,7 @@ class SwerveModule:
 
 
     def setRelativeRadiansGoal(self, angle) -> None:
-        position = angle / math.tau * ModuleConstants.kDrivingMotorReduction
+        position = angle / math.tau * ModuleConstants.kTurningReductionRatio
         if self.turningTalonMotor is not None:
             self.turningTalonMotor.set_control(
                 self.turningTalonPositionRequest.with_position(position)
@@ -256,9 +256,15 @@ class SwerveModule:
 
     def fuseAngles(self):
         if self.fusedAngle is not None:
-            cancoder = self.turningCancoder.get_position()
-            if cancoder.status.is_ok():
-                absolute = cancoder.value * math.tau  # radians
+            # use cancoder if we have it
+            if self.turningCancoder is not None:
+                cancoder = self.turningCancoder.get_position()
+                if cancoder.status.is_ok():
+                    absolute = cancoder.value * math.tau  # radians
+                    self.fusedAngle.observe(absolute, self.getRelativeRadians())
+            # use Rev absolute encoder if we don't
+            elif self.turningRevAbsEncoder is not None:
+                absolute = self.turningRevAbsEncoder.getPosition()
                 self.fusedAngle.observe(absolute, self.getRelativeRadians())
 
 

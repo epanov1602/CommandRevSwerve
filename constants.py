@@ -60,10 +60,10 @@ class DriveConstants:
     kRearRightTurningCanId = 8
 
     # CANCODER CAN IDs
-    kFrontLeftCancoderCanId = 1
-    kRearLeftCancoderCanId = 2
-    kFrontRightCancoderCanId = 3
-    kRearRightCancoderCanId = 4
+    kFrontLeftCancoderCanId = -1
+    kRearLeftCancoderCanId = -1
+    kFrontRightCancoderCanId = -1
+    kRearRightCancoderCanId = -1
 
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
     kGyroIsPigeon = False
@@ -110,12 +110,12 @@ def getSwerveTurningMotorConfig(turnMotorInverted: bool, useAbsoluteEncoderGoals
 
 
 class ModuleConstants:
-    kDrivingMotorIsTalon = True
-    kTurningMotorIsTalon = True
+    kDrivingMotorIsTalon = False
+    kTurningMotorIsTalon = False
     kTurningKalmanGain = 0.05  # if using CANcoder, how quickly to fuse the absolute and relative angles
     kWheelDiameterMeters = 0.0762
 
-    kTurningReductionRatio = 287 / 11.0  # for MK5n
+    kTurningReductionRatio = 150.0/7.0  # 287 / 11.0  # for MK5n
     # (others: MK5i 260/10.0, MK4i 150/7.0, MK4n 18.75/1.0, Thrifty 25/1, MAXSwerve 9424/203.0, Plummer 28/1)
 
     # WATCH OUT:
