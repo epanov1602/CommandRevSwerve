@@ -363,7 +363,7 @@ class DriveSubsystem(Subsystem):
         # 2. proportional control: if we are almost finished turning, use slower turn speed (to avoid overshooting)
         proportionalSpeed = AimToDirectionConstants.kP * abs(degreesRemainingToTurn)
         if AimToDirectionConstants.kUseSqrtControl:
-            proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
+            proportionalSpeed = 2*math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
         rotSpeed = min(proportionalSpeed, 1.0)
 
         # 3. if need to turn left, return the positive speed, otherwise negative
