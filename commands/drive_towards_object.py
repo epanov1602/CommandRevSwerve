@@ -21,9 +21,9 @@ class Constants:
     kDetectionTimeoutSeconds = 1.0  # if detection lost for this many seconds, done
 
     # for the swerve command:
-    kPTranslate = 0.25 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
+    kPTranslate = 0.5 / (DriveConstants.kMaxSpeedMetersPerSecond / 4.7)
     kMinLateralSpeed = 0.025  # driving slower than this is unproductive (motor might not even spin)
-    kLearnRate = 0.7  # really a fudge factor that improves stability of convergence, like "learning rate" elsewhere
+    kLearnRate = 1.0  # really a fudge factor that improves stability of convergence, like "learning rate" elsewhere
 
     # for the tank command:
     kP = 0.001  # 0.002 is the default, but you must calibrate this to your robot
@@ -47,6 +47,7 @@ class SwerveTowardsObject(commands2.Command):
                 camera=self.frontPickupCamera,
                 cameraLocationOnRobot=Pose2d(x=+0.4, y=-0.2, rotation=Rotation2d.fromDegrees(30)),  # camera located at front-right and tilted 30 degrees to the left
                 cameraPipeline=1,  # if pipeline 1 in that camera is setup to do gamepiece detection
+                dontSwitchToSmallerObject=True,
             )
 
             # make a command to repeatedly drive to gamepieces (do it again after one gamepiece reached)
@@ -58,7 +59,7 @@ class SwerveTowardsObject(commands2.Command):
             )
 
             # connect the command to its trigger
-            whenLeftTriggerPressed.whileTrue(driveToGamepiece)
+            whenLeftTriggerPressed.whileTrue(driveToManyGamepieces)
 
         ```
     """
@@ -191,10 +192,11 @@ class SwerveTowardsObject(commands2.Command):
                 self.lastTargetAreaSize = a
                 self.lastTargetLocationXY = self.calculateObjectLocationXY(x, a, robotXY)
                 self.drivetrain.field.getObject("swerve-towards").setPoses(_square(self.lastTargetLocationXY, side=0.1))
-                if self.initialRobotToTarget is not None or smallerObject:
-                    SmartDashboard.putString("command/c" + self.__class__.__name__, "acquired")
+                if self.initialRobotToTarget is None or smallerObject:
                     self.initialRobotToTarget = self.lastTargetLocationXY - robotXY.translation()
                     self.finalRobotToTargetDotProduct = self.initialRobotToTarget.norm() * DriveConstants.kWheelBase / 2
+                    self.finalRobotToTargetDotProduct *= 1.5  # fudge factor
+                    SmartDashboard.putString("command/c" + self.__class__.__name__, "acquired")
                     # ^^dotprod(initialRobotToTarget, robotToTarget) will be dropping until ~this value during approach
 
         # 2. or did we lose or reach the previously detected object?
@@ -203,6 +205,7 @@ class SwerveTowardsObject(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, "lost")
             reset = True   # no longer seeing the object and timed out
         elif self.lastTargetLocationXY is not None:
+            assert self.initialRobotToTarget is not None, "initialRobotToTarget must be set when lastTargetLocationXY is set"
             robotToTarget = self.lastTargetLocationXY - robotXY.translation()
             if robotToTarget.dot(self.initialRobotToTarget) < self.finalRobotToTargetDotProduct:
                 SmartDashboard.putString("command/c" + self.__class__.__name__, "reached")
@@ -214,8 +217,9 @@ class SwerveTowardsObject(commands2.Command):
             self.drivetrain.field.getObject("swerve-towards").setPoses([])
             SmartDashboard.putNumber("SwerveTowardsObject/distance", 0)
             self.lastTargetAreaSize = 0
-            self.lastTargetLocationXY = None
             self.lastTimeDetected = None
+            self.lastTargetLocationXY = None
+            self.initialRobotToTarget = None
 
 
     def calculateObjectLocationXY(self, x, a, robotXY: Pose2d):
@@ -253,8 +257,8 @@ class SwerveTowardsObject(commands2.Command):
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
-        distance = math.sqrt(self.objectDiameterMeters * self.objectDiameterMeters / (2.0 * 0.01 * objectSizePercent))
-        # note: Arducam w OV9281 is 1.70 steradians, not 2.0
+        distance = math.sqrt(self.objectDiameterMeters * self.objectDiameterMeters / (1.33 * 0.01 * objectSizePercent))
+        # note: Arducam w OV9281 is 1.70 steradians, not 1.33
 
         return distance
 
