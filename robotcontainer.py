@@ -46,14 +46,15 @@ class RobotContainer:
 
         self.limelightLocalizer = LimelightLocalizer(self.robotDrive)
 
-        self.centerCamera = LimelightCamera("limelight-center")
+        #self.lumaCamera = PhotonTagCamera("luma-front")
+        #self.centerCamera = LimelightCamera("limelight-center")
 
-        self.limelightLocalizer.addCamera(
-            self.centerCamera,
-            cameraPoseOnRobot=Translation3d(x=0.42 , y=-0.32, z=0.5),
-            cameraHeadingOnRobot=Rotation2d.fromDegrees(0.0),
-            cameraPitchAngleDegrees=30
-        )
+        #self.limelightLocalizer.addCamera(
+        #    self.lumaCamera,
+        #    cameraPoseOnRobot=Translation3d(x=0.42, y=-0.32, z=0.5),
+        #    cameraHeadingOnRobot=Rotation2d.fromDegrees(0.0),
+        #    cameraPitchAngleDegrees=30
+        #)
 
         # The driver's controller (joystick)
         self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
@@ -87,23 +88,6 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
-        from commands.point_towards_location import PointTowardsLocation
-
-        # create a command for keeping the robot nose pointed towards the hub
-        keepPointingTowardsHub = PointTowardsLocation(
-            drivetrain=self.robotDrive,
-            location=Translation2d(x=4.59, y=4.025),
-            locationIfRed=Translation2d(x=11.88, y=4.025),
-        )
-
-        # set up a condition for when to do this: do it when the joystick right trigger is pressed by more than 50%
-        whenRightTriggerPressed = self.driverController.axisGreaterThan(
-            XboxController.Axis.kRightTrigger, threshold=0.5
-        )
-
-        # connect the command to its trigger
-        whenRightTriggerPressed.whileTrue(keepPointingTowardsHub)
-
         # example 1: hold the wheels in "swerve X brake" position, when "X" button is pressed
         brakeCommand = RunCommand(self.robotDrive.setX, self.robotDrive)
         xButton = self.driverController.button(XboxController.Button.kX)
