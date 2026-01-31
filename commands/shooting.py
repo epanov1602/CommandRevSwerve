@@ -89,7 +89,7 @@ class GetInRange(commands2.Command):
         elif distance < self.goal.minimumRangeMeters:
             velocity = -(self.goal.maximumRangeMeters - distance) * GoToPointConstants.kPTranslate
         if GoToPointConstants.kUseSqrtControl:
-            velocity = math.sqrt(0.5 * velocity)
+            velocity = 2 * math.copysign(math.sqrt(0.5 * abs(velocity)), velocity)
 
         # calculate the correct direction for that velocity and drive the robot that way
         velocityInRobotAxes = Translation2d(velocity, 0.0).rotateBy(
@@ -161,7 +161,7 @@ class GetReadyToShoot(commands2.Command):
                 self.turret.setPositionGoal(direction.degrees())
 
         # if we are not aiming with a turret, we can aim with drivetrain
-        elif self.drivetrainTarget is not None:
+        elif self.drivetrain is not None:
             goalPoint = self.goal.goal
             if goalPoint is not None and self.drivetrain.startOverrideToFaceThisPoint(goalPoint):
                 self.drivetrainTarget = goalPoint

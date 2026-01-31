@@ -74,7 +74,7 @@ class FiringTable(Subsystem):
         rpm = RECOMMENDED_SHOOTER_RPM_BY_DISTANCE.interpolate(distanceMeters)
 
         # apply a factor added by the drivers (maybe 1.10 or 0.90 or something)
-        rpm = rpm * self.rpmFactor.getValue()
+        rpm = rpm * self.rpmFactor.getSelected()
 
         SmartDashboard.putNumber("FiringTable/rpm", rpm)
         return rpm
@@ -90,7 +90,7 @@ class FiringTable(Subsystem):
         hoodPosition = RECOMMENDED_SHOOTER_HOOD_POSITION_BY_DISTANCE.interpolate(distanceMeters)
 
         # and then apply an offset added by the drivers
-        hoodPosition = hoodPosition + self.hoodPosOffset.getValue()
+        hoodPosition = hoodPosition + self.hoodPosOffset.getSelected()
 
         SmartDashboard.putNumber("FiringTable/hoodPos", hoodPosition)
         return hoodPosition

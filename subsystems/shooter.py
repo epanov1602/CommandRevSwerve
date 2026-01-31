@@ -4,8 +4,8 @@ from wpilib import SmartDashboard, Servo
 
 
 class ShooterConstants:
-    kShooterMotorA_CANID = 11
-    kShooterMotorB_CANID = 10
+    kShooterMotorA_CANID = 41
+    kShooterMotorB_CANID = 40
 
     maxRPM = 6000
     kFF = 18.5 / 10000
@@ -31,6 +31,8 @@ class Shooter(Subsystem):
         super().__init__()
 
         self.hoodServo = hoodServo
+        # just in case the bounds were not set, set them
+        self.hoodServo.setBounds(2000, 1500, 1500, 1500, 1000)
         self.hoodServoGoal = 0.0
         if hoodServo is not None:
             self.hoodServoGoal = hoodServo.get()

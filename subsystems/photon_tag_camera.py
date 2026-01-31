@@ -6,7 +6,7 @@
 from typing import Tuple
 
 from photonlibpy import PhotonPoseEstimator
-from wpilib import Timer, Field2d
+from wpilib import Timer, Field2d, SmartDashboard
 from commands2 import Subsystem
 
 from photonlibpy.photonCamera import PhotonCamera
@@ -152,15 +152,31 @@ class PhotonTagCamera(Subsystem):
         Localizer method #2
         :return: estimated X, Y, area taken by the biggest tag, tag count
         """
-        if self.camera.isConnected():
+        if not self.camera.isConnected():
+            #SmartDashboard.putString("luma", "luma camera not connected")
+            pass
+        else:
             result = self.camera.getLatestResult()
             resultTime = result.getTimestampSeconds()
-            if resultTime != self.lastLocationTime:
+            if resultTime == self.lastLocationTime:
+                #SmartDashboard.putString("luma", "luma camera did not update")
+                pass
+            elif result is None:
+                #SmartDashboard.putString("luma", "luma camera gave us no result")
+                pass
+            else:
                 self.lastLocationTime = resultTime
                 tag = result.getBestTarget()
-                if not self.onlyTagIds or (tag.getFiducialId() in self.onlyTagIds):
+                if tag is None:
+                    #SmartDashboard.putString("luma", "luma camera gave a none tag")
+                    pass
+                elif not self.onlyTagIds or (tag.getFiducialId() in self.onlyTagIds):
                     estimate = self.camPoseEst.estimatePnpDistanceTrigSolvePose(result)
-                    if estimate is not None:
+                    if estimate is None:
+                        #SmartDashboard.putString("luma", f"luma camera gave us a result with {len(result.getTargets())} tags, but we could not get X and Y coordinate from that")
+                        pass
+                    else:
+                        #SmartDashboard.putString("luma", f"luma camera gave us a result with {len(result.getTargets())} tags, and we have X and Y coordinates")
                         # https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/98
                         # ^^ team 6328's method, count is always = 1
                         if not flipped:

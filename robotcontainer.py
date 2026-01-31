@@ -46,16 +46,15 @@ class RobotContainer:
 
         self.limelightLocalizer = LimelightLocalizer(self.robotDrive)
 
-        #self.lumaFrontCamera = PhotonTagCamera("LumaFront")
-        #self.frontCamera = LimelightCamera("limelight-front")
+        #self.lumaCamera = PhotonTagCamera("luma-front")
+        #self.centerCamera = LimelightCamera("limelight-center")
 
         #self.limelightLocalizer.addCamera(
-        #    self.lumaFrontCamera,
-        #    cameraPoseOnRobot=Translation3d(x=0.40, y=0.1, z=0.5),
+        #    self.lumaCamera,
+        #    cameraPoseOnRobot=Translation3d(x=0.42, y=-0.32, z=0.5),
         #    cameraHeadingOnRobot=Rotation2d.fromDegrees(0.0),
-        #    cameraPitchAngleDegrees=0.0,
+        #    cameraPitchAngleDegrees=30
         #)
-
 
         # The driver's controller (joystick)
         self.driverController = CommandGenericHID(OIConstants.kDriverControllerPort)
@@ -89,7 +88,6 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
-
         # example 1: hold the wheels in "swerve X brake" position, when "X" button is pressed
         brakeCommand = RunCommand(self.robotDrive.setX, self.robotDrive)
         xButton = self.driverController.button(XboxController.Button.kX)
@@ -101,7 +99,7 @@ class RobotContainer:
         povUpButton.whileTrue(resetFacingNorthCommand)
 
         # example 3: when "POV-down" is pressed, reset robot field position to "facing South"
-        resetFacingSouthCommand = ResetXY(x=7.0, y=4.0, headingDegrees=180, drivetrain=self.robotDrive)
+        resetFacingSouthCommand = ResetXY(x=14.0, y=6.0, headingDegrees=180, drivetrain=self.robotDrive)
         povDownButton = self.driverController.povDown()
         povDownButton.whileTrue(resetFacingSouthCommand)
 
