@@ -44,7 +44,7 @@ class LimelightCamera(Subsystem):
 
         # localizer state
         self.localizerSubscribed = False
-        self.cameraPoseSetRequest, self.robotOrientationSetRequest, self.imuModeRequest = None
+        self.cameraPoseSetRequest, self.robotOrientationSetRequest, self.imuModeRequest = None, None, None
 
 
     def addLocalizer(self):
