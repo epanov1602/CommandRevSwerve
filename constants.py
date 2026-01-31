@@ -11,6 +11,8 @@ numerical or boolean constants. Don't use this for any other purpose!
 import math
 from typing import Dict
 
+from robotpy_apriltag import AprilTagFieldLayout
+from wpilib import getDeployDirectory
 from wpimath import units
 from wpimath.geometry import Translation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
@@ -169,6 +171,9 @@ class OIConstants:
 
 class AutoConstants:
     kUseSqrtControl = True  # improves arrival time and precision for simple driving commands
+
+    # tag map, for PhotonVision
+    kFieldTags = AprilTagFieldLayout(getDeployDirectory() + "/2026-rebuilt-welded.json")
 
     # below are really trajectory constants
     kMaxSpeedMetersPerSecond = DriveConstants.kMaxSpeedMetersPerSecond * 0.9
