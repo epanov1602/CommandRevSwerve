@@ -107,6 +107,7 @@ class SwerveModule:
             config.slot0.k_p = ModuleConstants.kDrivingP * 7.5
             config.slot0.k_i = 0
             config.slot0.k_d = 0
+            config.slot0.k_v = ModuleConstants.kDrivingFF * 7.5
             self.drivingTalonMotor.configurator.apply(config)
 
             self.drivingTalonVelocityRequest = VelocityVoltage(0, slot=0)
@@ -152,6 +153,12 @@ class SwerveModule:
             self.turningTalonMotor.set_control(
                 self.turningTalonPositionRequest.with_position(position)
             )
+            SmartDashboard.putNumber(
+                f"fusedAngle_{self.fusedAngle.place}/relativeGoal",
+                position)
+            SmartDashboard.putNumber(
+                f"fusedAngle_{self.fusedAngle.place}/relativeActual",
+                self.turningTalonMotor.get_position().value)
         else:
             self.turningRevRelController.setReference(
                 position, SparkLowLevel.ControlType.kPosition
@@ -225,6 +232,12 @@ class SwerveModule:
             self.drivingTalonMotor.set_control(
                 self.drivingTalonVelocityRequest.with_velocity(rps)
             )
+            SmartDashboard.putNumber(
+                f"fusedAngle_{self.fusedAngle.place}/drivingGoal",
+                rps)
+            SmartDashboard.putNumber(
+                f"fusedAngle_{self.fusedAngle.place}/drivingActual",
+                self.drivingTalonMotor.get_velocity().value)
 
         self.desiredState = desiredState
 
