@@ -3,10 +3,13 @@
 # Open Source Software; you can modify and/or share it under the terms of
 # the WPILib BSD license file in the root directory of this project.
 #
+from typing import Tuple
 
 from wpilib import Timer, SmartDashboard
 from commands2 import Subsystem
 from ntcore import NetworkTableInstance
+from wpimath.geometry import Rotation2d
+
 
 class LimelightCamera(Subsystem):
     def __init__(self, cameraName: str) -> None:
@@ -39,7 +42,10 @@ class LimelightCamera(Subsystem):
         self.snapshotRequestValue = self.table.getIntegerTopic("snapshot").getEntry(0).get()
         self.lastSnapshotRequestTime = 0.0
 
+        # localizer state
         self.localizerSubscribed = False
+        self.cameraPoseSetRequest, self.robotOrientationSetRequest, self.imuModeRequest = None
+
 
     def addLocalizer(self):
         if self.localizerSubscribed:
@@ -56,6 +62,41 @@ class LimelightCamera(Subsystem):
         # and we can then receive the localizer results from the camera back
         self.botPose = self.table.getDoubleArrayTopic("botpose_orb_wpiblue").getEntry([])
         self.botPoseFlipped = self.table.getDoubleArrayTopic("botpose_orb_wpired").getEntry([])
+
+
+    def setCameraPoseOnRobot(self, x, y, z, pitch, roll, yaw):
+        """
+        Only for localization: angles should be in degrees, xyz in meters
+        """
+        if self.cameraPoseSetRequest is not None:
+            self.cameraPoseSetRequest.set([x, -y, z, roll, pitch, yaw])
+            self.imuModeRequest.set(0)  # TODO: try 4, this can be a better choice for Limelight 4
+            # 0 - use external imu (the only option available on Limelight 3)
+            # 1 - use external imu, seed internal imu
+            # 2 - use internal
+            # 3 - use internal with MT1 assisted convergence
+            # 4 - use internal IMU with external IMU assisted convergence
+
+    def updateRobotHeading(self, now: float, heading: Rotation2d):
+        """
+        Only for localization
+        """
+        if self.robotOrientationSetRequest is not None:
+            self.robotOrientationSetRequest.set([heading.degrees() % 360, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+    def getXYAPositionEstimate(self, flipped=False) -> Tuple[float, float, float, float]:
+        """
+        :return: estimated X, Y, area taken by the biggest tag, tag count
+        """
+        pose = self.botPoseFlipped.get() if flipped else self.botPose.get()
+        if len(pose) >= 11:
+            # Translation (X,Y,Z), Rotation(Roll,Pitch,Yaw) in degrees, total latency ms (cl+tl)
+            # , tag count, tag span, average tag distance from camera, average tag area (percentage of image)
+            x, y, z, roll, pitch, yaw, latency, count, span, distance, area = pose[0:11]
+            return x, y, area, count
+
+        else:
+            return 0.0, 0.0, 0.0, 0.0
 
 
     def setPipeline(self, index: int):
