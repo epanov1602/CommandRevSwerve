@@ -3,6 +3,12 @@ from rev import SparkMax, SparkBase, SparkBaseConfig, ResetMode, PersistMode
 from wpilib import SmartDashboard
 
 
+class Constants:
+    stallCurrentLimit = 5
+    freeSpinCurrentLimit = 10
+    limitRpm = 500
+
+
 class Indexer(Subsystem):
     def __init__(self, leaderCanID, leaderInverted=True, followerCanID=None, followerInverted=False) -> None:
         super().__init__()
@@ -13,6 +19,8 @@ class Indexer(Subsystem):
         self.motorConfig = SparkBaseConfig()
         self.motorConfig.inverted(leaderInverted)
         self.motorConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+        self.motorConfig.smartCurrentLimit(
+            Constants.stallCurrentLimit, Constants.freeSpinCurrentLimit, Constants.limitRpm)
         self.motor.configure(self.motorConfig,
                              ResetMode.kResetSafeParameters,
                              PersistMode.kPersistParameters)
@@ -26,6 +34,8 @@ class Indexer(Subsystem):
             self.followerMotor = SparkMax(followerCanID, SparkBase.MotorType.kBrushless)
             followerConfig = SparkBaseConfig()
             followerConfig.follow(leaderCanID, leaderInverted != followerInverted)
+            followerConfig.smartCurrentLimit(
+                Constants.stallCurrentLimit, Constants.freeSpinCurrentLimit, Constants.limitRpm)
             self.followerMotor.configure(followerConfig,
                                          ResetMode.kResetSafeParameters,
                                          PersistMode.kPersistParameters)

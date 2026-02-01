@@ -12,6 +12,9 @@ class ShooterConstants:
     kP = 0.5 / 10000
     kD = 0.0 / 10000
 
+    stallCurrentLimit = 5  # amps, must be integer for Rev
+    freeSpinCurrentLimit = 10  # amps, must be integer for Rev
+
 
 class Shooter(Subsystem):
     """
@@ -129,10 +132,20 @@ def _getLeadMotorConfig() -> SparkBaseConfig:
     config.closedLoop.pid(ShooterConstants.kP, 0.0, ShooterConstants.kD)
     config.closedLoop.velocityFF(ShooterConstants.kFF)
     config.closedLoop.outputRange(-1, +1)
+    config.smartCurrentLimit(
+        ShooterConstants.stallCurrentLimit,
+        ShooterConstants.freeSpinCurrentLimit,
+        limitRpm=500,
+    )
     return config
 
 def _getFollowMotorConfig():
     followConfig = SparkBaseConfig()
     followConfig.follow(ShooterConstants.kShooterMotorA_CANID, True)  # True = inverted when following
     followConfig.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
+    followConfig.smartCurrentLimit(
+        ShooterConstants.stallCurrentLimit,
+        ShooterConstants.freeSpinCurrentLimit,
+        limitRpm=500,
+    )
     return followConfig

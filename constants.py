@@ -76,7 +76,10 @@ class DriveConstants:
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     drivingConfig = SparkBaseConfig()
     drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    drivingConfig.smartCurrentLimit(ModuleConstants.kDrivingMotorCurrentLimit)
+    drivingConfig.smartCurrentLimit(
+        stallLimit=ModuleConstants.kDrivingMotorCurrentLimit / 3,
+        freeLimit=ModuleConstants.kDrivingMotorCurrentLimit,
+        limitRpm=1000)
     drivingConfig.encoder.positionConversionFactor(ModuleConstants.kDrivingEncoderPositionFactor)
     drivingConfig.encoder.velocityConversionFactor(ModuleConstants.kDrivingEncoderVelocityFactor)
     drivingConfig.closedLoop.setFeedbackSensor(FeedbackSensor.kPrimaryEncoder)
@@ -90,7 +93,10 @@ def getSwerveTurningMotorConfig(turnMotorInverted: bool) -> SparkBaseConfig:
     turningConfig = SparkBaseConfig()
     turningConfig.inverted(turnMotorInverted)
     turningConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    turningConfig.smartCurrentLimit(ModuleConstants.kTurningMotorCurrentLimit)
+    turningConfig.smartCurrentLimit(
+        stallLimit=ModuleConstants.kTurningMotorCurrentLimit / 3,
+        freeLimit=ModuleConstants.kTurningMotorCurrentLimit,
+        limitRpm=100)
     turningConfig.absoluteEncoder.positionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor)
     turningConfig.absoluteEncoder.velocityConversionFactor(ModuleConstants.kTurningEncoderVelocityFactor)
     turningConfig.absoluteEncoder.inverted(ModuleConstants.kTurningEncoderInverted)

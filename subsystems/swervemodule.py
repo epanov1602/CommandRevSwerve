@@ -1,4 +1,4 @@
-from phoenix6.configs import TalonFXConfiguration
+from phoenix6.configs import TalonFXConfiguration, CurrentLimitsConfigs
 from phoenix6.controls import VelocityVoltage
 from phoenix6.hardware import TalonFX, CANcoder
 from phoenix6.signals import NeutralModeValue, InvertedValue
@@ -60,6 +60,7 @@ class SwerveModule:
         if drivingIsTalon:
             # Talon
             self.drivingTalonMotor = TalonFX(drivingCANId)
+
             config = TalonFXConfiguration()
             config.motor_output.neutral_mode = NeutralModeValue.BRAKE
             config.motor_output.inverted = InvertedValue.COUNTER_CLOCKWISE_POSITIVE
@@ -67,6 +68,13 @@ class SwerveModule:
             config.slot0.k_i = 0
             config.slot0.k_d = 0
             self.drivingTalonMotor.configurator.apply(config)
+
+            current = CurrentLimitsConfigs()
+            current.stator_current_limit = ModuleConstants.kDrivingMotorCurrentLimit * 1.5
+            current.stator_current_limit_enable = True
+            current.supply_current_limit = ModuleConstants.kDrivingMotorCurrentLimit
+            current.supply_current_limit_enable = True
+            self.drivingTalonMotor.configurator.apply(current)
 
             self.drivingTalonVelocityRequest = VelocityVoltage(0, slot=0)
             self.drivingTalonMotor.set_position(0)
