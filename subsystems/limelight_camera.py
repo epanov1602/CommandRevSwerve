@@ -78,6 +78,7 @@ class LimelightCamera(Subsystem):
             # 3 - use internal with MT1 assisted convergence
             # 4 - use internal IMU with external IMU assisted convergence
 
+
     def updateRobotHeading(self, now: float, heading: Rotation2d):
         """
         Only for localization
