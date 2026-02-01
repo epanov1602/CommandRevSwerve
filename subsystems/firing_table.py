@@ -50,6 +50,7 @@ class FiringTable(Subsystem):
 
         self.goal = None
         self.vectorToGoal: Translation2d | None = None
+        self.shooterLocation: Translation2d | None = None
 
         self.rpmFactor = SendableChooser()
         self.rpmFactor.setDefaultOption("1.0", 1.0)
@@ -57,11 +58,13 @@ class FiringTable(Subsystem):
             self.rpmFactor.addOption(str(f), f)
         SmartDashboard.putData("FiringTable/rpmFactor", self.rpmFactor)
 
-        self.hoodPosOffset = SendableChooser()
-        self.hoodPosOffset.setDefaultOption("0.0", 0.0)
-        for a in [-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, +2, +4, +6, +8, +10, +12, +14, +16, +18, +20]:
-            self.hoodPosOffset.addOption(str(a), a)
-        SmartDashboard.putData("FiringTable/angleOffset", self.hoodPosOffset)
+        self.hoodPosFactor = SendableChooser()
+        self.hoodPosFactor.setDefaultOption("1.0", 1.0)
+        for f in [0.5, 0.6, 0.7, 0.8, 0.9, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.80, 2.00]:
+            self.rpmFactor.addOption(str(f), f)
+        SmartDashboard.putData("FiringTable/hoodPosFactor", self.hoodPosFactor)
+
+        self.resetSmartDashboard()
 
 
     def recommendedShooterRpm(self):
@@ -84,13 +87,12 @@ class FiringTable(Subsystem):
         if self.vectorToGoal is None:
             return None
         distanceMeters = self.distance()
-        SmartDashboard.putNumber("FiringTable/distance", distanceMeters)
 
         # lookup the recommended angle in the lookup table
         hoodPosition = RECOMMENDED_SHOOTER_HOOD_POSITION_BY_DISTANCE.interpolate(distanceMeters)
 
         # and then apply an offset added by the drivers
-        hoodPosition = hoodPosition + self.hoodPosOffset.getSelected()
+        hoodPosition = hoodPosition * self.hoodPosFactor.getSelected()
 
         SmartDashboard.putNumber("FiringTable/hoodPos", hoodPosition)
         return hoodPosition
@@ -102,10 +104,12 @@ class FiringTable(Subsystem):
         """
         if self.vectorToGoal is None:
             return None
-        SmartDashboard.putNumber("FiringTable/dirnDeg", self.vectorToGoal.angle().degrees())
 
         drivetrainPose = self.drivetrain.getPose()
-        return self.vectorToGoal.angle() - drivetrainPose.rotation()
+        result = self.vectorToGoal.angle() - drivetrainPose.rotation()
+
+        SmartDashboard.putNumber("FiringTable/turretDirDegrees", result.degrees())
+        return result
 
 
     def vector(self) -> Translation2d | None:
@@ -127,6 +131,12 @@ class FiringTable(Subsystem):
         else:
             self.goal = self.goalIfBlue
         pose = self.drivetrain.getPose()
-        shooter = pose.translation() + self.shooterLocationOnDrivetrain.rotateBy(pose.rotation())
-        self.vectorToGoal = self.goal - shooter
+        self.shooterLocation = pose.translation() + self.shooterLocationOnDrivetrain.rotateBy(pose.rotation())
+        self.vectorToGoal = self.goal - self.shooterLocation
 
+
+    def resetSmartDashboard(self):
+        SmartDashboard.putNumber("FiringTable/distance", float('nan'))
+        SmartDashboard.putNumber("FiringTable/rpm", float('nan'))
+        SmartDashboard.putNumber("FiringTable/hoodPos", float('nan'))
+        SmartDashboard.putNumber("FiringTable/turretDirDegrees", float('nan'))

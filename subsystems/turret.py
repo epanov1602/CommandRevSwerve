@@ -6,10 +6,7 @@ from wpilib import SmartDashboard
 
 
 class TurretConstants:
-    # very scary setting! (if set wrong, the arm will escape equilibrium and break something)
-    absoluteEncoderInverted = False
-
-    # if using relative encoder, how many motor revolutions are needed to move the elevator by one Degree?
+    # if using relative encoder, how many motor revolutions are needed to move the turret by one Degree?
     GEAR_RATIO = 25
     REVOLUTION = 360
     DEGREE = 1
@@ -25,11 +22,12 @@ class TurretConstants:
     calibrating = False
 
     # to calibrate, set calibrating = True and add this in robotcontainer.py __init__(...) function
-    # self.elevator.setDefaultCommand(
+    # self.turret.setDefaultCommand(
     #    commands2.RunCommand(lambda: self.turret.drive(self.driverController.getRawAxis(XboxController.Axis.kRightY)), self.turret)
     # )
 
-    # which range of motion we want from this elevator? (inside what's allowed by limit switches)
+    # which range of motion we want from this turret? (inside what's allowed by limit switches)
+    hardStopMinPosition = 30  # Degrees (location where the reverse limit switch is installed)
     minPositionGoal = 45  # Degrees
     maxPositionGoal = 315  # Degrees
     positionTolerance = 2.0  # Degrees
@@ -38,6 +36,8 @@ class TurretConstants:
     kP = 0.02  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kMaxOutput = 1.0
+
+assert TurretConstants.hardStopMinPosition <= TurretConstants.minPositionGoal, "hard stop cant be above lowest position"
 
 
 class Turret(Subsystem):
@@ -48,9 +48,8 @@ class Turret(Subsystem):
         limitSwitchType=LimitSwitchConfig.Type.kNormallyClosed,
     ) -> None:
         """
-        Constructs an elevator.
-        Please be very, very careful with setting kP and kD in ElevatorConstants (elevators are dangerous)
-        :param arm: if you want elevator to freeze and not move at times when this arm is in unsafe positions
+        Constructs an turret.
+        Please be very, very careful with setting kP and kD in TurretConstants (it's as dangerous as arms and elevators)
         """
         super().__init__()
 
@@ -65,21 +64,22 @@ class Turret(Subsystem):
             inverted=TurretConstants.leadMotorInverted,
             limitSwitchType=limitSwitchType,
             relPositionFactor=1.0 / TurretConstants.motorRevolutionsPerDegree,
+            forwardLimitEnabled=True,
         )
         self.leadMotor.configure(
             leadMotorConfig,
             ResetMode.kResetSafeParameters,
             PersistMode.kPersistParameters)
-        self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
         self.reverseLimit = self.leadMotor.getReverseLimitSwitch()
+        self.forwardLimit = self.leadMotor.getForwardLimitSwitch()
 
         # initialize pid controller and encoder(s)
         self.pidController = None
         self.relativeEncoder = self.leadMotor.getEncoder()  # this encoder can be used instead of absolute, if you know!
 
-        # set the initial elevator goal (if absolute encoder, current position = goal)
-        goal = TurretConstants.minPositionGoal
-        self.setPositionGoal(goal)
+        # set the initial turret goal to be the minimum
+        self.setPositionGoal(TurretConstants.minPositionGoal)
+
 
     def notReady(self) -> str:
         if not self.zeroFound:
@@ -139,8 +139,8 @@ class Turret(Subsystem):
         # did we find the zero just now?
         if self.reverseLimit.get() and not self.forwardLimit.get():
             self.zeroFound = True
-            self.leadMotor.set(0)  # zero setpoint now
-            self.relativeEncoder.setPosition(0.0)  # reset the relative encoder
+            self.leadMotor.set(0)  # stop! the hard stop reached, the "zero" is found
+            self.relativeEncoder.setPosition(TurretConstants.hardStopMinPosition)  # reset the relative encoder
             self.pidController = self.leadMotor.getClosedLoopController()
             self.setPositionGoal(TurretConstants.minPositionGoal)
             return
@@ -150,11 +150,11 @@ class Turret(Subsystem):
 
     def getState(self) -> str:
         if self.forwardLimit.get():
-            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
+            return "fwdLimit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
         if self.reverseLimit.get():
-            return "reverse limit"
+            return "revLimit" if self.forwardLimit is not None else "revLimit or CAN disconn"
         if not self.zeroFound:
-            return "finding zero"
+            return "finding"
         # otherwise, everything is ok
         return "ok"
 
@@ -164,23 +164,25 @@ class Turret(Subsystem):
         if not self.zeroFound:
             self.findZero()
         # 2. report to the dashboard
-        SmartDashboard.putString("turretState", self.getState())
-        SmartDashboard.putNumber("turretGoal", self.getPositionGoal())
-        SmartDashboard.putNumber("turretPosn", self.getPosition())
+        SmartDashboard.putString("Turret/state", self.getState())
+        SmartDashboard.putNumber("Turret/goal", self.getPositionGoal())
+        SmartDashboard.putNumber("Turret/pos", self.getPosition())
 
 
 def _getLeadMotorConfig(
     inverted: bool,
     limitSwitchType: LimitSwitchConfig.Type,
     relPositionFactor: float,
+    forwardLimitEnabled: bool,
 ) -> SparkBaseConfig:
     config = SparkBaseConfig()
     config.inverted(inverted)
     config.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    config.limitSwitch.forwardLimitSwitchEnabled(True)
     config.limitSwitch.reverseLimitSwitchEnabled(True)
-    config.limitSwitch.forwardLimitSwitchType(limitSwitchType)
     config.limitSwitch.reverseLimitSwitchType(limitSwitchType)
+    config.limitSwitch.forwardLimitSwitchEnabled(forwardLimitEnabled)
+    if forwardLimitEnabled:
+        config.limitSwitch.forwardLimitSwitchType(limitSwitchType)
     config.encoder.positionConversionFactor(relPositionFactor)
     config.encoder.velocityConversionFactor(relPositionFactor / 60)  # 60 seconds per minute
     config.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kPrimaryEncoder)

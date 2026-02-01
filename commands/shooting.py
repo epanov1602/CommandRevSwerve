@@ -1,8 +1,9 @@
 import math
+from typing import List
 
 import commands2
 from wpilib import SmartDashboard
-from wpimath.geometry import Translation2d
+from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 
 from commands.gotopoint import GoToPoint, GoToPointConstants
 from subsystems.firing_table import FiringTable
@@ -23,7 +24,7 @@ class GetInRange(commands2.Command):
     Simple example:
     ```
     getInRange = GetInRange(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         drivetrain=self.robotDrive
     )
 
@@ -33,11 +34,11 @@ class GetInRange(commands2.Command):
     Longer example (get in range and rev up the shooter at the same time):
     ```
     getInRange = GetInRange(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         drivetrain=self.robotDrive
     )
     getReady = GetReadyToShoot(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         shooter=self.shooter,
         turret=self.turret,
         drivetrain=None  # if we have a turret, drivetrain=None (otherwise supply drivetrain=self.robotDrive)
@@ -49,7 +50,7 @@ class GetInRange(commands2.Command):
     )
 
     keepShooting = GetReadyAndKeepShooting(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         shooter=self.shooter,
         turret=self.turret,
         drivetrain=None  # if we have a turret, drivetrain=None (otherwise supply drivetrain=self.robotDrive)
@@ -114,7 +115,7 @@ class GetReadyToShoot(commands2.Command):
     Usage example ( put it into configureButtonBindings(...) ):
     ```
     keepAiming = GetReadyToShoot(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         shooter=self.shooter,
         turret=self.turret,
         drivetrain=None  # drivetrain=None if we already have a turret
@@ -125,7 +126,7 @@ class GetReadyToShoot(commands2.Command):
     """
     def __init__(
         self,
-        goal: FiringTable,
+        firingTable: FiringTable,
         shooter: Shooter,
         turret: Turret | None,
         drivetrain: DriveSubsystem | None,
@@ -133,7 +134,7 @@ class GetReadyToShoot(commands2.Command):
     ):
         super().__init__()
         self.runForever = runForever
-        self.goal = goal
+        self.firingTable = firingTable
         self.shooter = shooter
         self.turret = turret
         self.drivetrain = drivetrain
@@ -149,20 +150,24 @@ class GetReadyToShoot(commands2.Command):
 
     def execute(self):
         # set the correct RPM (and hood servo position) in the shooter
-        rpm = self.goal.recommendedShooterRpm()
-        hoodPosition = self.goal.recommendedFiringHoodPosition()
+        ft = self.firingTable
+        rpm = ft.recommendedShooterRpm()
+        hoodPosition = ft.recommendedFiringHoodPosition()
         self.shooter.setVelocityGoal(rpm, rpm * Constants.RPM_TOLERANCE_FACTOR)
         self.shooter.setHoodServoGoal(hoodPosition)
 
+        if ft.drivetrain.field is not None and ft.shooterLocation is not None:
+            ft.drivetrain.field.getObject("firingDirn").setPoses(_drawArrow(ft.shooterLocation, ft.vectorToGoal))
+
         # aim the turret if we have it
         if self.turret is not None:
-            direction = self.goal.recommendedTurretDirection()
+            direction = self.firingTable.recommendedTurretDirection()
             if direction is not None:
                 self.turret.setPositionGoal(direction.degrees())
 
         # if we are not aiming with a turret, we can aim with drivetrain
         elif self.drivetrain is not None:
-            goalPoint = self.goal.goal
+            goalPoint = self.firingTable.goal
             if goalPoint is not None and self.drivetrain.startOverrideToFaceThisPoint(goalPoint):
                 self.drivetrainTarget = goalPoint
 
@@ -177,6 +182,8 @@ class GetReadyToShoot(commands2.Command):
             self.turret.stopAndReset()
         if self.drivetrainTarget is not None:
             self.drivetrain.stopOverrideToFaceThisPoint(self.drivetrainTarget)
+        self.firingTable.drivetrain.field.getObject("firingDirn").setPoses([])
+        self.firingTable.resetSmartDashboard()
 
     def initialize(self):
         self.drivetrainTarget = None
@@ -207,11 +214,11 @@ class GetReadyToShoot(commands2.Command):
         return ""
 
     def distanceNotGood(self):
-        if self.goal.maximumRangeMeters != 0:
-            distance = self.goal.distance()
-            if distance > self.goal.maximumRangeMeters:
+        if self.firingTable.maximumRangeMeters != 0:
+            distance = self.firingTable.distance()
+            if distance > self.firingTable.maximumRangeMeters:
                 return "too far"
-            if distance < self.goal.minimumRangeMeters:
+            if distance < self.firingTable.minimumRangeMeters:
                 return "too close"
         return ""
 
@@ -221,7 +228,7 @@ class GetReadyAndKeepShooting(GetReadyToShoot):
     Usage example ( put it into configureButtonBindings(...) ):
     ```
     shootWhenReady = GetReadyAndKeepShooting(
-        goal=self.firingTable,
+        firingTable=self.firingTable,
         shooter=self.shooter,
         turret=self.turret,
         drivetrain=None,  # if we have a turret (otherwise supply drivetrain=self.robotDrive)
@@ -235,14 +242,14 @@ class GetReadyAndKeepShooting(GetReadyToShoot):
 
     def __init__(
         self,
-        goal: FiringTable,
+        firingTable: FiringTable,
         shooter: Shooter,
         turret: Turret | None,
         drivetrain: DriveSubsystem | None,
         indexer: Indexer,
         indexerSpeed: float = 0.5
     ):
-        super().__init__(goal, shooter, turret, drivetrain)
+        super().__init__(firingTable, shooter, turret, drivetrain)
         self.indexer = indexer
         self.indexerSpeed = indexerSpeed
         self.addRequirements(indexer)
@@ -266,3 +273,23 @@ class GetReadyAndKeepShooting(GetReadyToShoot):
 
     def isFinished(self):
         return False
+
+
+def _drawArrow(start: Translation2d, directionVector: Translation2d, nPoints=11, size=0.85, tip=0.1) -> List[Pose2d]:
+    result = []
+    length = directionVector.norm()
+    zero = Rotation2d(0)
+    if length > 0:
+        end = start
+        directionVector = directionVector / length
+        for i in range(nPoints):
+            end = start + directionVector * (size * i / nPoints)
+            result.append(Pose2d(end, zero))
+        ray1 = directionVector.rotateBy(Rotation2d.fromDegrees(90)) * tip
+        ray2 = directionVector * tip
+        ray3 = directionVector.rotateBy(Rotation2d.fromDegrees(-90)) * tip
+        result.append(Pose2d(end + ray1, zero))
+        result.append(Pose2d(end + ray2, zero))
+        result.append(Pose2d(end + ray3, zero))
+        result.append(Pose2d(end, zero))
+    return result
