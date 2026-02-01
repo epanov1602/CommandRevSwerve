@@ -10,10 +10,11 @@ from wpilib import Timer, SmartDashboard
 from commands2 import Subsystem
 from ntcore import NetworkTableInstance
 from wpimath.geometry import Rotation2d
+from wpinet import PortForwarder
 
 
 class LimelightCamera(Subsystem):
-    def __init__(self, cameraName: str) -> None:
+    def __init__(self, cameraName: str, isUsb0=False) -> None:
         super().__init__()
 
         self.cameraName = _fix_name(cameraName)
@@ -46,6 +47,11 @@ class LimelightCamera(Subsystem):
         # localizer state
         self.localizerSubscribed = False
         self.cameraPoseSetRequest, self.robotOrientationSetRequest, self.imuModeRequest = None, None, None
+
+        # port forwarding in case this is connected over USB
+        if isUsb0:
+            for port in [1180, 5800, 5801, 5802, 5803, 5804, 5805, 5806, 5807, 5808, 5809]:
+                PortForwarder.getInstance().add(port, "172.29.0.1", port)
 
 
     def addLocalizer(self):
