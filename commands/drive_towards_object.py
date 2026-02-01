@@ -50,13 +50,13 @@ class SwerveTowardsObject(commands2.Command):
                 dontSwitchToSmallerObject=True,
             )
 
-            # make a command to repeatedly drive to gamepieces (do it again after one gamepiece reached)
-            driveToManyGamepieces = driveToGamepiece.repeatedly()
-
             # setup a condition for when to run that command
             whenLeftTriggerPressed = self.driverController.axisGreaterThan(
                 XboxController.Axis.kLeftTrigger, threshold=0.1
             )
+
+            # make a command to repeatedly drive to gamepieces (i.e. to do it again after one gamepiece reached)
+            driveToManyGamepieces = driveToGamepiece.repeatedly()
 
             # connect the command to its trigger
             whenLeftTriggerPressed.whileTrue(driveToManyGamepieces)
