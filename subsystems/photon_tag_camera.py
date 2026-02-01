@@ -191,13 +191,13 @@ class PhotonTagCamera(Subsystem):
         # otherwise
         return 0.0, 0.0, 0.0, 0.0
 
-    def setCameraPoseOnRobot(self, x, y, z, pitch, roll, yaw):
+    def setCameraPoseOnRobot(self, x, y, z, pitchDegrees, rollDegrees, yawDegrees):
         """
         Localizer method 3
         A way to update the pose *if* the camera is mounted on some moving part
         (only for localization: angles should be in degrees, xyz in meters)
         """
-        robotToCam = Transform3d(Translation3d(x, y, x), Rotation3d(pitch, roll, yaw))
+        robotToCam = Transform3d(Translation3d(x, y, x), Rotation3d.fromDegrees(pitchDegrees, rollDegrees, yawDegrees))
         self.camPoseEst.robotToCamera = robotToCam
 
 
@@ -375,7 +375,7 @@ class PhotonTagCameraSim(Subsystem):
         p = self.drivetrain.getPose()
         return p.x, p.y, self.ta, 1.0 if self.ta > 0 else 0.0
 
-    def setCameraPoseOnRobot(self, x, y, z, pitch, roll, yaw):
+    def setCameraPoseOnRobot(self, x, y, z, pitchDegrees, rollDegrees, yawDegrees):
         self.locationOnDrivetrain = Transform2d(
-            Pose2d(0, 0, 0), Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(yaw))
+            Pose2d(0, 0, 0), Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(yawDegrees))
         )

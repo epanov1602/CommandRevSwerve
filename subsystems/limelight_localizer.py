@@ -77,7 +77,7 @@ class LimelightLocalizer(Subsystem):
         assert isinstance(camera, (LimelightCamera, PhotonTagCamera, PhotonTagCameraSim)), \
             "you can only add LimelightCamera or PhotonTagCamera to LimelightLocalizer"
         assert camera.cameraName not in self.cameras, f"camera {camera.cameraName} already added to LimelightLocalizer"
-        self.cameras[camera.cameraName] = CameraState(
+        self.cameras[camera.cameraName] = c = CameraState(
             camera,
             cameraPoseOnRobot,
             cameraHeadingOnRobot,
@@ -87,6 +87,7 @@ class LimelightLocalizer(Subsystem):
             enabled=True
         )
         camera.addLocalizer()
+        _setCameraPoseOnRobot(c)
 
 
     def setAllowed(self, value: bool):
@@ -105,16 +106,13 @@ class LimelightLocalizer(Subsystem):
             found.cameraPoseOnRobot = pos
             found.cameraHeadingOnRobot = heading
             found.cameraPitchAngleDegrees = pitchDegrees
-            found.camera.setCameraPoseOnRobot(pos.x, pos.y, pos.z, heading.degrees(), 0.0, pitchDegrees)
+            _setCameraPoseOnRobot(found)
 
 
     def infrequent(self) -> None:
         for c in self.cameras.values():
-            p = c.cameraPoseOnRobot
-            c.camera.setCameraPoseOnRobot(
-                p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees()
-            )
-            # this resets the camera settings in case it got restarted
+            _setCameraPoseOnRobot(c)
+            # this resets the camera settings in case the camera got restarted (Limelight-only)
 
 
     def periodic(self) -> None:
@@ -154,3 +152,10 @@ class LimelightLocalizer(Subsystem):
                         gain = math.sqrt(gain)
                     shift = Translation2d(x - odometryPos.x, y - odometryPos.y) * min(learningRate * gain, maxGain)
                     self.drivetrain.adjustOdometry(shift, Rotation2d.fromDegrees(0))
+
+
+def _setCameraPoseOnRobot(c: CameraState):
+    p = c.cameraPoseOnRobot
+    c.camera.setCameraPoseOnRobot(
+        p.x, p.y, p.z, c.cameraPitchAngleDegrees, 0.0, c.cameraHeadingOnRobot.degrees()
+    )
