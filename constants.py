@@ -30,10 +30,10 @@ class DriveConstants:
     # Driving Parameters - Note that these are not the maximum capable speeds of
     # the robot, rather the allowed maximum speeds
     kMaxSpeedMetersPerSecond = 4.8
-    kMaxAngularSpeed = 2 * math.tau  # radians per second
+    kMaxAngularSpeed = math.tau  # radians per second
 
     kMagnitudeSlewRate = 9.8  # m/s per second (1g acceleration allowed along X and along Y axis)
-    kRotationalSlewRate = 12.0  # rad/s per second
+    kRotationalSlewRate = 24.0  # rad/s per second
 
     # Chassis configuration
     kTrackWidth = units.inchesToMeters(26.5)
@@ -49,15 +49,6 @@ class DriveConstants:
     ]
     kDriveKinematics = SwerveDrive4Kinematics(*kModulePositions)
 
-    # set it to True if you were using a ruler for zeroing and want to ignore the offsets below
-    kAssumeZeroOffsets = True
-
-    # set the above to == False, if you are using Rev zeroing tool (and you have to tinker with offsets below)
-    kFrontLeftChassisAngularOffset = -math.pi / 2
-    kFrontRightChassisAngularOffset = 0
-    kBackLeftChassisAngularOffset = math.pi
-    kBackRightChassisAngularOffset = math.pi / 2
-
     # MOTOR CAN IDs
     kFrontLeftDrivingCanId = 1
     kRearLeftDrivingCanId = 2
@@ -69,6 +60,12 @@ class DriveConstants:
     kFrontRightTurningCanId = 7
     kRearRightTurningCanId = 8
 
+    # CANCODER CAN IDs
+    kFrontLeftCancoderCanId = -1
+    kRearLeftCancoderCanId = -1
+    kFrontRightCancoderCanId = -1
+    kRearRightCancoderCanId = -1
+
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
     kGyroIsPigeon = False
 
@@ -76,10 +73,7 @@ class DriveConstants:
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     drivingConfig = SparkBaseConfig()
     drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    drivingConfig.smartCurrentLimit(
-        stallLimit=ModuleConstants.kDrivingMotorCurrentLimit // 3,
-        freeLimit=ModuleConstants.kDrivingMotorCurrentLimit,
-        limitRpm=1000)
+    drivingConfig.smartCurrentLimit(stallLimit=ModuleConstants.kDrivingMotorCurrentLimit)
     drivingConfig.encoder.positionConversionFactor(ModuleConstants.kDrivingEncoderPositionFactor)
     drivingConfig.encoder.velocityConversionFactor(ModuleConstants.kDrivingEncoderVelocityFactor)
     drivingConfig.closedLoop.setFeedbackSensor(FeedbackSensor.kPrimaryEncoder)
@@ -89,28 +83,44 @@ def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     return drivingConfig
 
 
-def getSwerveTurningMotorConfig(turnMotorInverted: bool) -> SparkBaseConfig:
+def getSwerveTurningMotorConfig(turnMotorInverted: bool, useAbsoluteEncoderGoals: bool = True) -> SparkBaseConfig:
     turningConfig = SparkBaseConfig()
     turningConfig.inverted(turnMotorInverted)
     turningConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
-    turningConfig.smartCurrentLimit(
-        stallLimit=ModuleConstants.kTurningMotorCurrentLimit // 3,
-        freeLimit=ModuleConstants.kTurningMotorCurrentLimit,
-        limitRpm=100)
+    turningConfig.smartCurrentLimit(stallLimit=ModuleConstants.kTurningMotorCurrentLimit)
     turningConfig.absoluteEncoder.positionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor)
     turningConfig.absoluteEncoder.velocityConversionFactor(ModuleConstants.kTurningEncoderVelocityFactor)
     turningConfig.absoluteEncoder.inverted(ModuleConstants.kTurningEncoderInverted)
-    turningConfig.closedLoop.setFeedbackSensor(FeedbackSensor.kAbsoluteEncoder)
-    turningConfig.closedLoop.pid(ModuleConstants.kTurningP, ModuleConstants.kTurningI, ModuleConstants.kTurningD)
+
+    turningConfig.encoder.positionConversionFactor(1.0)  # rotations, to match Kraken
+    turningConfig.encoder.velocityConversionFactor(1.0 / 60)  # rotations per second
+
+    if useAbsoluteEncoderGoals:
+        turningConfig.closedLoop.setFeedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+        turningConfig.closedLoop.pid(ModuleConstants.kTurningP, 0.0, ModuleConstants.kTurningD)
+    else:
+        turningConfig.closedLoop.setFeedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        turningConfig.closedLoop.pid(ModuleConstants.kTurningP * math.tau, 0.0, ModuleConstants.kTurningD)
+
     turningConfig.closedLoop.velocityFF(ModuleConstants.kTurningFF)
     turningConfig.closedLoop.outputRange(ModuleConstants.kTurningMinOutput, ModuleConstants.kTurningMaxOutput)
-    turningConfig.closedLoop.positionWrappingEnabled(True)
-    turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    if useAbsoluteEncoderGoals:
+        turningConfig.closedLoop.positionWrappingEnabled(True)
+        turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    else:
+        turningConfig.closedLoop.positionWrappingEnabled(False)
+
     return turningConfig
 
 
 class ModuleConstants:
     kDrivingMotorIsTalon = False
+    kTurningMotorIsTalon = False
+    kTurningKalmanGain = 0.05  # if using CANcoder, how quickly to fuse the absolute and relative angles
+    kWheelDiameterMeters = 0.0762
+
+    kTurningReductionRatio = 150.0/7.0  # 287 / 11.0 would be for MK5n
+    # (others: MK5i 260/10.0, MK4i 150/7.0, MK4n 18.75/1.0, Thrifty 25/1, MAXSwerve 9424/203.0, Plummer 28/1)
 
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
@@ -124,9 +134,8 @@ class ModuleConstants:
     kDrivingMotorPinionTeeth = 14
 
     # Calculations required for driving motor conversion factors and feed forward
-    kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60
-    kWheelDiameterMeters = 0.0762
     kWheelCircumferenceMeters = kWheelDiameterMeters * math.pi
+    kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60
     # 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15 teeth on the bevel pinion
     kDrivingMotorReduction = (45.0 * 22) / (kDrivingMotorPinionTeeth * 15)
     kDriveWheelFreeSpeedRps = (
@@ -143,17 +152,14 @@ class ModuleConstants:
     kTurningEncoderPositionFactor = math.tau  # radian
     kTurningEncoderVelocityFactor = math.tau / 60.0  # radians per second
 
-    kTurningEncoderPositionPIDMinInput = 0  # radian
-    kTurningEncoderPositionPIDMaxInput = kTurningEncoderPositionFactor  # radian
-
-    kDrivingP = 0.04
+    kDrivingP = 0.04  # was 0.04
     kDrivingI = 0
     kDrivingD = 0
-    kDrivingFF = 1 / kDriveWheelFreeSpeedRps
+    kDrivingFF = 1.0 / kDriveWheelFreeSpeedRps
     kDrivingMinOutput = -1
     kDrivingMaxOutput = 1
 
-    kTurningP = 1  # can be dialed down if you see oscillations in the turning motor
+    kTurningP = 1.0  # can be dialed down if you see oscillations in the turning motor
     kTurningI = 0
     kTurningD = 0
     kTurningFF = 0
@@ -224,3 +230,4 @@ class LookupTable:
 
     def interpolate(self, x: float):
         return np.interp(x, self.x, self.y)
+

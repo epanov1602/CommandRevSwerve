@@ -38,7 +38,6 @@ class TurretConstants:
     kMaxOutput = 1.0
 
     stallCurrentLimit = 5  # amps, must be integer for Rev
-    freeSpinCurrentLimit = 10  # amps, must be integer for Rev
 
 
 assert TurretConstants.hardStopMinPosition <= TurretConstants.minPositionGoal, "hard stop cant be above lowest position"
@@ -193,9 +192,5 @@ def _getLeadMotorConfig(
     config.closedLoop.pid(TurretConstants.kP, 0.0, TurretConstants.kD)
     config.closedLoop.velocityFF(0.0)
     config.closedLoop.outputRange(-TurretConstants.kMaxOutput, +TurretConstants.kMaxOutput)
-    config.smartCurrentLimit(
-        TurretConstants.stallCurrentLimit,
-        TurretConstants.freeSpinCurrentLimit,
-        limitRpm=300
-    )
+    config.smartCurrentLimit(TurretConstants.stallCurrentLimit)
     return config
