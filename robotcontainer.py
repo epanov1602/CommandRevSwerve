@@ -75,7 +75,7 @@ class RobotContainer:
                 self.robotDrive,
                 forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
                 leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
-                rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                rotationSpeed=lambda: -0.7 * self.driverController.getRawAxis(XboxController.Axis.kRightX),
                 fieldRelative=lambda: not fpvButton.getAsBoolean(),
                 deadband=OIConstants.kDriveDeadband,
                 rateLimit=True,

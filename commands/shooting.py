@@ -15,7 +15,7 @@ from subsystems.turret import Turret
 
 class Constants:
     RPM_TOLERANCE_FACTOR = 0.03  # plus minus 3%
-    ANGLE_TOLERANCE_DEGREES = 5  # plus minus 5 degrees is fine for drivetrain aiming
+    TARGET_RADIUS_METERS = 0.34  # in reality the target is 0.52m wide, but let's be conservative
     RANGE_TOLERANCE_METERS = 0.1
 
 
@@ -151,6 +151,7 @@ class GetReadyToShoot(commands2.Command):
     def execute(self):
         # set the correct RPM (and hood servo position) in the shooter
         ft = self.firingTable
+        distance = ft.distance()
         rpm = ft.recommendedShooterRpm()
         hoodPosition = ft.recommendedFiringHoodPosition()
         self.shooter.setVelocityGoal(rpm, rpm * Constants.RPM_TOLERANCE_FACTOR)
@@ -172,7 +173,8 @@ class GetReadyToShoot(commands2.Command):
                 self.drivetrainTarget = goalPoint
 
         # check if we are ready to fire or not
-        notYet = self.turretNotReady() or self.drivetrainNotReady() or self.shooter.notReady() or self.distanceNotGood()
+        notYet = self.turretNotReady() or self.drivetrainNotReady(distance) \
+                 or self.shooter.notReady() or self.distanceNotGood(distance)
         self.setNotReady(notYet)
 
     def end(self, interrupted: bool):
@@ -204,18 +206,19 @@ class GetReadyToShoot(commands2.Command):
             return ""
         return self.turret.notReady()
 
-    def drivetrainNotReady(self):
+    def drivetrainNotReady(self, distanceMeters):
         if self.drivetrain is not None:
             # direction not right?
-            notPointing = self.drivetrain.notPointingTo(self.drivetrainTarget, Constants.ANGLE_TOLERANCE_DEGREES)
+            angularToleranceRadians = Constants.TARGET_RADIUS_METERS / distanceMeters
+            angularToleranceDegrees = angularToleranceRadians * 57.2958
+            notPointing = self.drivetrain.notPointingTo(self.drivetrainTarget, angularToleranceDegrees)
             if notPointing:
                 return notPointing
         # otherwise no problem
         return ""
 
-    def distanceNotGood(self):
+    def distanceNotGood(self, distance):
         if self.firingTable.maximumRangeMeters != 0:
-            distance = self.firingTable.distance()
             if distance > self.firingTable.maximumRangeMeters:
                 return "too far"
             if distance < self.firingTable.minimumRangeMeters:
