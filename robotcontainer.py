@@ -65,14 +65,19 @@ class RobotContainer:
 
         # Configure default command for driving using joystick sticks
         from commands.holonomicdrive import HolonomicDrive
+
+        # if the driver pushes the left bumper, they drive in "FPV mode"
+        # (great for driving using front camera feed, because it is not field-relative)
+        fpvButton = self.driverController.button(XboxController.Button.kLeftBumper)
+
         self.robotDrive.setDefaultCommand(
             HolonomicDrive(
                 self.robotDrive,
                 forwardSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftY),
                 leftSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kLeftX),
                 rotationSpeed=lambda: -self.driverController.getRawAxis(XboxController.Axis.kRightX),
+                fieldRelative=lambda: not fpvButton.getAsBoolean(),
                 deadband=OIConstants.kDriveDeadband,
-                fieldRelative=True,
                 rateLimit=True,
                 square=True,
             )
