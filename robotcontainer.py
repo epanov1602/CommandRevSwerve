@@ -12,6 +12,7 @@ from wpilib import XboxController, Servo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d, Rotation3d
 
 from commands.aimtodirection import AimToDirection
+from commands.point_towards_location import PointTowardsLocation
 from commands.trajectory import SwerveTrajectory, JerkyTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.firing_table import FiringTable
@@ -128,6 +129,27 @@ class RobotContainer:
         reversedTrajectoryCommand1 = trajectoryCommand1.reversed()
         bButton = self.driverController.button(XboxController.Button.kB)
         bButton.whileTrue(reversedTrajectoryCommand1)  # while "B" button is pressed, keep running this command
+
+        # create a command for keeping the robot nose pointed towards the hub
+        keepPointingTowardsHub = PointTowardsLocation(
+            drivetrain=self.robotDrive,
+            location=Translation2d(x=4.59, y=4.025),
+            locationIfRed=Translation2d(x=11.88, y=4.025),
+        )
+        whenRightTriggerPressed = self.driverController.axisGreaterThan(
+            XboxController.Axis.kRightTrigger, threshold=0.5
+        )
+        whenRightTriggerPressed.whileTrue(keepPointingTowardsHub)
+        # ^^ set up a condition for when to do this: do it when the joystick right trigger is pressed by more than 50%
+
+        # create a command for keeping the robot nose pointed 45 degrees (for traversing the hump on a swerve drive)
+        keepNoseAt45Degrees = PointTowardsLocation(
+            drivetrain=self.robotDrive,
+            location=Translation2d(x=999999, y=999999),
+            locationIfRed=Translation2d(x=-999999, y=-999999),
+        )
+        self.driverController.button(XboxController.Button.kRightBumper).whileTrue(keepNoseAt45Degrees)
+        # ^^ set up a condition for when to do this: do it when the joystick right trigger is pressed by more than 50%
 
 
     def disablePIDSubsystems(self) -> None:
