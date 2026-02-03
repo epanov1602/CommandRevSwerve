@@ -43,13 +43,13 @@ class LimelightLocalizer(Subsystem):
         self.learningRateMult.setDefaultOption("10%", 0.1)
         self.learningRateMult.addOption("3%", 0.03)
         self.learningRateMult.addOption("1%", 0.01)
-        SmartDashboard.putData("LocaLearnRate", self.learningRateMult)
+        SmartDashboard.putData("Localizer/learningRate", self.learningRateMult)
 
         self.flipped = False
         self.enabled = SendableChooser()
         self.enabled.addOption("off", False)
         self.enabled.setDefaultOption("on", True)
-        SmartDashboard.putData("Localizer", self.enabled)
+        SmartDashboard.putData("Localizer/on", self.enabled)
 
         self.allowed = True
         self.cameras: Dict[str, CameraState] = dict()  # list of Limelight cameras
