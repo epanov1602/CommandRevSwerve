@@ -21,7 +21,7 @@ from wpilib import SmartDashboard, DriverStation
 
 
 FIELD_WIDTH = 8.052
-FIELD_LENGTH = 17.55
+FIELD_LENGTH = 16.541
 U_TURN = Rotation2d.fromDegrees(180)
 
 
@@ -36,6 +36,7 @@ class JerkyTrajectory(commands2.Command):
         setup: typing.Optional[typing.Callable[[], None]] = None,
         stopAtEnd: bool = True,
         flipIfRed: bool = False,
+        flipIfBlue: bool = False,
     ):
         """
         A simple trajectory command that automatically skips all the waypoints that are already behind
@@ -60,6 +61,7 @@ class JerkyTrajectory(commands2.Command):
         self.swerve = swerve
         self.stopAtEnd = stopAtEnd
         self.flipIfRed = flipIfRed
+        self.flipIfBlue = flipIfBlue
         self.setup = setup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints]
         if endpoint is not None:
@@ -74,7 +76,8 @@ class JerkyTrajectory(commands2.Command):
         waypoints.reverse()
         endpoint = self.waypoints[0]
         return JerkyTrajectory(
-            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup, self.stopAtEnd, self.flipIfRed
+            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup,
+            self.stopAtEnd, self.flipIfRed, self.flipIfBlue,
         )
 
     def trajectoryToDisplay(self):
@@ -115,6 +118,8 @@ class JerkyTrajectory(commands2.Command):
         mustFlip = False
         if self.flipIfRed:
             mustFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        if self.flipIfBlue:
+            mustFlip = DriverStation.getAlliance() == DriverStation.Alliance.kBlue
 
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
@@ -234,7 +239,8 @@ class SwerveTrajectory(JerkyTrajectory):
         waypoints.reverse()
         endpoint = self.waypoints[0]
         return SwerveTrajectory(
-            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup, self.stopAtEnd, self.flipIfRed
+            self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup,
+            self.stopAtEnd, self.flipIfRed, self.flipIfBlue,
         )
 
     def initialize(self):
