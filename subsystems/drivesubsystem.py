@@ -426,7 +426,7 @@ class BadSimPhysics(object):
             rot = (speeds.omega * 180 / math.pi) * dt
 
             g = drivetrain.gyro
-            g.set_yaw(g.get_yaw().value + rot * DriveConstants.kGyroReversed)
+            g.set_yaw(g.get_yaw().value + 2 * rot * DriveConstants.kGyroReversed)
             drivetrain.adjustOdometry(trans, Rotation2d())
 
 
