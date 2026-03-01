@@ -104,7 +104,7 @@ class JerkyTrajectory(commands2.Command):
             commands.append(command)
 
         # if the last waypoint (endpoint) has a specific direction, aim in that direction at the end
-        if direction is not None:
+        if direction is not None and self.stopAtEnd:
             degrees = direction.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
             aim = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)
@@ -316,13 +316,13 @@ class SwerveTrajectory(JerkyTrajectory):
 
         # If the robot fell behind the trajectory (trajectory speed too high in optimizer), brute-force catch up @ end
         catchup = SwerveToPoint(
-            endPt.x, endPt.y, endHeading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=True
+            endPt.x, endPt.y, endHeading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=self.stopAtEnd
         ).beforeStarting(
             lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"catchup: {endPt.x}, {endPt.y}")
         )
 
         # Run path following command, then stop at the end (possibly turn in correct direction)
-        if endHeading is not None:
+        if endHeading is not None and self.stopAtEnd:
             degrees = endHeading.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
             stop = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)

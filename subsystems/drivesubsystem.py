@@ -313,6 +313,10 @@ class DriveSubsystem(Subsystem):
         self.rearLeft.setDesiredState(rl)
         self.rearRight.setDesiredState(rr)
 
+        # we don't have a good way to keep the rate limiters current, but we can keep them safe
+        self.xySpeedLimiter.calculate(0.0, 0.0)
+        self.rotLimiter.calculate(0.0)
+
 
     def resetEncoders(self) -> None:
         """Resets the drive encoders to currently read a position of 0."""
