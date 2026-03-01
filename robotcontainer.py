@@ -6,9 +6,9 @@ import wpimath
 import wpilib
 import typing
 
-from commands2 import cmd, InstantCommand, RunCommand
+from commands2 import cmd, InstantCommand, RunCommand, ConditionalCommand
 from commands2.button import CommandGenericHID
-from wpilib import XboxController, Servo
+from wpilib import XboxController, Servo, DriverStation
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d, Rotation3d
 
 from commands.aimtodirection import AimToDirection
@@ -114,13 +114,13 @@ class RobotContainer:
             drivetrain=self.robotDrive,
             speed=+1.0,
             waypoints=[
-                (1.0, 7.0, -54),  # start at left feeding station: x=1.0, y=7.0, heading=-54 degrees
-                (1.5, 6.5, 0),  # next waypoint
-                (2.0, 4.5, 0),  # next waypoint
+                (4.64, 0.65, 0.0),
+                (7.00, 0.65, 50.0),  # next waypoint
+                (8.33, 1.16, 110.0),  # next waypoint
             ],
-            endpoint=(3.2, 4.0, 0),  # end point at the reef facing North
-            flipIfRed=False,  # if you want the trajectory to flip when team is red, set =True
-            stopAtEnd=True,  # to keep driving onto next command, set =False
+            endpoint=(8.11, 6.00, 110.0),  # end point
+            flipIfRed=True,  # if you want the trajectory to flip when team is red, set =True
+            stopAtEnd=False,  # to keep driving onto next command, set =False
         )
         aButton = self.driverController.button(XboxController.Button.kA)
         aButton.whileTrue(trajectoryCommand1)  # while "A" button is pressed, keep running trajectoryCommand1
@@ -169,7 +169,34 @@ class RobotContainer:
         self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
         self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
         self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
+        self.chosenAuto.addOption("right centerline", self.getRightCenterlineAuto)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
+
+    def getRightCenterlineAuto(self):
+        setStartPose = ConditionalCommand(
+            ResetXY(x=12.96, y=7.49, headingDegrees=+180, drivetrain=self.robotDrive),
+            ResetXY(x=3.52, y=0.61, headingDegrees=+0, drivetrain=self.robotDrive),
+            lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        )
+
+        speed = 1.0
+
+        trajectory1 = SwerveTrajectory(
+            drivetrain=self.robotDrive,
+            speed=speed,
+            waypoints=[
+                (4.64, 0.65, 0.0),
+                (7.00, 0.65, 110.0),  # next waypoint
+                (8.33, 1.16, 120.0),  # next waypoint
+                (7.75, 5.80, 130.0),
+            ],
+            endpoint=(6.06, 6.97, 140),
+            flipIfRed=True,  # if you want the trajectory to flip when team is red, set =True
+            stopAtEnd=True,  # to keep driving onto next command, set =False
+        )
+
+        return setStartPose.andThen(trajectory1)
+
 
     def getAutonomousLeftBlue(self):
         setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)
