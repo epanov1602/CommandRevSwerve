@@ -258,9 +258,12 @@ class SwerveTrajectory(JerkyTrajectory):
         from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 
         # Create config for trajectory
+        maxAccel = AutoConstants.kMaxAccelerationMetersPerSecondSquared
+        if not self.stopAtEnd:
+            maxAccel *= 10.0
         config = TrajectoryConfig(
             AutoConstants.kMaxSpeedMetersPerSecond * abs(self.speed),
-            AutoConstants.kMaxAccelerationMetersPerSecondSquared,
+            maxAccel,
         )
         # Add kinematics to ensure max speed is actually obeyed
         config.setKinematics(DriveConstants.kDriveKinematics)
