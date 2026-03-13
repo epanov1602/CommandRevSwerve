@@ -13,7 +13,7 @@ from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Translation3d, R
 
 from commands.aimtodirection import AimToDirection
 from commands.point_towards_location import PointTowardsLocation
-from commands.trajectory import SwerveTrajectory, JerkyTrajectory
+from commands.trajectory import SwerveTrajectory, SimpleTrajectory
 from constants import AutoConstants, DriveConstants, OIConstants
 from subsystems.firing_table import FiringTable
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics

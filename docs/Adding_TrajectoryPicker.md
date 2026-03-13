@@ -155,9 +155,9 @@ class ReversedTrajectoryPicker(commands2.Command):
         subsystems=[self.robotDrive, self.intake],
     )
 
-    from commands.trajectory import JerkyTrajectory
+    from commands.trajectory import SimpleTrajectory
 
-    goToPos1 = JerkyTrajectory(
+    goToPos1 = SimpleTrajectory(
         # swerve=True, # uncomment if you have a swerve drive (or you can also use swerve="last-point")
         drivetrain=self.robotDrive,
         endpoint=(5.54, 3.99, -180),
@@ -173,7 +173,7 @@ class ReversedTrajectoryPicker(commands2.Command):
     )
     self.trajectoryPicker.addCommands("to-pos1", goToPos1)
 
-    goToPos2 = JerkyTrajectory(
+    goToPos2 = SimpleTrajectory(
         # swerve=True, # uncomment if you have a swerve drive (you can also use swerve="last-point")
         drivetrain=self.robotDrive,
         endpoint=(3.92, 2.97, 60.0),

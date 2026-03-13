@@ -443,11 +443,15 @@ class SlewRateLimiter2d:
     def calculate(self, x, y) -> typing.Tuple[float, float]:
         t = Timer.getFPGATimestamp()
 
+        dt = t - self.t
         dx = x - self.x
         dy = y - self.y
 
+        if x != 0 or y != 0:
+            dt = min(dt, 0.02)  # 0.02 means "50 updates per second", in case slew rate limiter was not always applied
+
         # this is the maximum permitted change in X or Y, given the slew rate
-        limit = self.rate * abs(t - self.t)
+        limit = self.rate * abs(dt)
         self.t = t
 
         # this is the desired change in X or Y

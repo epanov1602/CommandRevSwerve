@@ -25,7 +25,7 @@ FIELD_LENGTH = 16.541
 U_TURN = Rotation2d.fromDegrees(180)
 
 
-class JerkyTrajectory(commands2.Command):
+class SimpleTrajectory(commands2.Command):
     def __init__(
         self,
         drivetrain: DriveSubsystem,
@@ -75,7 +75,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(
+        return SimpleTrajectory(
             self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup,
             self.stopAtEnd, self.flipIfRed, self.flipIfBlue,
         )
@@ -104,7 +104,7 @@ class JerkyTrajectory(commands2.Command):
             commands.append(command)
 
         # if the last waypoint (endpoint) has a specific direction, aim in that direction at the end
-        if direction is not None and self.stopAtEnd:
+        if direction is not None:
             degrees = direction.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
             aim = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)
@@ -125,6 +125,7 @@ class JerkyTrajectory(commands2.Command):
 
         # find the waypoint nearest to the current location: we want to skip all the waypoints before it
         nearest, distance, nh = None, None, None
+        endPt, endHeading = self.waypoints[-1]
 
         location = self.drivetrain.getPose().translation()
         if mustFlip:  # if flipping the field for red team, flip robot location too
@@ -132,6 +133,8 @@ class JerkyTrajectory(commands2.Command):
 
         for point, heading in self.waypoints:
             d = location.distance(point)
+            if d == 0:
+                continue  # this point does not count
             if nearest is None or d < distance:
                 nearest, distance, nh = point, d, heading
 
@@ -140,12 +143,11 @@ class JerkyTrajectory(commands2.Command):
         if nearest is not None:
             skip = True
             for point, heading in self.waypoints:
-                if not skip:
+                if not skip and point.squaredDistance(endPt) > 0:
                     waypoints.append((point, heading))
                 elif point == nearest:
                     skip = False
-        if len(waypoints) == 0:
-            waypoints = [self.waypoints[-1]]
+        waypoints.append((endPt, endHeading))
 
         # if the nearest point is also in the same direction, include it too
         if nearest is not None and _sameDirection(nearest - location, waypoints[0][0] - location):
@@ -232,7 +234,7 @@ class JerkyTrajectory(commands2.Command):
             self.field.getObject("active-trajectory").setPoses(trajectory)
 
 
-class SwerveTrajectory(JerkyTrajectory):
+class SwerveTrajectory(SimpleTrajectory):
 
     def reversed(self):
         waypoints = self.waypoints[1:]
@@ -244,6 +246,7 @@ class SwerveTrajectory(JerkyTrajectory):
         )
 
     def initialize(self):
+        self.swerve = True
         if self.setup is not None:
             self.setup()
 
@@ -258,12 +261,9 @@ class SwerveTrajectory(JerkyTrajectory):
         from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 
         # Create config for trajectory
-        maxAccel = AutoConstants.kMaxAccelerationMetersPerSecondSquared
-        if not self.stopAtEnd:
-            maxAccel *= 10.0
         config = TrajectoryConfig(
             AutoConstants.kMaxSpeedMetersPerSecond * abs(self.speed),
-            maxAccel,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared,
         )
         # Add kinematics to ensure max speed is actually obeyed
         config.setKinematics(DriveConstants.kDriveKinematics)
@@ -279,17 +279,21 @@ class SwerveTrajectory(JerkyTrajectory):
                 rotation += Rotation2d.fromDegrees(180)
             return Pose2d(translation, rotation)
 
-        # An example trajectory to follow. All units in meters.
+        secondPoint = endPt if not waypoints else waypoints[0][0]
+        penultimatePoint = currentPoint if not waypoints else waypoints[-1][0]
+        try:
+            trajectory = TrajectoryGenerator.generateTrajectory(
+                makeTrajectoryPose(currentPoint, (secondPoint - currentPoint).angle()),
+                [w[0] for w in waypoints[0:-1]],
+                makeTrajectoryPose(endPt, (endPt - penultimatePoint).angle()),
+                config,
+            )
+        except RuntimeError:
+            SmartDashboard.putString(
+                "command/c" + self.__class__.__name__,
+                f"trajectory generator failed to converge, using a simple trajectory")
+            return super().initialize()
 
-        trajectory = TrajectoryGenerator.generateTrajectory(
-            # Start at the current point
-            makeTrajectoryPose(currentPoint, currentHeading if not waypoints else waypoints[0][1]),
-            # Pass through these interior waypoints
-            [w[0] for w in waypoints[0:-1]],
-            # End 1.5 meters straight ahead of where we started, facing forward
-            makeTrajectoryPose(endPt, endHeading),
-            config,
-        )
         thetaController = ProfiledPIDControllerRadians(
             AutoConstants.kPThetaController,
             0,
@@ -322,7 +326,7 @@ class SwerveTrajectory(JerkyTrajectory):
         )
 
         # Run path following command, then stop at the end (possibly turn in correct direction)
-        if endHeading is not None and self.stopAtEnd:
+        if endHeading is not None:
             degrees = endHeading.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
             stop = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)

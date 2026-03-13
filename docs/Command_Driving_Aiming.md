@@ -560,7 +560,7 @@ from commands.gotopoint import GoToPoint
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 
 
-class JerkyTrajectory(commands2.Command):
+class SimpleTrajectory(commands2.Command):
     def __init__(
         self,
         drivetrain: DriveSubsystem,
@@ -593,11 +593,11 @@ class JerkyTrajectory(commands2.Command):
 
         self.addRequirements(self.drivetrain)
 
-    def reversed(self) -> JerkyTrajectory:
+    def reversed(self) -> SimpleTrajectory:
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
+        return SimpleTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed)
 
     def trajectoryToDisplay(self):
         result = []
@@ -702,7 +702,7 @@ class JerkyTrajectory(commands2.Command):
             )
 
 
-class SwerveTrajectory(JerkyTrajectory):
+class SwerveTrajectory(SimpleTrajectory):
 
     def reversed(self) -> SwerveTrajectory:
         waypoints = self.waypoints[1:]
