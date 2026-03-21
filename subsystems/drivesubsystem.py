@@ -88,8 +88,8 @@ class DriveSubsystem(Subsystem):
         # Override for the direction where robot should point
         self.overrideControlsToFaceThisPoint: Translation2d | None = None
 
-        if DriveConstants.kGyroIsPigeon:
-            self.gyro = Pigeon2(0)
+        if DriveConstants.kUsePigeonCanId >= 0:
+            self.gyro = Pigeon2(DriveConstants.kUsePigeonCanId)
         else:
             self.gyro = NavxGyro(GYRO_OVERSHOOT_FRACTION)
 
