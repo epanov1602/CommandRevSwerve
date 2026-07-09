@@ -6,6 +6,7 @@ from wpilib import SmartDashboard, Servo
 class IntakeConstants:
     kIntakeMotorA_CANID = 50 # Can ID not choosen yet
     kIntakeMotorB_CANID = 51 # Can ID not choosen yet
+    kFollowMotorInverted = False
 
     maxRPM = 6000
     kFF = 18.5 / 10000
@@ -107,7 +108,7 @@ def _getLeadMotorConfig() -> SparkBaseConfig:
 
 def _getFollowMotorConfig():
     followConfig = SparkBaseConfig()
-    followConfig.follow(IntakeConstants.kIntakeMotorA_CANID, False)  # True = inverted when following
+    followConfig.follow(IntakeConstants.kIntakeMotorA_CANID, IntakeConstants.kFollowMotorInverted)  # True = inverted when following
     followConfig.setIdleMode(SparkBaseConfig.IdleMode.kCoast)
     followConfig.smartCurrentLimit(IntakeConstants.stallCurrentLimit)
     return followConfig
