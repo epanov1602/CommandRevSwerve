@@ -37,11 +37,11 @@ class Constants:
     # which range of motion we want from this hood?
     minPosition = -0.55  # motor revolutions
     maxPosition = -0.01  # motor revolutions
-    initialPositionGoal = maxPosition   # closest to zero (out of the two)
+    initialPositionGoal = 0.1 * (minPosition - maxPosition) + maxPosition   # closest to zero (out of the two)
     positionTolerance = 0.01  # motor revolutions
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 0.33  # at first make it very small like this, then start tuning by increasing from there
+    kP = 6.0  # at first make it very small like this, then start tuning by increasing from there
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kMaxOutput = 1.0
 

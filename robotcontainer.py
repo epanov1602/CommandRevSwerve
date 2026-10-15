@@ -253,6 +253,9 @@ class RobotContainer:
         self.driverController.povLeft().whileTrue(PickUp(self.intake, arm=self.intake_arm))
         self.driverController.povRight().whileTrue(ShakeIntake(self.intake, self.intake_arm))
 
+        #self.driverController.button(XboxController.Button.kB).whileTrue(
+        #    RunCommand(lambda: self.hoodServo.setPositionGoal(-0.4))
+        #)
 
 
 
