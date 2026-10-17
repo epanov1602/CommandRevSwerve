@@ -336,7 +336,10 @@ class KeepFeederClear(commands2.Command):
         self.addRequirements(indexer)
 
     def initialize(self):
-        self.indexer.setFeederVelocityGoal(-0.075 * IndexerConstants.kTargetFeederVelocity)
+        if IndexerConstants.kAntiJamEnabled:
+            self.indexer.setFeederVelocityGoal(-0.075 * IndexerConstants.kTargetFeederVelocity)
+        else:
+            self.indexer.stop()
 
     def end(self, interrupted: bool):
         self.indexer.stop()
@@ -399,12 +402,12 @@ class ShootFromFixedPosition(commands2.Command):
 
     def execute(self):
         t = Timer.getFPGATimestamp()
-        if t > self.tStart + 2.0:
+        if t > self.tStart + 0.05:
             self.indexer.feedGamepieceIntoShooter()
             SmartDashboard.putString("ShootFromFixedPos", f"shooting")
         else:
             self.indexer.startUnjamming()
-            SmartDashboard.putString("ShootFromFixedPos", f"unjamming")
+            SmartDashboard.putString("ShootFromFixedPos", "unjamming")
 
 
     def end(self, interrupted: bool):

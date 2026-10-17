@@ -7,7 +7,9 @@ from subsystems.intake_arm import Constants as IntakeArmConstants
 
 
 class PickUpConstants:
-    kPickupRollerSpeed = -1550  # rpm
+    kPickupRollerSpeed = -2500  # rpm, inward pickup
+    kIdleRollerSpeed = -1162.5  # rpm, inward idle
+    kShakeRollerSpeed = -1550  # rpm, inward while shaking
     kEjectRollerSpeed = +1550  # rpm
 
 
@@ -19,8 +21,8 @@ class RunIntakeRollersAtIdleSpeed(commands2.Command):
 
     def initialize(self):
         self.intake.setVelocityGoal(
-            PickUpConstants.kPickupRollerSpeed * 0.75,  # 0.75 for 714, 0.5 for 8630
-            PickUpConstants.kPickupRollerSpeed * 0.1)
+            PickUpConstants.kIdleRollerSpeed,
+            abs(PickUpConstants.kIdleRollerSpeed) * 0.1)
 
     def end(self, interrupted: bool):
         self.intake.stop()
@@ -124,7 +126,7 @@ class Eject(commands2.Command):
         # bring the arm down to its lowest position
         self.arm.setPositionGoal(IntakeArmConstants.deployedPosition)
         # start the rollers
-        self.intake.setVelocityGoal(-PickUpConstants.kPickupRollerSpeed, 0.0)
+        self.intake.setVelocityGoal(PickUpConstants.kEjectRollerSpeed, 0.0)
 
     def end(self, interrupted) -> None:
         # bring the arm down to its lowest position
@@ -194,7 +196,7 @@ class ShakeIntake(commands2.Command):
         SmartDashboard.putString("ShakeIntake/state", "started")
         self.start = self.arm.positionGoal
         self.startTime = Timer.getFPGATimestamp()
-        self.intake.setVelocityGoal(PickUpConstants.kPickupRollerSpeed, 0.1 * PickUpConstants.kPickupRollerSpeed)
+        self.intake.setVelocityGoal(PickUpConstants.kShakeRollerSpeed, 0.1 * abs(PickUpConstants.kShakeRollerSpeed))
 
     def end(self, interrupted: bool):
         SmartDashboard.putString("ShakeIntake/state", "finished")

@@ -208,12 +208,10 @@ class RobotContainer:
         whenOperatorRightTriger = self.operatorController.axisGreaterThan(
             XboxController.Axis.kRightTrigger, threshold=0.5
         )
-        whenOperatorRightTriger.whileTrue(PickUp(intakeRollers=self.intake, arm=self.intake_arm))
 
         whenOperatorLeftTriger = self.operatorController.axisGreaterThan(
             XboxController.Axis.kLeftTrigger, threshold=0.4
         )
-        whenOperatorLeftTriger.whileTrue(ShakeIntake(intake=self.intake, arm=self.intake_arm))
         # create a command for keeping the robot nose pointed 45 degrees (for traversing the hump on a swerve drive)
         keepNoseAt45Degrees = PointTowardsLocation(
             drivetrain=self.robotDrive,
@@ -240,18 +238,23 @@ class RobotContainer:
             rpmFactor=1.05,
         )
 
-        getReadyAndShootAndShake = getReadyAndShoot.deadlineFor(ShakeIntake(self.intake, self.intake_arm))
+        # Combine both controllers so releasing one does not cancel the other's request.
+        shootRequested = (
+            self.driverController.button(XboxController.Button.kX)
+            | self.operatorController.button(XboxController.Button.kX)
+        )
+        pickupRequested = self.driverController.button(XboxController.Button.kB) | whenOperatorRightTriger
+        manualShakeRequested = self.driverController.povRight() | whenOperatorLeftTriger
 
-        #opperator controls
-        self.operatorController.button(XboxController.Button.kX).whileTrue(getReadyAndShootAndShake)
+        # Shooting never owns the intake or drivetrain. Pickup always suppresses shaking.
+        shootRequested.whileTrue(getReadyAndShoot)
+        pickupRequested.whileTrue(PickUp(self.intake, arm=self.intake_arm))
+        ((shootRequested | manualShakeRequested) & ~pickupRequested).whileTrue(
+            ShakeIntake(self.intake, self.intake_arm)
+        )
+
+        # The alternate +5% RPM shooting mode retains its existing behavior.
         self.operatorController.button(XboxController.Button.kB).whileTrue(getReadyAndShootLowBattery)
-
-        #driver controls
-        self.driverController.button(XboxController.Button.kX).whileTrue(getReadyAndShootAndShake)
-
-        # intake commands
-        self.driverController.povLeft().whileTrue(PickUp(self.intake, arm=self.intake_arm))
-        self.driverController.povRight().whileTrue(ShakeIntake(self.intake, self.intake_arm))
 
         #self.driverController.button(XboxController.Button.kB).whileTrue(
         #    RunCommand(lambda: self.hoodServo.setPositionGoal(-0.4))

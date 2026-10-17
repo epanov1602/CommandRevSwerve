@@ -4,6 +4,7 @@ from wpilib import SmartDashboard
 
 
 class IndexerConstants:
+    kAntiJamEnabled = True
     kFeederMotor1_CANID = 11
     kFeederMotor2_CANID = 10
     kWashingMachine_CANID = 26
@@ -114,6 +115,9 @@ class Indexer(Subsystem):
         # TO DO: add the similar things for the turntable
 
     def startUnjamming(self):
+        if not IndexerConstants.kAntiJamEnabled:
+            self.stop()
+            return
         self.setFeederVelocityGoal(-0.15 * IndexerConstants.kTargetFeederVelocity)
         self.setWashingMachineVelocitySetpoint(-1.0 * IndexerConstants.kWashingMachineSetpoint)
 

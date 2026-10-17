@@ -41,7 +41,7 @@ class Constants:
     positionTolerance = 0.01  # motor revolutions
 
     # PID configuration (after you are done with calibrating=True)
-    kP = 6.0  # at first make it very small like this, then start tuning by increasing from there
+    kP = 3.0  # reduced from 6.0 to test position-hold pulsing near home
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
     kMaxOutput = 1.0
 
@@ -120,10 +120,25 @@ class Hood(Subsystem):
         if not self.zeroFound:
             return
 
+        if self._restAtHomeIfReady():
+            return
+
         if self.revPidController:
             self.revPidController.setReference(goal, SparkBase.ControlType.kPosition)
         else:
             self.talonMotor.set_control(self.talonPositionRequest.with_position(goal))
+
+    def _restAtHomeIfReady(self) -> bool:
+        # Release motor effort only at the homed bottom target, never at shooting angles.
+        if (self.zeroFound
+                and self.positionGoal == Constants.maxPosition
+                and abs(self.getPosition() - self.positionGoal) <= Constants.positionTolerance):
+            if self.revMotor is not None:
+                self.revMotor.stopMotor()
+            if self.talonMotor is not None:
+                self.talonMotor.stopMotor()
+            return True
+        return False
 
 
     def getPositionGoal(self) -> float:
@@ -229,6 +244,8 @@ class Hood(Subsystem):
         # 1. do we need to find zero?
         if not self.zeroFound:
             self.findZero()
+        else:
+            self._restAtHomeIfReady()
         # 2. report to the dashboard
         SmartDashboard.putString("Hood/state", self.getState())
         if self.revMotor is not None:
